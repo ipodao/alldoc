@@ -173,3 +173,215 @@ AndEngine包含几种引擎。不同的引擎游戏风格完全不同。
 
 Android设备分辨率差异很大。Generally developers and users alike prefer that a game takes up the full width and height of the device's display, but in some cases our resolution policy may need to be carefully selected in order to properly display our scenes as we—the developer—see fit. 我们将讨论多种可用的分辨率策略，分析哪种适合我们。
 
+在`onCreateEngineOptions()`中创建`EngineOptions`时设置分辨率策略。例如下面设置了`FillResolutionPolicy`。
+
+	EngineOptions engineOptions = new EngineOptions(true,
+		ScreenOrientation.LANDSCAPE_FIXED,
+		new FillResolutionPolicy(),
+		mCamera); 
+
+下面是`BaseResolutionPolicy`子类的详细介绍：
+
+### `FillResolutionPolicy`
+
+如果向游戏占据屏幕的所有空间。这是一种真全屏策略。但可能造成一些拉伸。若要选择这种策略，传`new FillResolutionPolicy()`。
+
+### `FixedResolutionPolicy`
+
+设定固定的显示大小，不管屏幕或摄像头的大小。
+
+传入参数`new FixedResolutionPolicy(pWidth, pHeight)`。For example, if we pass a width of 800 and a height of 480 to this policy-types constructor, on a tablet with a resolution of 1280 x 752, 周围将会有黑边。
+
+### `RatioResolutionPolicy`
+
+若不想造成精灵失真，又想最大化其显示大小，`RatioResolutionPolicy`是最好的策略。此时水平或垂直方向上只会有一个方向上有黑边。
+
+`RatioResolutionPolicy`构造器可以接受一个浮点数，表示比率。如`new RatioResolutionPolicy(1.6f)`。或两个整数`RatioResolutionPolicy(mCameraWidth, mCameraHeight)`，assuming `mCameraWidth` and `mCameraHeight` are the defined `Camera` object dimensions。
+
+### `RelativeResolutionPolicy`
+
+This policy allows us to apply scaling, either larger or smaller, to the overall application view based on a scaling factor with 1f being the default value. We can apply general scaling to the view with the constructor—`new RelativeResolutionPolicy(1.5f)`—which will increase the scale of both the width and height by 1.5 times, or we can specify individual width and height scales, for example, `new RelativeResolutionPolicy(1.5f, 0.5f)`. One thing to note with this policy is that we must be careful with the scaling factors, as scaling too large will cause an application to close without warning. 建议不要超过`1.8f`。
+
+## （未）1.5 对象工厂
+
+In game development specifically, a factory might be used to spawn enemy objects, spawn bullet objects, particle effects, item objects, and much more. 实际上，在创建声音、音乐、纹理、字体时AndEngine都用到了对象工厂。In this recipe, we'll find out how we can create an object factory and discuss how we can use them to provide simplicity in object creation within our own projects.
+
+参见`ObjectFactory`类。
+
+In this recipe, we're using the `ObjectFactory` class as a way for us to easily create and return subtypes of the `BaseObject` class. However, in a real-world project, the factory would not normally contain inner classes.
+
+1、Before we create our object factory, we should create our base class as well as at least a couple subtypes extending the base class:
+
+	public static class BaseObject {
+		/* The mX and mY variables have no real purpose in this recipe, however in
+		* a real factory class, member variables might be used to 		define position,
+		* color, scale, and more, of a sprite or other entity. */
+		private int mX;
+		private int mY;
+		// BaseObject constructor, all subtypes should define an mX and 
+		mY value on creation
+		BaseObject(final int pX, final int pY){
+			this.mX = pX;
+			this.mY = pY;
+		}
+	}
+
+2、Once we've got a base class with any number of subtypes, we can now start to consider implementing the factory design pattern. The ObjectFactoryclass contains the methods which will handle creating and returning objects of types `LargeObject` and `SmallObject` in this case:
+
+## （未）1.6 游戏管理者
+
+参见`GameManager`类。负责管理游戏状态。单例。
+
+## 1.7 介绍声音和音乐
+
+AndEngine引擎的`Sound`和`Music`对象。`Sound`表示声音特效，如爆炸。`Music`对象是更长的音频，如游戏音乐。
+
+在工程的`assets/`文件夹下，创建一个新文件夹`sfx`，放入两个文件`sound.mp3`和`music.mp3`。
+
+1、先在`onCreateEngineOptions()`告诉引擎我们需要声音和音乐：
+
+	engineOptions.getAudioOptions().setNeedsMusic(true);
+	engineOptions.getAudioOptions().setNeedsSound(true);
+
+2、设置声音和音乐工厂的资源路径，然后加载`Sound`和`Music`对象。`Sound`和`Music`都是资源，于是下面的代码可以放入`onCreateResources()`方法：
+
+	SoundFactory.setAssetBasePath("sfx/");
+	MusicFactory.setAssetBasePath("sfx/");
+
+	// Load our "sound.mp3" file into a Sound object
+	try {
+		Sound mSound = SoundFactory.createSoundFromAsset(getSoundManager(),
+			this, "sound.mp3");
+	} catch (IOException e) {
+		e.printStackTrace();
+	}
+	
+	// Load our "music.mp3" file into a music object
+	try {
+		Music mMusic = MusicFactory.createMusicFromAsset(getMusicManager(),
+			this, "music.mp3");
+	} catch (IOException e) {
+		e.printStackTrace();
+	}
+
+3、把`Sound`对象加载到`SoundManager`后，在按下按钮，爆炸时，可以利用`play()`播放：
+	
+	// Play the mSound object
+	mSound.play();
+
+4、`Music`处理方式不同。如果`Music`需要循环播放，应该在合适的生命周期回调中调用`play()`和`pause()`方法：
+
+	// 在onResumeGame()是播放
+	@Override
+	public synchronized void onResumeGame() {
+		if(mMusic != null && !mMusic.isPlaying()){
+			mMusic.play();
+		}
+		super.onResumeGame();
+	}
+
+	// onPauseGame() 时暂停
+	@Override
+	public synchronized void onPauseGame() {
+		if(mMusic != null && mMusic.isPlaying()){
+			mMusic.pause();
+		}
+		super.onPauseGame();
+	}
+
+> 可以利用Android的`strings.xml`，把文件名放进去，而不是硬编码。
+
+AndEngine利用Android原生的声音类提供音频。These classes include a few additional methods aside from play() and pause() that allow us to have more control over the audio objects during runtime.
+
+### `Music`对象的方法
+
+* `seekTo`：`seekTo(pMilliseconds)`定义开始播放的位置。可以用`mMusic.getMediaPlayer().getDuration()`获取音频长度。
+* `setLooping`：`setLooping(pBoolean)`定义是否重复播放。如果`setLooping(true)`，`Music`对象会一直重复知道被关闭或`setLooping(false)`。
+* `setOnCompletionListener`：
+
+		mMusic.setOnCompletionListener(new OnCompletionListener(){
+			@Override
+			public void onCompletion(MediaPlayer mp) {
+				// Do something pending Music completion
+			}	
+		});
+* `setVolume`：`setVolume(pLeftVolume, pRightVolume)`设置左右声道音量，取值`0.0f`到`1.0f`。
+
+### `Sound`对象方法
+
+* `setLooping`：参见`Music`对象的方法。`Sound`还允许我们设置重复次数：`mSound.setLoopCount(pLoopCount)`。
+* `setRate`：The setRate(pRate)method allows us to define the rate, or speed, at which the Soundobject will play, where pRateis equal to the rate as a floating point value. The default rate is equal to 1.0f, while decreasing the rate will lower the audio pitch and increasing the rate will increase audio pitch. 注意Android API文档说比率要在`0.5f`到`2.0f`。Exceeding this range on a negative or positive scale may cause errors in playback.
+* `setVolume`：参见`Music`对象。
+
+> 免费声音库： [http://www.soundjay.com](http://www.soundjay.com)。
+
+## 1.8 处理不同纹理
+
+在`assets/gfx/`下添加三个图片。The first rectangle will be named rectangle_one.png, at 30 pixels wide by 40 pixels in height. The second rectangle named rectangle_two.png, is 40 pixels wide by 30 pixels in height. The final rectangle is named rectangle_three.png, at 70 pixels wide by 50 pixels in height.
+
+AndEngine中与纹理相关的有两个组件。第一个是`BitmapTextureAtlas`，表示一个纹理贴图集（texture atlas）。在它限定的长宽内容纳纹理区域。这些纹理区域用用`ITextureRegion`对象表示。`ITextureRegion`用来在内存中引用特定纹理，指定该纹理在`BitmapTextureAtlas`上的位置。
+
+1、设置`BitmapTextureAtlasTextureRegionFactory`的图像文件夹。默认指向`assets/`，现在指向`assets/gfx/`：
+
+	BitmapTextureAtlasTextureRegionFactory.setAssetBasePath("gfx/");
+
+2、创建`BitmapTextureAtlas`。纹理贴图级（texture atlas）可以想象成一个地图，包含多个不同的纹理。这里我们的贴图`BitmapTextureAtlas`大小为`120 x 120`像素：
+
+	BitmapTextureAtlas mBitmapTextureAtlas = new BitmapTextureAtlas(mEngine.getTextureManager(), 120, 120);
+
+3、接下来创建`ITextureRegion`对象，放在`BitmapTextureAtlas`的特定位置。利用`BitmapTextureAtlasTextureRegionFactory`将PNG图像绑定到特定的`ITextureRegion`，定义`ITextureRegion`对象在`BitmapTextureAtlas`的位置：
+
+
+	// 在(10, 10)位置
+	ITextureRegion mRectangleOneTextureRegion =
+		BitmapTextureAtlasTextureRegionFactory.createFromAsset(mBitmapTextureAtlas, this, "rectangle_one.png", 10, 10);
+	    
+	// 在(50, 10)位置
+	ITextureRegion mRectangleTwoTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(mBitmapTextureAtlas, this, "rectangle_two.png", 50, 10);
+	    
+	// 在(10, 60)位置
+	ITextureRegion mRectangleThreeTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(mBitmapTextureAtlas, this, "rectangle_three.png", 10, 60);
+
+4、将`ITextureRegion`对象加载到内存。利用`BitmapTextureAtlas`一次性加载包含的`ITextureRegion`对象：
+
+	mBitmapTextureAtlas.load();
+
+结束。
+
+不要创建过大的texture atlases。例如不要创建256 x 256的贴图集容纳32 x 32的图像。第二，避免创建超过1024 x 1024的texture atlases。
+
+If there is no other option and a large image is absolutely necessary, see Background stitching in Chapter 4, Working with Cameras.
+
+![](texture_atlases.png)
+
+In the previous image, notice that there is a minimum gap of 10 pixels between each of the rectangles and the texture edge. The `ITextureRegion` objects are not spaced out like this to make things more understandable, although it helps. They are actually spaced out in order to add what is known as *texture atlas source spacing*. What this spacing does is that it prevents the possibility of texture overlapping when a texture is applied to a **sprite**. This overlapping is called *texture bleeding*. Although creating textures as seen in this recipe does not completely mitigate the chance of texture bleeding, it does reduce the likelihood of this issue when certain texture options are applied to the texture atlas.
+
+下面会介绍另一种创建texture atlases的方法，能解决texture bleeding的问题，强烈推荐。
+
+添加纹理有多种方法。各有利弊。
+
+
+### `BuildableBitmapTextureAtlas`
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
