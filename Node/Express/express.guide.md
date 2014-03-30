@@ -157,7 +157,7 @@ Then finally we use it, and bind to a port! That's all there is to it, visit the
 	
 	app.listen(3000);
 
-# 代理后面Express
+# 代理后面的Express
 
 在Ngnix等反向带来后面使用，需要配置。调用`app.enable('trust proxy')`启用*trust proxy*，告诉Express它在代理后面，and that the X-Forwarded-* header fields may be trusted, which otherwise may be easily spoofed.
 
