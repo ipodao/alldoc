@@ -1,4 +1,4 @@
-# Bitmaps 
+# 图像 
 
 处理和加载Bitmap时要考虑的三个问题：
 
@@ -9,8 +9,18 @@
 内存限制对加载Bitmap造成的麻烦：
 
 * 设备一般有受限的系统资源。对单个应用最少可以分配16MB内存。The Android Compatibility Definition Document (CDD), Section 3.7. Virtual Machine Compatibility 规定过了不同屏幕大小和解析度要求达到的最少应用内存。应用应该根据这个限制优化。很多设备会提高这个限制。
-* Bitmaps会占据很多内存。例如，Galaxy Nexus上的摄像头能拍摄2592x1936像素（5M像素）。如果bitmap配置使用`ARGB_8888`（Android 2.3之后的默认配置），则将该图片加载到内存要消耗19MB（2592*1936*4 bytes）——立刻超出了一些设备上的*单应用限制*。
+* Bitmaps会占据很多内存。例如，Galaxy Nexus上的摄像头能拍摄`2592 * 1936`像素（`5M`像素）。如果bitmap配置使用`ARGB_8888`（Android 2.3之后的默认配置），则将该图片加载到内存要消耗19MB（`2592 * 1936 * 4 bytes`）——立刻超出了一些设备上的*单应用限制*。
 * Android应用的UI经常需要多个bitmaps同时加载。如`ListView`, `GridView`和`ViewPager`。
+
+## 参考
+
+* [Bitmap质量](http://www.curious-creature.org/2010/12/08/bitmap-quality-banding-and-dithering/)。
+
+## 加载大分辨率（resolution）图像通用建议
+
+> 这里讨论的是加载大分辨率图像，如`1920*1080`，即最终显示的图像就要这么大。而后面几节讨论的问题，是原图很大，但显示目标很小，如显示缩略图。我们要解决的问题是，原图很大，目标也很大，如把`1920*1080`显示在`1920*1080`的屏幕上。
+
+* 确保内存中只有一个Bitmap实例。显示完之后，调用`recycle()`，**并把引用设置null**。 可以使用[Memory Allocation Tracker](http://android-developers.blogspot.com/2009/02/track-memory-allocations.html)。 You can also read HPROF files, as suggested in comments.
 
 ## 加载缩小版的Bitmap
 
