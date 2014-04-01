@@ -247,6 +247,8 @@ res/layout/news_articles.xml:
 	        super.onCreate(savedInstanceState);
 	        setContentView(R.layout.news_articles);
 	
+			// {{检查容器是否为空的目的是，该活动根据不同配置会有不同布局；}}
+			// {{可能某个替换布局采用静态布局，因此没有此容器}}
 	        if (findViewById(R.id.fragment_container) != null) {
 	            // 如果是从之前的状态恢复，什么也不要做
 				// 否则会又创建一个Fragment，遮在上面！
