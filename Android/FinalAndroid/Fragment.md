@@ -294,13 +294,14 @@ The `addToBackStack()` method takes an optional string parameter that specifies 
 
 	transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
 
-可以利用`setCustomAnimations`设置定制动画。该方法接受两个animator 资源：one for Fragments that are being added to the layout by this transaction, and another for Fragments being removed:
+可以利用`setCustomAnimations`设置定制动画。该方法接受两个animator 资源：一个用于将要被加入布局的Fragment，yield用于被移除的：
 
 	fragmentTransaction.setCustomAnimations(R.animator.slide_in_left,
 		R.animator.slide_out_right);
 
-The Android animation libraries were significantly improved in Android 3.0 (API level 11) with the inclusion of the Animator class. 于是，传入setCustomAnimations方法的动画资源，不同于使用support library的应用。
-Applications built for devices running on API level 11 and above should use Animator resources, whereas those using the support library to support earlier platform releases should use the older View Animation resources.
+> `setCustomAnimations`方法要在replace/add/remove等方法之前调用，否则无效！！
+
+The Android animation libraries were significantly improved in Android 3.0 (API level 11) with the inclusion of the Animator class. 于是，传入setCustomAnimations方法的动画资源，不同于使用support library的应用。API level 11之后应该使用Animator，之前使用View动画。
 
 # 与其他Fragments通信
 
