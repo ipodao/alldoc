@@ -1,5 +1,56 @@
 # 图像 
 
+## 参考
+
+* [Bitmap质量](http://www.curious-creature.org/2010/12/08/bitmap-quality-banding-and-dithering/)。
+
+## ImageView
+
+一般使用内建的`ImageView`显示图像。此View负责加载和优化图像。
+
+### 缩放、对齐
+
+显示图像的最简单的方式是，在布局文件中声明一个ImageView，`src`特性指向一个图像资源（位于`/res/drawable`）。
+
+	<ImageView
+		android:id=”@+id/image”
+		android:layout_width=”match_parent”
+		android:layout_height=”match_parent”
+		android:scaleType=”center”
+		android:src=”@drawable/icon” />
+
+ImageView会负责加载和缩放。选择`android:scaleType`为`center`，图像将以原来的分辨率显示在View中央。其他`android:scaleType`见下表：
+
+- `center` 在View中居中显示，不缩放
+- `centerCrop` 缩放图像使x和y轴都要大于等于视图；保持比例；超过View的部分截掉；在View居中。
+- `centerInside` 缩放图像，适应View大小；保持比例；｛｛整个图像都要显示出来｝｝居中。
+- `fitCenter` 缩放图像，适应View大小，保持比例。至少有一边匹配View，居中。
+- `fitStart` 与`fitCenter`类似，差别在于对齐View的左上角。
+- `fitEnd` 与`fitCenter`类似，差别在于对齐View的右下角。
+- `fitXY` 缩放，大小与视图相同，因此可能改变比例。
+- `matrix` Scales the image using a supplied Matrix class. The matrix can be supplied using the `setImageMatrix` method. A Matrix class can be used to apply `transformations` such as rotations to an image.
+
+下面展示`android:scaleType`的各种效果。上面一行从左到右分别是：center, centerCrop, centerInside。下面一行，从左到右：fitCenter, fitStart, fitEnd, fitXY。
+
+![](image_scale_1.png)
+
+![](image_scale_2.png)
+
+
+## Bitmaps
+
+图片放在`/res/drawable`文件夹下。可以为不同设备放置不同规格的图像：drawable-ldpi, drawable-mdpi, drawable-hdpi和drawable-xhdpi。每个文件夹下的文件名要相同，Android资源管理器会为你选择合适的文件夹。
+
+如果某个解析度的图片未找到，Android将选择最近匹配。Android一般会选择*缩小大的*图像。默认应该创建*hdpi*图像。你应该努力为所有解析度创建资源，**避免不必要的硬件缩放**，防止减慢UI的绘制。利用R对象引用图片资源。
+
+图片应该是以下几种格式：PNG（最优）、JPEG（可接受）、GiF（不推荐使用）。也可以9-patch图像。
+
+可以在运行时创建图像并添加到布局。例如从Internet下载。使用Bitmap封装图像，并加载到UI。`Bitmap`类是一个到bitmap图像的引用。可以利用`BitmapFactory`从任何源创建bitmap图像，包括App内资源、文件、任意的InputStream。通过setImageBitmap可以将Bitmap对象加载到ImageView。
+
+	Bitmap bitmap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888);
+	ImageView iv = (ImageView) findViewById(R.id.image);
+	iv.setImageBitmap(bitmap);
+
 处理和加载Bitmap时要考虑的三个问题：
 
 * 保持UI响应，一般要异步加载。
@@ -12,9 +63,28 @@
 * Bitmaps会占据很多内存。例如，Galaxy Nexus上的摄像头能拍摄`2592 * 1936`像素（`5M`像素）。如果bitmap配置使用`ARGB_8888`（Android 2.3之后的默认配置），则将该图片加载到内存要消耗19MB（`2592 * 1936 * 4 bytes`）——立刻超出了一些设备上的*单应用限制*。
 * Android应用的UI经常需要多个bitmaps同时加载。如`ListView`, `GridView`和`ViewPager`。
 
-## 参考
+## Drawable
 
-* [Bitmap质量](http://www.curious-creature.org/2010/12/08/bitmap-quality-banding-and-dithering/)。
+不是所有的图形都是图像——Android可以让你使用XML创建图形或使用定制的绘图代码。要使用XML创建图形，需要使用Drawable类。一个Drawable可以是图像、一个XML资源或一个定制的类，Drawable是它们的通用抽象。
+
+Android框架大量对内建的UI View使用drawables。例如Button类，使用XML定义按钮可能的状态。例子：
+
+	<?xml version=”1.0” encoding=”utf-8”?>
+	<selector xmlns:android=”http://schemas.android.com/apk/res/android”>
+		<item android:state_pressed=”true”
+			android:drawable=”@drawable/button_pressed” />
+		<item android:state_focused=”true”
+			android:drawable=”@drawable/button_focused” />
+		<item android:state_hovered=”true”
+			android:drawable=”@drawable/button_hovered” />
+		<item android:drawable=”@drawable/button_normal” />
+	</selector>
+
+这是一个`StateListDrawable`。它为不同状态定义了一组drawables。StateListDrawable中的每个`item`定义了一个drawable：android:drawable特性引入一个实际的i图像的drawable。`StateListDrawable`不是寻找最优匹配，而是找到第一个匹配的就停下。查找是从上到下进行的，因此顺序是重要的。
+
+其他可能。在一个bitmap的基础上增加简单的**变换（transformations）**。向图像上添加padding和抖动（dithering）。可以组合多个bitmaps创建一个复合图像。或使用XML绘制一个形状：ShapeDrawable。可以添加渐变、阴影、圆角。本书不会介绍各种XML drawable。
+
+注意：将图像绘制进View使用系统标准的绘制过程。在Android 3.0之前，该过程不是完全硬件加速的。注意大量图形的应用使用这种过程在老版本上将不能表现良好。
 
 ## 加载大分辨率（resolution）图像通用建议
 
