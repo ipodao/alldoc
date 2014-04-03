@@ -111,5 +111,195 @@
 		} 
 	}
 
+## RelativeLayout
+
+相对于容器或兄弟组件定位。
+
+相对父容器定位：
+
+- android:layout_alignParentTop：让组件的上边对齐容器的上边
+- android:layout_alignParentBottom：
+- android:layout_alignParentLeft：
+- android:layout_alignParentRight：
+- android:layout_centerHorizontal：让组件位于容器水平中心
+- android:layout_centerVertical：
+- android:layout_centerInParent：垂直和水平居中
+
+这些属性的取值是true或false。
+
+对齐时考虑padding，是小部件的padding外对齐容器。
+
+相对其他小部件定位和对齐：
+
+下面这些属性的值为某个小部件的id，如`@id/widget_a`。
+
+下面四个属性控制小部件相对于其他小部件的位置：
+
+- android:layout_above: 指定上面的控件
+- android:layout_below: 指定下面的控件
+- android:layout_toLeftOf: 指定右边的控件
+- android:layout_toRightOf: 指定左边的控件
+
+下面五个属性控制小部件相对于其他的对齐：
+
+- android:layout_alignTop：小部件的顶部对齐参考控件的顶部
+- android:layout_alignBottom：
+- android:layout_alignLeft：
+- android:layout_alignRight：
+- android:layout_alignBaseline：两个控件的基线对齐
+
+例子：`android:layout_toRightOf = "@id/widget_a"`
+
+> **Order of Evaluation**  早期不能引用尚未定义的小部件。从Android 1.6开始，可以向后引用尚未定义的。
+
+例子
+
+	<?xml version="1.0" encoding="utf-8"?> 
+	<RelativeLayout 
+		xmlns:android="http://schemas.android.com/apk/res/android" 
+		android:layout_width="fill_parent" 
+		android:layout_height="wrap_content"> 
+		<TextView android:id="@+id/label" 
+			android:layout_width="wrap_content" 
+			android:layout_height="wrap_content" 
+			android:text="URL:" 
+			android:layout_alignBaseline="@+id/entry" 
+			android:layout_alignParentLeft="true"/> 
+		<EditText 
+			android:id="@id/entry" 
+			android:layout_width="fill_parent" 
+			android:layout_height="wrap_content" 
+			android:layout_toRightOf="@id/label" 
+			android:layout_alignParentTop="true"/> 
+		<Button 
+			android:id="@+id/ok"
+			android:layout_width="wrap_content" 
+			android:layout_height="wrap_content" 
+			android:layout_below="@id/entry" 
+			android:layout_alignRight="@id/entry" 
+			android:text="OK" /> 
+		<Button 
+			android:id="@+id/cancel" 
+			android:layout_width="wrap_content" 
+			android:layout_height="wrap_content" 
+			android:layout_toLeftOf="@id/ok" 
+			android:layout_alignTop="@id/ok" 
+			android:text="Cancel" /> 
+	</RelativeLayout>
+
+### 重叠
+
+相对布局中如果两个小部件占据相同位置，后定义的覆盖在先定义的之上。
+
+	<?xml version="1.0" encoding="utf-8"?> 
+	<RelativeLayout 
+		xmlns:android="http://schemas.android.com/apk/res/android" 
+		android:layout_width="fill_parent" 
+		android:layout_height="fill_parent" > 
+		<Button 
+			android:text="I AM BIG" 
+			android:textSize="120dip" 
+			android:textStyle="bold" 
+			android:layout_width="fill_parent" 
+			android:layout_height="fill_parent" /> 
+		<Button 
+			android:text="I am small" 
+			android:layout_width="wrap_content" 
+			android:layout_height="wrap_content" 
+			android:layout_centerInParent="true" /> 
+	</RelativeLayout>
+ 
+点击下面的按钮仍然有效。点击小按钮不会引发大按钮也被点击。
+
+## TableLayout
+
+TableLayout搭配TableRow使用。组件放入TableRow中。TableRow决定行数。
+列数由最长的行的列数决定。小部件可以占据多列，由`android:layout_span`控制。例如：
+	
+	<TableRow> 
+		<TextView android:text="URL:" /> 
+		<EditText android:id="@+id/entry" android:layout_span="3"/> 
+	</TableRow>
+
+TableLayout的孩子不能指定`layout_width`｛｛不能指定列宽｝｝。TableLayout会帮你设置。
+
+小部件一般放入第一个可放的列。通过`android:layout_column`可以显式指定小部件放入哪一列。值从0开始：
+
+	<TableRow> 
+		<Button android:id="@+id/cancel" android:layout_column="2" android:text="Cancel" /> 
+		<Button android:id="@+id/ok" android:text="OK" /> 
+	</TableRow>
+
+TableLayout内除了可以直接放TableRow，还可以放其他小部件。此时TableLayout就像一个垂直的LinearLayout。小部件自动的宽度自动填满容器。利用此方式可以实现分割线。例如：
+
+	<View android:layout_height="2dip" android:background="#0000FF" />
+
+### 拉伸、收缩、收起（Stretch, Shrink, and Collapse）
+
+默认，列的宽度为此列最宽的小部件的自然大小（会考虑跨多列）。
+
+可以设置TableLayout的`android:stretchColumns`属性。属性值是某个列的编号（0开始）或逗号分隔的列编号。Those columns will be stretched to take up any available space on the row.
+
+还可以设置TableLayout的`android:shrinkColumns`属性。属性值是某个列的编号（0开始）或逗号分隔的列编号。The columns listed in this property will try to word-wrap their contents to reduce the effective width of the column—by default, widgets are not word-wrapped. This helps if you have columns with potentially wordy content that might cause some columns to be pushed off the right side of the screen. 
+
+还可以设置TableLayout的`android:collapseColumns`属性。属性值是某个列的编号（0开始）或逗号分隔的列编号。这些列开始处于收起状态，不可见。可以通过`TableLayout.setColumnCollapsed()`控制列的开合。
+
+在运行时可以通过`setColumnStretchable()`和`setColumnShrinkable()`控制拉伸和收缩。
+
+例子
+
+	<?xml version="1.0" encoding="utf-8"?> 
+	<TableLayout 
+		xmlns:android="http://schemas.android.com/apk/res/android" 
+		android:layout_width="fill_parent" 
+		android:layout_height="fill_parent" 
+		android:stretchColumns="1"> 
+		<TableRow> 
+			<TextView android:text="URL:" /> 
+			<EditText android:id="@+id/entry" android:layout_span="3"/> 
+		</TableRow> 
+		<View android:layout_height="2dip" android:background="#0000FF" /> 
+		<TableRow> 
+			<Button android:id="@+id/cancel" android:layout_column="2" android:text="Cancel" /> 
+			<Button android:id="@+id/ok" android:text="OK" /> 
+		</TableRow> 
+	</TableLayout>
+
+![](tablelayout_ex1.png)
+
+## GridLayout
+GridLayout是Android 4新引入的。GridLayout is a layout that places its children onto a grid of infinitely detailed lines that separate the area into cells. The key to GridLayout’s fine control is that the number of cells or, more accurately, grid lines used to describe the cells has no limit or threshold— you specify how many or how few grid lines your GridLayout should have, using `rowSpec` and `columnSpec` properties. This means you could create a layout that mimics a simple table with a few cells (that is, rows and columns) or, for those demanding situations where you need fantastically fine precision, 可以指定成千上万的网格。｛｛这些网格是用于布局的！｝｝
+
+> 一般使用Layout Editor构建你的Grid Layout，而不是手工写XML。
+
+NOTE: To complement GridLayout’s different view of the UI world, it uses `android:layout_gravity` in place of `android:layout_weight`.
+
+As an example, here is a GridLayout used in an XML layout file (from the Containers/Griddemo): 
+
+	<?xml version="1.0" encoding="utf-8"?> 
+	<GridLayout 
+		xmlns:android="http://schemas.android.com/apk/res/android" 
+		android:orientation="vertical" 
+		android:layout_width="fill_parent" 
+		android:layout_height="fill_parent"> 
+		<Button android:text="Defying gravity!" android:layout_gravity="top" /> 
+		<Button android:text="Falling like an apple" android:layout_gravity="bottom" /> 
+	</GridLayout>
+
+Our buttons have followed their various gravity directions to place themselves on the GridLayout, using the defaults for rowSpec and columnSpec counts. We can observe the utility of the GridLayout not needing the somewhat tedious static layout directives of the TableLayout by adding another button to our declarations in main.xml
+
+	... 
+	<Button android:text="Defying gravity!" android:layout_gravity="top" /> 
+	<Button android:text="Floating middle right" android:layout_gravity="right|center_vertical" /> 
+	<Button android:text="Falling like an apple" android:layout_gravity="bottom" /> 
+	...
+
+
+
+
+
+
+
+
 
 

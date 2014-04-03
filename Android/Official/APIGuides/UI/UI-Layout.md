@@ -81,19 +81,98 @@ View不支持Margin。但ViewGroup支持，参见[ViewGroup](http://developer.an
 
 If, during the course of your application's life, you change the underlying data that is read by your adapter, you should call `notifyDataSetChanged()`. This will notify the attached view that the data has been changed and it should refresh itself.
 
-### 线程布局
+### （未）Linear Layout
 
+### （未）Relative Layout
 
+### （未）List View
 
+### Grid View
 
+GridView是一个二维的、可滚动的Grid。使用ListAdapter向布局中插入单元格。
 
+![](http://developer.android.com/images/ui/gridview.png)
 
+例子：显示图片缩略图网格。
 
+	<?xml version="1.0" encoding="utf-8"?>
+	<GridView xmlns:android="http://schemas.android.com/apk/res/android" 
+	    android:id="@+id/gridview"
+	    android:layout_width="fill_parent" 
+	    android:layout_height="fill_parent"
+	    android:columnWidth="90dp"
+	    android:numColumns="auto_fit"
+	    android:verticalSpacing="10dp"
+	    android:horizontalSpacing="10dp"
+	    android:stretchMode="columnWidth"
+	    android:gravity="center" />
 
+代码：
 
+	public void onCreate(Bundle savedInstanceState) {
+	    super.onCreate(savedInstanceState);
+	    setContentView(R.layout.main);
+	
+	    GridView gridview = (GridView) findViewById(R.id.gridview);
+	    gridview.setAdapter(new ImageAdapter(this));
+	
+	    gridview.setOnItemClickListener(new OnItemClickListener() {
+	        public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
+	            Toast.makeText(HelloGridView.this, "" + position, Toast.LENGTH_SHORT).show();
+	        }
+	    });
+	}
 
-
-
+	public class ImageAdapter extends BaseAdapter {
+	    private Context mContext;
+	
+	    public ImageAdapter(Context c) {
+	        mContext = c;
+	    }
+	
+	    public int getCount() {
+	        return mThumbIds.length;
+	    }
+	
+	    public Object getItem(int position) {
+	        return null;
+	    }
+	
+	    public long getItemId(int position) {
+	        return 0;
+	    }
+	
+	    // create a new ImageView for each item referenced by the Adapter
+	    public View getView(int position, View convertView, ViewGroup parent) {
+	        ImageView imageView;
+	        if (convertView == null) {  // if it's not recycled, initialize some attributes
+	            imageView = new ImageView(mContext);
+	            imageView.setLayoutParams(new GridView.LayoutParams(85, 85));
+	            imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+	            imageView.setPadding(8, 8, 8, 8);
+	        } else {
+	            imageView = (ImageView) convertView;
+	        }
+	
+	        imageView.setImageResource(mThumbIds[position]);
+	        return imageView;
+	    }
+	
+	    // references to our images
+	    private Integer[] mThumbIds = {
+	            R.drawable.sample_2, R.drawable.sample_3,
+	            R.drawable.sample_4, R.drawable.sample_5,
+	            R.drawable.sample_6, R.drawable.sample_7,
+	            R.drawable.sample_0, R.drawable.sample_1,
+	            R.drawable.sample_2, R.drawable.sample_3,
+	            R.drawable.sample_4, R.drawable.sample_5,
+	            R.drawable.sample_6, R.drawable.sample_7,
+	            R.drawable.sample_0, R.drawable.sample_1,
+	            R.drawable.sample_2, R.drawable.sample_3,
+	            R.drawable.sample_4, R.drawable.sample_5,
+	            R.drawable.sample_6, R.drawable.sample_7
+	    };
+	}
 
 
 
