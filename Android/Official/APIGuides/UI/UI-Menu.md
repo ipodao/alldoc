@@ -1,18 +1,16 @@
-使用API。
+Android 3.0 (API level 11)开始，Android设备不再要求必须有Menu按钮。于是，Android apps应该从传统的六项菜单，转换到使用action bar。
 
-Beginning with Android 3.0 (API level 11), Android-powered devices are no longer required to provide a dedicated Menu button. With this change, Android apps应该从传统的六项菜单，转换到使用action bar。
+尽管菜单项的设计改变了，定义一组操作和选项的语义仍基于[Menu](http://developer.android.com/reference/android/view/Menu.html) APIs。下面介绍如何常见三种基础的菜单：
 
-Although the design and user experience for some menu items have changed, the semantics to define a set of actions and options is still based on the [Menu](http://developer.android.com/reference/android/view/Menu.html) APIs. This guide shows how to create the three fundamental types of menus or action presentations on **all versions** of Android:
-
-- **Options menu and action bar**  
+- **Options menu和action bar**  
 options menu是收集activity菜单项的主要集合。用于放置影响全局App的功能，如搜索、设置。  
 在Android 2.3及之前的版本，可以利用Menu按钮呼出options menu。  
 在Android 3.0及之后，items from the options menu are presented by the action bar as a combination of on-screen action items and overflow options.从Android 3.0开始，在某些设备上可能不存在菜单键。
-- **Context menu and contextual action mode**  
+- **上下文菜单和contextual action mode**  
 用户长按一个元素后呼出的浮动菜单是context menu。  
 在Android 3.0及之后，you should instead use the contextual action mode to enable actions on selected content. This mode displays action items that affect the selected content in a bar at the top of the screen and allows the user to select multiple items.
-- **Popup menu**  
-A popup menu displays a list of items in a vertical list that's anchored to the view that invoked the menu. It's good for providing an overflow of actions that relate to specific content or to provide options for a second part of a command. Actions in a popup menu should not directly affect the corresponding content—that's what contextual actions are for. Rather, the popup menu is for extended actions that relate to regions of content in your activity.
+- **弹出（Popup）菜单**  
+弹出菜单垂直显示一组项，锚定到调用菜单的View上。It's good for providing an overflow of actions that relate to specific content or to provide options for a second part of a command. Actions in a popup menu should not directly affect the corresponding content—that's what contextual actions are for. Rather, the popup menu is for extended actions that relate to regions of content in your activity.
 
 ## 在XML中定义菜单
 
