@@ -4,20 +4,17 @@ Although the system performs scaling and resizing to make your application work 
 
 ## 术语与概念
 
-* Screen size  
-实际物理大小，屏幕对角线的长度。为了简化，Android将屏幕大小分为四类：small, normal, large, and extra large。
-* Screen density  
+* 屏幕大小  
+实际物理大小｛｛单位是英寸等长度单位｝｝，屏幕对角线的长度。为了简化，Android将屏幕大小分为四类：small, normal, large, and extra large。
+	> 注意：从Android 3.2 (API level 13)开始，屏幕大小分组被废弃。管理屏幕大小的新技术基于可用的屏幕宽度。参见最后一节*Declaring Tablet Layouts for Android 3.2*。
+* 屏幕density  
 屏幕上一块物理区域上像素的数量。常被称为dpi (dots per inch)。为了简化，Android将所有density分为四类：ldpi (low), mdpi (medium), hdpi (high), and xhdpi (extra high)。
-* Orientation  
-The orientation of the screen from the user's point of view. This is either landscape or portrait. 朝向可能在运行时改变。
-* Resolution  
-屏幕上物理像素的总数。应用不用关心resolution，只需要关心屏幕大小和density。
+* 朝向（Orientation）  
+This is either landscape or portrait. 朝向可能在运行时改变。
+* 分辨率（Resolution）  
+屏幕上物理像素的总数。**应用不用关心分辨率**，只需要关心屏幕大小和density。
 * Density-independent pixel (dp)  
-定义UI时使用的虚拟像素单位，表达长度和位置，独立于density。
-The density-independent pixel is equivalent to one physical pixel on a 160 dpi screen, which is the baseline density assumed by the system for a "medium" density screen. 系统会根据实际density透明的处理`dp`单位的任何缩放。 `dp`转换为屏幕像素很简单：`px = dp * (dpi / 160)`。例如在240 dpi屏幕上，1 `dp`等于1.5倍的物理像素。使用dp能确保在不同density下显示良好。
-
-> 注意：从Android 3.2 (API level 13)开始，屏幕大小分组被废弃。管理屏幕大小的新技术基于可用的屏幕宽度。参见[Declaring Tablet Layouts for Android 3.2](http://developer.android.com/guide/practices/screens_support.html#DeclaringTabletLayouts)。
-
+定义UI时使用的虚拟像素单位，表达长度和位置，独立于density。一个dp等价于在一个160 dpi屏幕上的物理像素，which is the baseline density assumed by the system for a "medium" density screen. 系统会根据实际density透明的处理`dp`单位的任何缩放。 `dp`转换为屏幕像素很简单：`px = dp * (dpi / 160)`。例如在240 dpi屏幕上，1 `dp`等于1.5倍的物理像素。使用dp能确保在不同density下显示良好。
 
 ##支持的屏幕范围
 
@@ -36,23 +33,23 @@ As you design your UI for different screen sizes, you'll discover that each desi
 
 > 注意：Android 3.0之前未能很好的定义最小屏幕大小，因此你可能会遇到一些设备被错误的在normal和large之间划分。These are also based on the physical resolution of the screen, so may vary across devices—for example a 1024x720 tablet with a system bar actually has a bit less space available to the application due to it being used by the system bar.
 
-To optimize your application's UI for the different screen sizes and densities, you can provide alternative resources for any of the generalized sizes and densities. *一般爱说应该为不同的屏幕大小提供不同的布局，为不同的density提供不同的bitmap*。
+为了优化不同屏幕大小和densities的屏幕下的显示效果，应该提供替换资源：一般说，**应该为不同的屏幕大小提供不同的布局，为不同的density提供不同的bitmap**。
 
 不需要为每种屏幕大小和density提供一份替换资源。The system provides robust compatibility features that can handle most of the work of rendering your application on any device screen, provided that you've implemented your UI using techniques that allow it to gracefully resize （参见下面的最佳实践）.
 
-> 注意：定义泛化大小和density的指标是相互独立的。high-density的屏可能只有normal大小。但medium-density的屏却可能有large屏。且二者可能最终的resolution相同。the WVGA medium-density screen has a lower screen density, meaning that each pixel is physically larger and, thus, the entire screen is larger than the baseline (normal size) screen.
+> 注意：定义泛化大小和density的指标是相互独立的。*high-density*的屏可能只有normal大小。但*medium-density*的屏却可能有large屏。且二者可能最终的分辨率相同。the WVGA medium-density screen has a lower screen density, meaning that each pixel is physically larger and, thus, the entire screen is larger than the baseline (normal size) screen.
 
 ##Density独立
 
-Your application achieves "density independence" when it preserves the physical size (from the user's point of view) of user interface elements when displayed on screens with different densities.
+density独立，是从用户的视角看的，一个UI元素，显示在不同density的屏幕是那个，物理大小保持不变｛｛物理大小单位是英寸、厘米等长度单位｝｝。｛｛如果屏幕物理大小相同，仅是density不同，则UI元素在不同屏上显示效果相同，包括两方面，一方面是其自身物理大小相同，它占据屏幕的比例在各个屏幕上相同。因为这些屏幕的物理大小相同。但如果物理大小不同，虽然，UI元素自身大小在各个屏相同，但UI元素在屏幕上的比例会发生变换：在大屏上占据的屏幕比较小，在小屏上大｝｝
 
-Maintaining density independence is important because,若没有它，一个UI元素（如按钮）在低density的屏幕上比在高density的屏幕上大（看起来大）。这些由于density导致的大小变化可能导致应用布局和可用性的变化。Figures 2 and 3 show the difference between an application when it does not provide density independence and when it does, respectively.
+若不独立，一个UI元素（如按钮）在低density的屏幕上比在高density的屏幕上大（看起来大）。这些由于density导致的大小变化可能导致应用布局和可用性的变化。Figures 2 and 3 show the difference between an application when it does not provide density independence and when it does, respectively.
 
 ![](density-test-bad.png)
 Figure 2. 不支持不同densities，as shown on low, medium, and high density screens.
 
 ![](density-test-good.png)
-Figure 3. Example application with good support for different densities (it's density independent), as shown on low, medium, and high density screens.
+Figure 3. 支持不同densities（density独立），as shown on low, medium, and high density screens.
 
 The Android system helps your application achieve density independence in two ways:
 
@@ -75,7 +72,7 @@ To declare the screen sizes your application supports, you should include the `<
 * 为不同屏幕大小定义不同布局  
 Android默认会调整你的布局大小，适应当前屏幕。In most cases, this works fine. In other cases, your UI might not look as good and might need adjustments for different screen sizes. 例如在大屏下你可能需要调整元素的大小和位置。  
 与大小相关的配置限定符是small, normal, large, and xlarge。例如extra large屏使用的布局`layout-xlarge/`。  
-从Android 3.2 (API level 13)开始，上述大小组被启用，你应该使用`sw<N>dp`限定符，定义你的布局需要的最小可用宽度。例如，如果multi-pane tablet布局至少需要`600dp`屏幕宽度，则布局文件应放在`layout-sw600dp/`下。参见[Declaring Tablet Layouts for Android 3.2](http://developer.android.com/guide/practices/screens_support.html#DeclaringTabletLayouts)。
+从Android 3.2 (API level 13)开始，上述大小组被弃用，你应该使用`sw<N>dp`限定符，定义布局需要的最小可用宽度。例如，如果多面板tablet布局至少需要`600dp`屏幕宽度，则布局文件应放在`layout-sw600dp/`下。
 * 为不同的屏幕densities提供不同的bitmap  
 Android默认会缩放你的drawables (.png, .jpg, and .gif files) 和Nine-Patch drawables (.9.png files) so that they render at the appropriate physical size on each device。例如如果你只提供了`medium screen density (mdpi)`，则在更高density屏幕下，系统会放大；在低density下系统会缩小。缩放可能代理失真。  
 density相关的限定符是：ldpi (low), mdpi (medium), hdpi (high), xhdpi (extra high)。例如high-density屏的Bitmap放在`drawable-hdpi/`下。
