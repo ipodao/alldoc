@@ -4,42 +4,28 @@
 
 一个Drawable资源是一个可以绘制在屏幕上的图形。可以通过[getDrawable(int)](http://developer.android.com/reference/android/content/res/Resources.html#getDrawable(int))获取，或通过`android:drawable`和`android:icon`特性指定。有以下几种类型：
 
-- Bitmap File  
-一个bitmap图形文件(.png, .jpg, or .gif)。创建一个[BitmapDrawable](http://developer.android.com/reference/android/graphics/drawable/BitmapDrawable.html)。
-- Nine-Patch File  
-A PNG file with stretchable regions to allow image resizing based on content (.9.png). 创建一个`NinePatchDrawable`。
-- Layer List  
-一个Drawables数组。在数组后面的元素绘制在上面。创建一个`LayerDrawable`。
-- State List  
-不同的状态引用不同的bitmap（例如，当按钮被按下后使用不同的图）。创建一个`StateListDrawable`。
-- Level List  
-An XML file that defines a drawable that manages a number of alternate Drawables, each assigned a maximum numerical value. Creates a `LevelListDrawable`.
-- Transition Drawable  
-两个drawable资源淡入淡出（cross-fade）。创建一个`TransitionDrawable`。
-- Inset Drawable  
-An XML file that defines a drawable that insets another drawable by a specified distance. This is useful when a View needs a background drawble that is smaller than the View's actual bounds.
-- Clip Drawable  
-An XML file that defines a drawable that clips another Drawable based on this Drawable's current *level* value. Creates a `ClipDrawable`.
-- Scale Drawable  
-An XML file that defines a drawable that changes the size of another Drawable based on its current *level* value. Creates a `ScaleDrawable`
-- Shape Drawable  
-An XML file that defines a geometric shape, including colors and gradients. Creates a `ShapeDrawable`.
+- **Bitmap文件** 一个bitmap图形文件(.png, .jpg, or .gif)。创建一个[BitmapDrawable](http://developer.android.com/reference/android/graphics/drawable/BitmapDrawable.html)。
+- **Nine-Patch文件** 一个PNG图片，指定可拉伸区域，允许图片根据内容天正调整大小｛｛图片作为文字背景时，可以根据文字大小调整背景大小｝｝(.9.png). 创建一个`NinePatchDrawable`。
+- **层列表** 一个Drawables数组。在数组后面的元素绘制在上面。创建一个`LayerDrawable`。
+- **状态列表** 不同的状态引用不同的bitmap（例如，当按钮被按下后使用不同的图）。创建一个`StateListDrawable`。
+- **Level List** 一个XML文件，定义一个drawable，管理多个可替代的Drawables，每个分配一个最大值。Creates a `LevelListDrawable`.
+- **Transition Drawable** 两个drawable资源淡入淡出（cross-fade）。创建一个`TransitionDrawable`。
+- **Inset Drawable** An XML file that defines a drawable that insets another drawable by a specified distance. This is useful when a View needs a background drawble that is smaller than the View's actual bounds.
+- **Clip Drawable** An XML file that defines a drawable that clips another Drawable based on this Drawable's current *level* value. Creates a `ClipDrawable`.
+- **Scale Drawable** An XML file that defines a drawable that changes the size of another Drawable based on its current *level* value. Creates a `ScaleDrawable`
+- **Shape Drawable** 一个XML文件，定义一个几何形状，包括颜色和渐变。Creates a `ShapeDrawable`.
 
-Also see the Animation Resource document for how to create an `AnimationDrawable`.
-
-> Note: A color resource can also be used as a drawable in XML. For example, when creating a state list drawable, you can reference a color resource for the `android:drawable` attribute (`android:drawable="@color/green"`).
+> 一个颜色资源也可以被当作一个drawable。For example, when creating a state list drawable, you can reference a color resource for the `android:drawable` attribute (`android:drawable="@color/green"`).
 
 #### Bitmap
 
-A bitmap image. Android supports bitmap files in a three formats: .png (preferred), .jpg (acceptable), .gif (discouraged).
+Android支持三种格式：.png (preferred), .jpg (acceptable), .gif (discouraged)。
 
-You can reference a bitmap file directly, using the filename as the resource ID, or create an alias resource ID in XML.
-
-> Note: 在构建阶段，aapt工具（无损压缩）会自动优化Bitmap文件。For example, a true-color PNG that does not require more than 256 colors may be converted to an 8-bit PNG with a color palette. This will result in an image of equal quality but which requires less memory. So be aware that the image binaries placed in this directory can change during the build. If you plan on reading an image as a bit stream in order to convert it to a bitmap, put your images in the `res/raw/` folder instead, where they will not be optimized.
+> 在构建阶段，aapt工具（无损压缩）会自动优化Bitmap文件。例如一个支持颜色不超过256色的真彩色（true-color）PNG会被转换成带色盘（color palette）的8-bit PNG。这样图片内存减少但指令不变。So be aware that the image binaries placed in this directory can change during the build. If you plan on reading an image as a bit stream in order to convert it to a bitmap, put your images in the `res/raw/` folder instead, where they will not be optimized.
 
 ##### Bitmap文件
 
-A bitmap file is a .png, .jpg, or .gif file. Android为`res/drawable/`下的文件创建一个Drawable资源。
+Android为`res/drawable/`下的每个文件创建一个Drawable资源。
 
 例如，文件位置`res/drawable/filename.png`。文件名做为资源名。编译后的资源类型是`BitmapDrawable`。引用方式`R.drawable.filename`、`@[package:]drawable/filename`。
 
@@ -60,9 +46,9 @@ A bitmap file is a .png, .jpg, or .gif file. Android为`res/drawable/`下的文�
 
 ##### XML Bitmap
 
-一个XML bitmap定义在XML中，指向一个bitmap文件。可以作为一个raw bitmap文件的别名。还可以指定bitmap的附加属性，如dithering和tiling。
+XML bitmap定义在XML中，指向一个bitmap文件。可以作为一个原始bitmap文件的别名。还可以指定bitmap的附加属性，如dithering和tiling。
 
-> 注意：`<bitmap>`可以作为`<item>`的子元素。例如创建state list时，可以不用`<item>`的`android:drawable`特性，嵌入一个`<bitmap>`。
+> `<bitmap>`可以作为`<item>`的子元素。例如创建 *state list* 时，可以不用`<item>`的`android:drawable`特性，而是嵌入一个`<bitmap>`。
 
 例如，文件位置`res/drawable/filename.xml`，文件名作为资源名。编译后的资源类型是`BitmapDrawable`。引用：`R.drawable.filename`、`@[package:]drawable/filename`。
 
@@ -101,7 +87,7 @@ A bitmap file is a .png, .jpg, or .gif file. Android为`res/drawable/`下的文�
 	- `clip_vertical` Additional option that can be set to have the top and/or bottom edges of the child clipped to its container's bounds. The clip is based on the vertical gravity: a top gravity clips the bottom edge, a bottom gravity clips the top edge, and neither clips both edges.
 	- `clip_horizontal` Additional option that can be set to have the left and/or right edges of the child clipped to its container's bounds. The clip is based on the horizontal gravity: a left gravity clips the right edge, a right gravity clips the left edge, and neither clips both edges.
 - `android:mipMap` 布尔。Enables or disables the mipmap hint. See `setHasMipMap()` for more information. 默认false。
-- `android:tileMode` Defines the tile mode. When the tile mode is enabled, the bitmap is repeated. Gravity is ignored when the tile mode is enabled. 取值：
+- `android:tileMode` Defines the tile mode. When the tile mode is enabled, the bitmap is repeated. 启用tile模式后Gravity会被忽略。取值：
 	- `disabled` **默认值**。不要铺满。
 	- `clamp` Replicates the *edge color* if the shader draws outside of its original bounds
 	- `repeat` Repeats the shader's image horizontally and vertically.
