@@ -12,12 +12,14 @@
 
 显示图像的最简单的方式是，在布局文件中声明一个ImageView，`src`特性指向一个图像资源（位于`/res/drawable`）。
 
-	<ImageView
-		android:id=”@+id/image”
-		android:layout_width=”match_parent”
-		android:layout_height=”match_parent”
-		android:scaleType=”center”
-		android:src=”@drawable/icon” />
+```xml
+<ImageView
+    android:id="@+id/image"
+    android:layout_width=”match_parent"
+    android:layout_height="match_parent"
+    android:scaleType="center"
+    android:src="@drawable/ico" />
+```
 
 ImageView会负责加载和缩放。选择`android:scaleType`为`center`，图像将以原来的分辨率显示在View中央。其他`android:scaleType`见下表：
 
@@ -47,9 +49,11 @@ ImageView会负责加载和缩放。选择`android:scaleType`为`center`，图�
 
 可以在运行时创建图像并添加到布局。例如从Internet下载。使用Bitmap封装图像，并加载到UI。`Bitmap`类是一个到bitmap图像的引用。可以利用`BitmapFactory`从任何源创建bitmap图像，包括App内资源、文件、任意的InputStream。通过setImageBitmap可以将Bitmap对象加载到ImageView。
 
-	Bitmap bitmap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888);
-	ImageView iv = (ImageView) findViewById(R.id.image);
-	iv.setImageBitmap(bitmap);
+```java
+Bitmap bitmap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888);
+ImageView iv = (ImageView) findViewById(R.id.image);
+iv.setImageBitmap(bitmap);
+```
 
 处理和加载Bitmap时要考虑的三个问题：
 
@@ -69,16 +73,18 @@ ImageView会负责加载和缩放。选择`android:scaleType`为`center`，图�
 
 Android框架大量对内建的UI View使用drawables。例如Button类，使用XML定义按钮可能的状态。例子：
 
-	<?xml version=”1.0” encoding=”utf-8”?>
-	<selector xmlns:android=”http://schemas.android.com/apk/res/android”>
-		<item android:state_pressed=”true”
-			android:drawable=”@drawable/button_pressed” />
-		<item android:state_focused=”true”
-			android:drawable=”@drawable/button_focused” />
-		<item android:state_hovered=”true”
-			android:drawable=”@drawable/button_hovered” />
-		<item android:drawable=”@drawable/button_normal” />
-	</selector>
+```xml
+<?xml version=”1.0” encoding=”utf-8”?>
+<selector xmlns:android=”http://schemas.android.com/apk/res/android”>
+    <item android:state_pressed=”true”
+        android:drawable=”@drawable/button_pressed” />
+    <item android:state_focused=”true”
+        android:drawable=”@drawable/button_focused” />
+    <item android:state_hovered=”true”
+        android:drawable=”@drawable/button_hovered” />
+    <item android:drawable=”@drawable/button_normal” />
+</selector>
+```
 
 这是一个`StateListDrawable`。它为不同状态定义了一组drawables。StateListDrawable中的每个`item`定义了一个drawable：android:drawable特性引入一个实际的i图像的drawable。`StateListDrawable`不是寻找最优匹配，而是找到第一个匹配的就停下。查找是从上到下进行的，因此顺序是重要的。
 
@@ -104,12 +110,14 @@ Android框架大量对内建的UI View使用drawables。例如Button类，使用
 
 BitmapFactory类提供的解码方法（decodeByteArray()、decodeFile()、decodeResource()等），会尝试为构建的bitmap分配内存。但如果解码时设置解码选项（`BitmapFactory.Options`）`inJustDecodeBounds`为`true`，会避免分配内存，此时bitmap对象返回`null`，但`outWidth`, `outHeight`和`outMimeType`会被设值。这些技术使得你可以在构造bitmap（和分配内存）之前读取维度和图像类型。
 
-	BitmapFactory.Options options = new BitmapFactory.Options();
-	options.inJustDecodeBounds = true;
-	BitmapFactory.decodeResource(getResources(), R.id.myimage, options);
-	int imageHeight = options.outHeight;
-	int imageWidth = options.outWidth;
-	String imageType = options.outMimeType;
+```java
+BitmapFactory.Options options = new BitmapFactory.Options();
+options.inJustDecodeBounds = true;
+BitmapFactory.decodeResource(getResources(), R.id.myimage, options);
+int imageHeight = options.outHeight;
+int imageWidth = options.outWidth;
+String imageType = options.outMimeType;
+```
 
 ### 加载一个缩小（Scaled Down）的版本到内存
 
@@ -122,43 +130,46 @@ BitmapFactory类提供的解码方法（decodeByteArray()、decodeFile()、decod
 
 若想告诉解码器加载小版本图像到内存，设置`BitmapFactory.Options`对象的`inSampleSize` 为`true`｛｛这里应该有错，貌似不是`inSampleSize`｝｝。例如`inSampleSize` 取4，即`2048x1536`压缩4倍到`512x384`，将加载`0.75MB`而不是`12MB`（假如使用ARGB_8888）。下面是计算`inSampleSize`的方法。这个值是2的倍数。使用2的倍数是因为解码器最终会把值近似到2的倍数，参见`inSampleSize`文档｛｛缩小时，一半一半的缩小（比缩小0.75获取其他非一半的值）失真小｝｝：
 
-	public static int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight) {
-	    // 图像的原生高度和宽度
-	    final int height = options.outHeight;
-	    final int width = options.outWidth;
-	    int inSampleSize = 1;
-	
-	    if (height > reqHeight || width > reqWidth) {
-	        final int halfHeight = height / 2;
-	        final int halfWidth = width / 2;
-	
-	        // 计算可能的inSampleSize的最大值。该值要是2的平方
-	        // 同时使得宽和高要大于请求的宽高
-	        while ((halfHeight / inSampleSize) > reqHeight && (halfWidth / inSampleSize) > reqWidth) {
-	            inSampleSize *= 2;
-	        }
-	    }
-	
-	    return inSampleSize;
-	}
+```java
+public static int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight) {
+    // 图像的原生高度和宽度
+    final int height = options.outHeight;
+    final int width = options.outWidth;
+    int inSampleSize = 1;
+
+    if (height > reqHeight || width > reqWidth) {
+        final int halfHeight = height / 2;
+        final int halfWidth = width / 2;
+
+        // 计算可能的inSampleSize的最大值。该值要是2的平方
+        // 同时使得宽和高要大于请求的宽高
+        while ((halfHeight / inSampleSize) > reqHeight && (halfWidth / inSampleSize) > reqWidth) {
+            inSampleSize *= 2;
+        }
+    }
+
+    return inSampleSize;
+}
+```
 
 要使用该方法，先设置`inJustDecodeBounds`为true。然后再利用`inSampleSize`（inJustDecodeBounds改回false）重新解码：
 
-	public static Bitmap decodeSampledBitmapFromResource(Resources res, int resId, 
-		int reqWidth, int reqHeight) {
-	    // 先检测大小，设置inJustDecodeBounds=true
-	    final BitmapFactory.Options options = new BitmapFactory.Options();
-	    options.inJustDecodeBounds = true;
-	    BitmapFactory.decodeResource(res, resId, options);
-	
-	    // Calculate inSampleSize
-	    options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight);
-	
-	    // Decode bitmap with inSampleSize set
-	    options.inJustDecodeBounds = false;
-	    return BitmapFactory.decodeResource(res, resId, options);
-	}
+```java
+public static Bitmap decodeSampledBitmapFromResource(Resources res, int resId, 
+    int reqWidth, int reqHeight) {
+    // 先检测大小，设置inJustDecodeBounds=true
+    final BitmapFactory.Options options = new BitmapFactory.Options();
+    options.inJustDecodeBounds = true;
+    BitmapFactory.decodeResource(res, resId, options);
 
+    // Calculate inSampleSize
+    options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight);
+
+    // Decode bitmap with inSampleSize set
+    options.inJustDecodeBounds = false;
+    return BitmapFactory.decodeResource(res, resId, options);
+}
+```
 
 使用实例，将任意大的图片加载为100*100大小：
 
