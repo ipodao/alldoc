@@ -1,5 +1,7 @@
 # 6. Connect
 
+[TOC]
+
 Connect是一个框架，使用模块化的组件（称为中间件（middleware））实现Web应用逻辑。中间件是一个函数，拦截HTTP服务器的请求和响应，执行逻辑，传给下一个中间件或结束响应。Connect使用dispatcher将中间件连接到一起。
 
 除了自己编写中间件，Connect有几个通用的组件，可以用于请求的日志、伺服静态文件、解析请求体、session管理。

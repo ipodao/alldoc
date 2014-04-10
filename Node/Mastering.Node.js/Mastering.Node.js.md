@@ -651,10 +651,24 @@ As an application grows in complexity it will become more and more useful to be 
 
 ### 2.5.3 建造金字塔
 
+Simplifying controlflows has been a concern of the Node community since the very beginning of the project. Indeed, this potential criticism was one of the very first anticipated by Ryan Dahl, who discussed it at length during the talk in which he introduced Node to the JavaScript developer community.
 
+Node代码经常回调嵌套回调，Node代码常常像一个侧放的金字塔。
 
+Accordingly, there are several Node packages available which take the problem on, employing strategies as varied as futures, fibers, even C++ modules exposing system threads directly.
+- Async https://github.com/caolan/async
+- Tame https://github.com/maxtaco/tamejs
+- Fibers https://github.com/laverdet/nodefibers
+- Promises https://github.com/kriskowal/q
 
+> Mikeal Rogers, in discussing why Promises were removed from the Node core, makes a strong argument in the following link for why leaving feature development to the community leads to a stronger core product:
+http://www.futurealoof.com/posts/broken-promises.html
 
+### （未）2.5.4 思考
+
+## 2.6 监听对文件的改变
+
+实践之前学到的知识。The goal is to create a server that a client can connect to and receive updates from Twitter. We will first create a process to query Twitter for any messages with the *hashtag#nodejs*, and writes any found messages to a *tweets.txt* file in 140-byte chunks. We will then create a network server that broadcasts these messages to a single client. Those broadcasts will be triggered by write events on the tweets.txt file. Whenever a write occurs, 140-byte chunks are asynchronously read from the last known client read pointer. This will happen until we reach the end of the file, broadcasting as we go. Finally, wewill create a simple client.htmlpage, which asks for, receives, and displays these messages.
 
 
 
