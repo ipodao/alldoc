@@ -379,6 +379,278 @@ This method does reflect the standard behavior of timers in that its invocation 
 
 ## 2.3 定时器
 
+JavaScript提供两种异步定时器：`setInterval()`和`setTimeout()`。
+
+执行回调前实际的延迟时间可能比设置的时间略长。执行的次序也是不可保证的。Node的定时器是不可中断的。Timers simply promise to execute as close as possible to the specified time (though never before), beholden, as with every other event source, to event loop scheduling.
+
+> At least one thing you may not know about timers...
+We are all familiar with the standard arguments to setTimeout: a callback function and timeout interval. Did you know that many additional arguments are passed to the callback function?
+```javascript
+setTimeout(callback, time, [passArg1, passArg2…])
+```
+
+### 2.3.1 setTimeout
+
+延迟一些毫秒后执行：
+
+```javascript
+setTimeout(a, 1000);
+setTimeout(b, 1001);
+```
+
+`a`不一定先于`b`执行。
+
+另一种情况：
+```javascript
+setTimeout(a, 1000);
+setTimeout(b, 1000);
+```
+
+执行顺序是确定的。Node essentially maintains an object map grouping callbacks with identical timeout lengths. *Isaac Schlueter*, the current leader of the Node project, puts it this way:
+
+    [N]ode uses a single low level timer object for each timeout value. If you attach multiple callbacks for a single timeout value, they'll occur in order, because they're sitting in a queue. However, if they're on different timeout values, then they'll be using timers in different threads, and are thus subject to the vagaries of the [CPU] scheduler.
+
+The ordering of timer callbacks registered within an identical execution scope does not predictably determine the eventual execution order in all cases.
+
+Additionally, there exists a minimum wait time of one millisecond for a timeout. Passing a value of zero, -1, or a non-number will be translated into this minimum value.
+
+### 2.3.2 setInterval
+
+周期性执行一个功能。例如，每100毫秒执行一次：
+```javascript
+var intervalId = setInterval(function() { ... }, 100);
+```
+
+通过`clearInterval(intervalId)`取消。
+
+与`setTimeout`一样不可靠。Importantly, if a system delay (such as some badly written blocking whileloop) occupies the event loop for some period of time, intervals set prior and completing within that interim will have their results queued on the stack. 当事件循环不再阻塞，所有的回调将被立即调用（串行）。
+
+幸运的是，Node中的intervals比浏览器中可靠很多。
+
+### 2.3.3 unref 和 ref
+
+A Node program does not stay aliv ewithout a reason to do so. 如果有回调尚未被处理，进程将继续运行。完成后，进程没什么可做，于是退出。例如，下面的代码会让Node进程一直运行：
+```javascript
+Var intervalId = setInterval(function() {}, 1000);
+```
+
+There are cases of using a timer to do something interesting with external I/O, or some data structure, or a network interface where once those external event sources stop occurring or disappear, the timer itself stops being necessary. Normally one would trap that irrelevantstate of a timer somewhere else in the program and cancel the timer from there. This can become difficult or even clumsy, as an unnecessary tangling of concerns is now necessary, an added level of complexity.
+
+The `unref` method allows the developer to assert the following instructions: when this timer is the only event source remaining for the event loop to process, go ahead and terminate the process.
+
+例如，下面的代码会让进程结束，不再一直运行：
+```javascript
+var intervalId = setInterval(function() {}, 1000);
+intervalId.unref();
+```
+
+`unref`方法是创建定时器时返回的对象。
+
+现在加入一个外部事件源（一个定时器）。当外部事件源结束后，进程终止。
+```javascript
+setTimeout(function() {
+	console.log("now stop");
+}, 100);
+var intervalId = setInterval(function() {
+	console.log("running")
+}, 1);
+intervalId.unref();
+```
+
+利用`ref`方法可以让定时器回到常规的状态，它的作用是取消`unref`方法：
+```javascript
+var intervalId = setInterval(function() {}, 1000);
+intervalId.unref();
+intervalId.ref();
+```
+
+此时，进程又将一直运行下去。
+
+## 2.4 理解事件循环
+
+Node使用单个线程处理Javascript指令。在你的Javascript中，两句代码不可能同时执行。
+
+这并不意味着Node进程所在的机器只使用一个线程。回调并不产生并发。Recall Chapter 1, Understanding the Node Environment, and our discussion about the `process` object—Node's "single thread" simplicity is in fact an abstraction created for the benefit of developers. 但一定要记得，有大量线程在背后管理I/O（和其他东西），and these threads unpredictably insert instructions, originally packaged as callbacks, into the single JavaScript thread for processing.
+
+Node executes instructions one by one until there are no further instructions to execute, no more input or output to stream, and no further callbacks waiting to be handled.
+
+Even deferred events (such as timeouts) require an eventual interrupt in the event loop to fulfill their promise.
+
+下面的代码，本期望1秒后改变`stop`的值。但实际while循环将无限执行下去。While循环反复执行，一直占据着事件循环。事件循环无法给定时器回调机会执行。
+```javascript
+var stop = false;
+setTimeout(function() {
+	stop = true;
+}, 1000);
+while(stop === false) {};
+```
+
+写Node就是写事件循环。We've previously discussed the event sources that are queued and otherwise arranged and ordered on this event loop — I/O events, timer events, and so on.
+
+When writing non-deterministic code it is imperative that no assumptions about eventual callback orders are made. The abstraction that is Node masks the complexity of the thread pool on which the straightforward main JavaScript thread floats, leading to some surprising results.
+
+We will now refine this general understanding with more information about how, precisely, the callback execution order for each of these types is determined within Node's event loop.
+
+### Four sources of truth
+
+我们已经学习了四组主要的事件源（deferred event sources），下面总结它们在栈中的位置和优先级：
+- 执行代码块（Execution blocks）：Javascript代码，包括表达式、循环、函数。This includes `EventEmitter` events emitted within the current execution context.
+- 定时器：Callbacks deferred to sometime in the future specified in milliseconds, such as `setTimeout` and `setInterval`.
+- I/O：Prepared callbacks returned to the main thread after being delegated to Node's managed thread pool, such as filesystem calls and network listeners.
+- Deferred execution blocks: Mainly the functions slotted on the stack according to the rules of `setImmediate` and `nextTick`.
+
+We have learned how the deferred execution method `setImmediate` slots its callbacks after I/O callbacks in the event queue, and `nextTick` slots its callbacks before I/O and timer callbacks.
+
+> A challenge for the reader
+After running the following code, what is the expected order of logged messages?
+
+```javascript
+var fs = require('fs');
+var EventEmitter = require('events').EventEmitter;
+var pos = 0;
+var messenger = new EventEmitter();
+// Listener for EventEmitter
+messenger.on("message", function(msg) {
+	console.log(++pos + " MESSAGE: " + msg);
+});
+// (A) FIRST
+console.log(++pos + " FIRST");
+// (B) NEXT
+process.nextTick(function() {
+	console.log(++pos + " NEXT")
+})
+// (C) QUICK TIMER
+setTimeout(function() {
+	console.log(++pos + " QUICK TIMER")
+}, 0)
+// (D) LONG TIMER
+setTimeout(function() {
+	console.log(++pos + " LONG TIMER")
+}, 10)
+// (E) IMMEDIATE
+setImmediate(function() {
+	console.log(++pos + " IMMEDIATE")
+})
+// (F) MESSAGE HELLO!
+messenger.emit("message", "Hello!");
+// (G) FIRST STAT
+fs.stat(__filename, function() {
+	console.log(++pos + " FIRST STAT");
+});
+// (H) LAST STAT
+fs.stat(__filename, function() {
+	console.log(++pos + " LAST STAT");
+});
+// (I) LAST
+console.log(++pos + " LAST");
+```
+
+The output of is program is:
+1.  FIRST (A).
+2.  MESSAGE: Hello! (F).
+3.  LAST (I).
+4.  NEXT (B).
+5.  QUICK TIMER (C).
+6.  FIRST STAT (G).
+7.  LAST STAT (H).
+8.  IMMEDIATE (E).
+9.  LONG TIMER (D).
+
+Let's break the preceding code down:
+A, F, and I execute in the main program flow and as such they will have the first priority in the main thread (this is obvious; your JavaScript executes its instructions in the order they are written, including the synchronous execution of the `emit` callback).
+
+With the main call stack exhausted, the event loop is now almost reading to process I/O operations. This is the moment when nextTick requests are honored slotting in at the head of the event queue. This is when B is displayed.
+The rest of the order should be clear. Timers and I/O operations will be processed next, (C, G, H) followed by the results of the `setImmediate` callback (E), always arriving after any I/O and timer responses are executed.
+
+Finally, the long timeout (D) arrives, being a relatively far-future event.
+Notice that re-ordering the expressions in this program will notchange the output order (outside of possible re-ordering of the STAT results, which only implies that they have been returned from the thread pool in different order, remaining as a group in the correct order as relates to the event queue).
+
+## 2.5 回调和错误
+
+### 2.5.1 约定
+
+遵循：
+- 回调函数的第一个参数是错误消息，最好是一个错误对象。如果没有错误，应该传`null`。
+- 向函数传入一个回调，回调应该是函数的最后一个参数。APIs should be consistently designed this way.
+- 错误参数和回调参数之间可以有任意数量的参数。
+
+创建错误对象：
+```javascript
+new Error("Argument must be a String!")
+```
+
+### 2.5.2 了解你的错误
+
+It is excellent that the Node community has automatically adopted a convention that compels developers to be diligent and report errors. However, what does one do with errors once they are received?
+
+It is generally a very good idea to centralize error handling in a program. Often, a custom error handling system will be designed, which may send messages to clients, add to a log, and so on. Sometimes it is best to `throw` errors, halting the process.
+
+Node为错误处理提供了更高级的工具。In particular, Node's `domain` system helps with a problem that evented systems have: how can a stack trace be generated if the full route of a call has been obliterated as it jumped from callback to callback?
+
+The goal of `domain` is simple: fence and label an execution context such that all events that occur within it are identified as such, allowing more informative stack traces. By creating several different domains for each significant segment of your program, a chain of errors can be properly understood.
+
+Additionally, this provides a way to catch errors and handle them, rather than allowing your entire Node process to collapse.
+
+In the following example we're going to create two domains: `appDomain` and `fsDomain`. 目标是追踪应用的哪部分目前正处于错误状态：
+```javascript
+var domain = require("domain");
+var fs = require("fs");
+var fsDomain = domain.create();
+fsDomain.on("error", function(err) {
+	console.error("FS error", err);
+});
+var appDomain = domain.create();
+appDomain.on('error', function(err) {
+	console.log("APP error", err);
+});
+```
+
+现在将主程序包裹进`appDomain`，将文件系统调用包裹进`fsDomain`。We then create an error in `fsDomain` by trying to open a non-existent file:
+```javascript
+appDomain.run(function() {
+    process.nextTick(function() {
+    	fsDomain.run(function() {
+    		fs.open('no_file_here', 'r', function(err, fd) {
+    			if(err) {
+    				throw err;
+    			}
+    			appDomain.dispose();
+    		});
+    	});
+    });
+});
+```
+
+When thepreceding code executes, something resembling this should be echoed to the terminal:
+```shell
+FS error { [Error: ENOENT, open 'non-existent file']
+    errno: 34,
+    code: 'ENOENT',
+    path: 'non-existent file',
+    domain: 
+        { domain: null,
+          _events: { error: [Function] },
+          _maxListeners: 10,
+          members: [] },
+    domainThrown: true }
+```
+
+Now let's create an error in `appDomain` by adding this code, which will produce a reference error (as no `b` is defined):
+```javascript
+appDomain.run(function() {
+	a = b;
+	process.nextTick(function() {
+...
+```
+
+An error similar to that in the precious code should be generated and reported by appDomain.
+
+Notice the command `appDomain.dispose`. As maintaining these error contexts will consume some memory, it is best to dispose of them when no longer needed—after the code they contain has successfully executed, for example. We'll learn more advanced uses of this tool as we progress into more complex territories.
+
+As an application grows in complexity it will become more and more useful to be able to trap errors and handle them properly, perhaps restarting only one part of an application when it fails rather than the entire system.
+
+### 2.5.3 建造金字塔
+
 
 
 
