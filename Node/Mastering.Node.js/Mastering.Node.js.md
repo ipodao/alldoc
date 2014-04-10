@@ -206,6 +206,183 @@ If we were to instantiate `Filesystem` and call `readDir` a nested execution con
 # 2. 理解异步事件驱动编程
 
 
+## 2.1 广播事件
+
+I/O是昂贵的。In the following chart (taken from Ryan Dahl's original presentation on Node) we can see how many clock cycles typical system tasks consume.
+
+| 存储| 消耗CPU周期 |
+|--------|--------|
+| L1 cache | 3 cycles  |
+| L2 cache | 14 cycles |
+| RAM      | 250 cycles |
+| Disk     | 41,000,000 cycles |
+| Network  | 240,000,000 cycles |
+
+## 2.2 监听事件
+
+Node中暴露事件接口的多数对象，如文件、网络流，都将`EventEmitter`作为其原型（prototype）。
+
+但本节的目的是讨论一些更少人知晓的事件源：signals, child process communication, filesystem change events, and deferred execution.
+
+## （未）2.2.1 Signals
+
+## 2.2.2 Forks
+
+Node设计的一个基础是，当需要并行执行时，创建或fork进程，而不是创建线程。We will be using child processes in various ways throughout this book, and learn how to create and use them. 这里主要关注子进程之间如何通讯。
+
+要创建一个子进程，调用`child_process`模块的`fork`方法，传入新进程要执行的文件名：
+```javascript
+var cp = require('child_process');
+var child = cp.fork(__dirname + '/lovechild.js');
+```
+
+在多核机器上，forked进程一般会被OS分配到不同的核上。Spreading node processes across cores (even other machines) and managing IPC is (one) way to scale a Node application in a stable, understandable, and predictable way.
+
+父进程可以向子进程发送消息，或监听子进程的消息。
+```javascript
+child.on('message', function(msg) {
+	console.log('Child said: ', msg);
+});
+child.send("I love you");
+```
+
+通用，子进程（程序定义在`lovechild.js`）也可以发送、监听消息：
+```javascript
+// lovechild.js
+process.on('message', function(msg) {
+	console.log('Parent said: ', msg);
+	process.send("I love you too");
+});
+```
+
+Another very powerful idea is to pass a network server an object to a child. This technique allows multiple processes, including the parent, to share the responsibility for servicing connection requests, spreading load across cores.
+
+例如，下面程序启动一个服务器，fork一个子进程，然后把服务器传给子进程：
+```javascript
+var child = require('child_process').fork('./child.js');
+var server = require('net').createServer();
+server.on('connection', function(socket) {
+	socket.end('Parent handled connection');
+});
+server.listen(8080, function() {
+	child.send("The parent message", server);
+});
+```
+
+In addition to passing a message to a child process as the first argument to send, the preceding code also sends the server handle to itself as a second argument. Our child server can now help out with the family's service business:
+```javascript
+// child.js
+process.on('message', function(msg, server) {
+    console.log(msg);
+    server.on('connection', function(socket) {
+        socket.end('Child handled connection');
+    });
+});
+```
+
+连续请求，将被子进程或父进程处理：两个进程在负载平衡。It should be clear that this technique, when combined with the simple inter-process messaging protocol discussed previously, demonstrates how Ryan Dahl's creation succeeds in providing an easy way to build scalable network programs.
+
+> 我们会讨论Node的新模块`cluster`，它扩展和简化了上面讨论的技术。If you are interested in how server handles are shared, visit the cluster documentation at the following link:
+http://nodejs.org/api/cluster.html
+For those who are truly curious, examine the clustercode itself at:
+https://github.com/joyent/node/blob/c668185adde3a474585a11f172b8387e270ec23b/lib/cluster.js#L523-558
+
+### 2.2.3 文件事件
+
+通过`fs.watch`方法可以监听文件系统通知。The `watch` method will broadcast changed events on both files and directories.
+
+`watch`接受三个参数，依次是：
+1. 监控的文件或目录的路径。如果文件不存在，将抛出**ENOENT(no entity)**错误。可以先使用`fs.exists`检查。
+2. 一个可选的选项对象：
+  - persistent (Boolean): Node keeps processes alive as long as there is "something to do". An active file watcher will by default function as a persistence flag to Node. Setting this option to false flags not keeping the general process alive if the watcher is the only activity keeping it running.
+3. 监听器函数。接受两个参数：
+  - 事件名（`rename`或`change`）。
+  - 发生改变的文件名(important when watching directories). Some operating systems will notreturn this argument.
+
+This example will set up a watcher on itself, change its own filename, and exit:
+```javascript
+var fs = require('fs');
+fs.watch(__filename, { persistent: false }, function(event, filename) {
+    console.log(event);
+    console.log(filename);
+})
+setImmediate(function() {
+	fs.rename(__filename, __filename + '.new', function() {});
+});
+```
+
+可以在任何时候关闭监控：
+```javascript
+var w = fs.watch('file', function(){})
+w.close();
+```
+
+It should be noted that `fs.watch` depends a great deal on how the host OS handles file events, and according to the Node documentation:
+
+    "The fs.watch API is not 100% consistent across platforms, and is unavailable in some situations."
+
+### 2.2.4 Deferred execution
+
+经常需要推迟一个函数的执行。Javascript传统上使用定时器：`setTimeout`和`setInterval`。Node introduces another perspective on defers, primarily as means of controlling the order in which a callback executes in relation to I/O events, as well as timer events properly.
+
+We'll learn more about this ordering in the event loop discussion that follows. For now we will examine two types of deferred event sources that give a developer the ability to schedule callback executions to occur either before, or after, the processing of queued I/O events.
+
+#### process.nextTick
+
+Node本地模块`process`的`process.nextTick`方法类似于`setTimeout`，延迟执行回调方法。`nextTick`的回调方法会被放置在事件对象头部，在I/O或定时器事件之前，但在当前脚本之后执行（JavaScript代码在 V8 线程上同步执行）。
+
+在函数中，`nextTick`的主要用途是，postpone the broadcast of result events to listeners on the current execution stack until the caller has had an opportunity to register event listeners—to give the currently executing program a chance to bind callbacks to `EventEmitter.emit` events. It may be thought of as a pattern used wherever asynchronous behavior should be emulated. For instance, imagine a lookup system that may either fetch from a cache or pull fresh data from a data store. The cache is fast and doesn't need callbacks, while the data I/O call would need them. The need for callbacks in the second case argues for emulation of the callback behavior with `nextTick` in the first case. This allows a consistent API, improving clarity of implementation without burdening the developer with the responsibility of determining whether or not to use a callback.
+
+The following code seems to set up a simple transaction; when an instance of `EventEmitter` emits a `start` event, log "Started" to the console:
+
+```javascript
+var events = require('events');
+function getEmitter() {
+	var emitter = new events.EventEmitter();
+	emitter.emit('start');
+	return emitter;
+}
+var myEmitter = getEmitter();
+myEmitter.on("start", function() {
+	console.log("Started");
+});
+```
+
+However, the expected result will not occur. The event emitter instantiated within getEmitter emits "start" previous to being returned, wrong-footing the subsequent assignment of a listener, which arrives a step late, missing the event notification.
+
+使用`process.nextTick`解决该问题：
+
+```javascript
+var events = require('events');
+function getEmitter() {
+	var emitter = new events.EventEmitter();
+	process.nextTick(function() {
+		emitter.emit('start');
+	});
+	return emitter;
+}
+var myEmitter = getEmitter();
+myEmitter.on('start', function() {
+	console.log('Started');
+})
+```
+
+Because it is possible to recursively call `nextTick`, which might lead to an infinite loop of recursive `nextTick` calls (starving the event loop, preventing I/O), there exists a *failsafe* mechanism in Node which limits the number of recursive `nextTick` calls evaluated prior to yielding the I/O: `process.maxTickDepth`. Set this value (which defaults to 1000) if such a construct becomes necessary—although what you probably want to use in such a case is `setImmediate`.
+
+##### setImmediate
+
+`setImmediate`类似于`process.nextTick`，但区别在于：`nextTick`的回调在I/O和定时器事件之前调用，但`setImmediate`的回调在I/O事件之后调用。
+
+> The naming of these two methods is confusing: `nextTick` occurs before `setImmediate`.
+
+This method does reflect the standard behavior of timers in that its invocation will return an object which can be passed to `cancelImmediate`, cancelling `setImmediate` in the same way `cancelTimeout` cancels timers set with `setTimeout`.
+
+## 2.3 定时器
+
+
+
+
+
 
 
 
