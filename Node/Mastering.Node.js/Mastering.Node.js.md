@@ -1,3 +1,9 @@
+# 目录
+
+[TOC]
+
+
+
 # 1 理解Node环境
 
 ## 1.1 扩展Javascript
@@ -203,8 +209,7 @@ If we were to instantiate `Filesystem` and call `readDir` a nested execution con
 
 ## （未）1.4 REPL和执行Node程序
 
-# 2. 理解异步事件驱动编程
-
+# 2 理解异步事件驱动编程
 
 ## 2.1 广播事件
 
@@ -668,7 +673,685 @@ http://www.futurealoof.com/posts/broken-promises.html
 
 ## 2.6 监听对文件的改变
 
-实践之前学到的知识。The goal is to create a server that a client can connect to and receive updates from Twitter. We will first create a process to query Twitter for any messages with the *hashtag#nodejs*, and writes any found messages to a *tweets.txt* file in 140-byte chunks. We will then create a network server that broadcasts these messages to a single client. Those broadcasts will be triggered by write events on the tweets.txt file. Whenever a write occurs, 140-byte chunks are asynchronously read from the last known client read pointer. This will happen until we reach the end of the file, broadcasting as we go. Finally, wewill create a simple client.htmlpage, which asks for, receives, and displays these messages.
+实践之前学到的知识。创建一个服务，客户端可以接收Twitter的更新。We will first create a process to query Twitter for any messages with the *hashtag#nodejs*, and writes any found messages to a *tweets.txt* file in 140-byte chunks. We will then create a network server that broadcasts these messages to a single client. Those broadcasts will be triggered by write events on the *tweets.txt* file. Whenever a write occurs, 140-byte chunks are asynchronously read from the last known client read pointer. This will happen until we reach the end of the file, broadcasting as we go. Finally, we will create a simple *client.html* page, which asks for, receives, and displays these messages.
+
+本例展示了：
+- 监听文件系统事件
+- 使用数据流事件读写文件
+- 响应网络事件
+- Using timeouts for polling state
+- 将Node服务器作为网络事件的广播者
+
+处理服务器广播，使用Server Sent Events(SSE)协议，该协议是HTML5的一部分。
+
+先创建一个Node服务器，监听文件改变，广播内容到客户端。创建`server.js`文件：
+```javascript
+var fs = require("fs");
+var http = require('http');
+var theUser = null;
+var userPos = 0;
+var tweetFile = "tweets.txt";
+```
+
+我们只接受单个用户连接，whose pointer will be `theUser`. The `userPos` will store the last position this client read from in `tweetFile`:
+```javascript
+http.createServer(function(request, response) {
+    response.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Access-Control-Allow-Origin': '*'
+    });
+    theUser = response;
+    response.write(':' + Array(2049).join(' ') + '\n');
+	response.write('retry: 2000\n');
+	response.socket.on('close', function() {
+		theUser = null;
+	});
+}).listen(8080);
+```
+
+参数`response`实现了writeable stream接口，允许我们向客户端写数据：
+```javascript
+var sendNext = function(fd) {
+    var buffer = new Buffer(140);
+    fs.read(fd, buffer, 0, 140, userPos * 140, function(err, num) {
+    	if(!err && num > 0 && theUser) {
+    		++userPos;
+    		theUser.write('data: ' + buffer.toString('utf-8', 0, num) + '\n\n');
+    		return process.nextTick(function() {
+                sendNext(fd);
+            });
+        }
+    });
+};
+```
+
+We create a function to send the client messages. We will be pulling buffers of 140 bytes out of the readable stream bound to our *tweets.txt* file, 每读取一次位置计数器加一。We write this buffer to the writeable stream binding our server to the client. When done, we queue up a repeat call of the same function using `nextTick`, repeating until we get an error, receive no data, or the client disconnects:
+```javascript
+function start() {
+    fs.open(tweetFile, 'r', function(err, fd) {
+        if(err) {
+        	return setTimeout(start, 1000);
+        }
+        fs.watch(tweetFile, function(event, filename) {
+            if(event === "change") {
+                sendNext(fd);
+            }
+        });
+    });
+};
+start();
+```
+
+Finally, we start the process by opening the *tweets.txt* file and watch for any changes, calling `sendNext` whenever new tweets are written. 启动服务器时，文件可能还不存在，因此使用`setTimeout`轮询知道文件出现。
+
+下面产生文件。We first install the *TWiT* Twitter package for Node, via npm.
+
+We then create aprocess whose sole job is to write new data to a file:
+```javascript
+var fs = require("fs");
+var Twit = require('twit');
+var twit = new Twit({
+    consumer_key: 'your key',
+    consumer_secret: 'your secret',
+    access_token: 'your token',
+    access_token_secret: 'your secret token'
+})
+var tweetFile = "tweets.txt";
+var writeStream = fs.createWriteStream(tweetFile, {
+	flags : "a"
+});
+
+var cleanBuffer = function(len) {
+    var buf = new Buffer(len);
+    buf.fill('\0');
+    return buf;
+}
+```
+
+因为Twitter消息不超过140字节，我们可以简化读写操作，总是写140字节的块，即便可能不到140字节。Once we receive updates we will create a buffer that is number of messagesx 140 bytes wide, and write those 140-byte chunks to this buffer:
+
+```javascript
+var check = function() {
+	twit.get('search/tweets', {
+		q: '#nodejs since:2013-01-01'
+	}, function(err, reply) {
+        var buffer = cleanBuffer(reply.statuses.length * 140);
+        reply.statuses.forEach(function(obj, idx) {
+        	buffer.write(obj.text, idx*140, 140);
+        });
+        writeStream.write(buffer);
+    })
+    setTimeout(check, 10000);
+};
+check();
+```
+
+每10秒检查一次消息。Twitter returns an array of message objects. The one object property we are interested in is the `#text` of the message. Calculate the number of bytes necessary to represent these new messages (140乘以消息数量), fetch a clean buffer, and fill it with 140-byte chunks until all messages are written. Finally, this data is written to our *tweets.txt* file, causing a change event to occur that our server is notified of.
+
+最后是前端页面。使用 *SSE* 监听本地8080端口。
+```html
+<!DOCTYPE html>
+<html>
+<head>
+<title></title>
+</head>
+<script>
+window.onload = function() {
+    var list = document.getElementById("list");
+    var evtSource = new EventSource("http://localhost:8080/events");
+    evtSource.onmessage = function(e) {
+    	var newElement = document.createElement("li");
+        newElement.innerHTML = e.data;
+    	list.appendChild(newElement);
+    }
+}
+</script>
+<body>
+<ul id="list"></ul>
+</body>
+</html>
+```
+
+> 更多关于 SSE 的知识，参见第六章，Creating Real-time Application。或：
+https://developer.mozilla.org/en-US/docs/Server-sent_events/Using_server-sent_events
+
+# 3 Node与客户端之间的数据流
+
+Managing I/O in Node involves managing data events bound to data streams. `Stream`对象是`EventEmitter`的实例。
+
+# 3.1 探索流
+
+Node's `Stream` moduleis the preferred way to manage asynchronous data streams.
+
+Node中，一个流只是一个字节序列。任意时点，流包含字节缓冲，这个缓存长度可能为0。
+
+Because each character in a stream is well defined, 流中任意部分都可以被重定向，或"piped"到其他流，流中的不同块可以发送给不同的处理器。In this way stream input and output interfaces are both flexible and predictable and can be easily coupled.
+
+通过抽象的`Stream`接口暴露五个不同的基类：`Readable`, `Writable`, `Duplex`, `Transform`, and `PassThrough`. 这五个类都继承`EventEmitter`。
+
+强调，`Stream`接口是抽象接口。描述每个流实例共有的特性。例如，其实现`Readable` stream implementation is required to implement a public read method which delegates to the interface's internal `_read` method.
+
+所有流的实现都要遵循：
+- 只要有数据要发送，反复调用`write`写入流，直到返回`false`，接着需要等待`drain`事件（表示buffered stream data has emptied）。
+- 反复调用`read`直到返回`null`。如何等待`readable`事件再读。
+- 几个Node I/O模块都实现成了流。Network sockets, file readers and writers, `stdin` and `stdout`, `zlib`, and so on. Similarly, when implementing a readable data source, or data reader, one should implement that interface as a `Stream` interface.
+
+> 从Node 0.10.0开始，`Stream`接口changed in some fundamental ways. The Node team has done its best to implement backwards-compatible interfaces, such that (most) older programs will continue to function without modification. 本章只讲最新的设计，不讲老的接口。The reader is encouraged to consult Node's online documentation for information on migrating older programs.
+
+# 3.1.1 实现readable流
+
+Streams producing data that another process may have an interest in are normally implemented using a `Readable` stream. A `Readable` stream saves the implementer all the work of managing the read queue, handling the emitting of data events, and so on.
+
+创建一个`Readable`流：
+```javascript
+var stream = require('stream');
+var readable = new stream.Readable({
+    encoding : "utf8",
+    highWaterMark : 16000,
+    objectMode: true
+});
+```
+
+`Readable`是一个基类，可以通过下面三个选项实例化：
+- encoding: Decode buffers into the specified encoding, 默认UTF-8。
+- highWaterMark: Number of bytes to keep in the internal buffer before ceasing to read from the data source. 默认16 KB。
+- objectMode: Tell the stream to behave as a stream of objects instead of a stream of bytes, 例如，一个JSON对象的流，而不是文件中的字节。默认`false`。
+
+下面创建一个模拟的`Feed`对象，该对象将继承`Readable`接口｛｛对象继承，不是类继承｝｝。我们只需要实现抽象的`Readable._read`方法。该实现中将不断向消费者推送数据，直到没有数据，最后推出一个`null`，让`Readable`发送一个`end`事件。
+
+```javascript
+var Feed = function(channel) {
+    var readable = new stream.Readable({
+    	encoding : "utf8"
+    });
+    var news = [
+        "Big Win!",
+        "Stocks Down!",
+        "Actor Sad!"
+    ];
+    readable._read = function() {
+    	if(news.length) {
+    		return readable.push(news.shift() + "\n");
+    	}
+    	readable.push(null);
+    };
+    return readable;
+}
+```
+
+Now that we have an implementation, a consumer might want to **instantiate** the stream and listen for stream events. 两个关键事件：`readable`和`end`。
+
+只要数据被推向流就会发出`readable`事件。它告诉消费者，有新数据。可以通过`Readable.read`读取新数据。
+
+> Note again how the Readableimplementation must provide a private `_read` method, which services the public `read` method exposed to the consumer API.
+
+当我们的`Readable`实现，调用`push(null)`会发出`end`事件。
+
+Here we see a consumer using these methods to display new stream data, providing a notification when the stream has stopped sending data:
+```javascript
+var feed = new Feed();
+feed.on("readable", function() {
+	var data = feed.read();
+	data && process.stdout.write(data);
+});
+feed.on("end", function() {
+	console.log("No more news");
+});
+```
+
+通过`objectMode`选项可以实现对象流：
+```javascript
+    var readable = new stream.Readable({
+        objectMode : true
+    });
+    var prices = [
+        { price : 1 },
+        { price : 2 }
+    ];
+...
+readable.push(prices.shift());
+// > { prices : 1 }
+// > { prices : 2 }
+```
+
+可以向`Readable.read`传入一个数字，表示一次从流的内部缓冲中读取多少字节。For example, if it was desired that a file should be read one byte at a time, one might implement a consumer using a routine similar to:
+```javascript
+readable.push("Sequence of bytes");
+...
+feed.on("readable", function() {
+	var character;
+    while(character = feed.read(1)) {
+    	console.log(character);
+    };
+});
+// > S
+// > e
+// > q
+// > ...
+```
+Here it should be clear that the `Readable` stream's buffer was filled with a number of bytes all at once, but was read from discretely.
+
+#### Pushing and pulling
+
+We have seen how a `Readable` implementation will use `push` to populate the stream buffer for reading. When designingthese implementations it is important to consider how volume is managed, at either end of the stream. Pushing more data into a stream than can be read can lead to complications around exceeding available space (memory). At the consumer end it is important to maintain awareness of termination events, and how to deal with pauses in the data stream.
+
+流的实现要注意，如果`push`返回false，表示实现要暂停从数据源读取（也暂停`push`），因为流的缓冲已满。暂停，直到下一次`_read`（消费者读取了缓冲，缓冲有了空位）。
+
+In conjunction with the above, if there is no more data to push but more is expected in the future the implementation should pushan empty string (""), which adds no data to the queue but does ensure a future `readable` event.
+
+While the most common treatment of a stream buffer is to `push` to it (queuing data in a line), there are occasions where one might want to place data on the front of the buffer (jumping the line). Node provides an `unshift` operation for these cases, which behavior is identical to `push`, outside of the aforementioned difference in buffer placement.
+
+### 3.1.2 Writable流
+
+A Writable stream is responsible for accepting some value (a stream of bytes, a string) and writing that data to a destination. 常见的目的地是文件。
+
+创建一个`Writablestream`：
+```javascript
+var stream = require('stream');
+var readable = new stream.Writable({
+    highWaterMark : 16000,
+    decodeStrings: true
+});
+```
+选项：
+- `highWaterMark`：The maximum number of bytes the stream's buffer will accept prior to returning false on **writes**. Default is 16 KB。
+- `decodeStrings`：Whether to convert strings into buffers before writing. Default is true.
+
+`Writable`流的实现需要实现`_write`方法，which will be passed the arguments sent to the `write` method of instances.
+
+One should think of a `Writable` stream as a data target, such as for a file you are uploading. Conceptually this is not unlike the implementation of push in a `Readable` stream, where one pushes data until the data source is exhausted, passing `null` to terminate reading. For example, here we write 100 bytes to `stdout`:
+```javascript
+var stream = require('stream');
+var writable = new stream.Writable({
+	decodeStrings: false
+});
+writable._write = function(chunk, encoding, callback) {
+	console.log(chunk);
+	callback();
+}
+var w = writable.write(new Buffer(100));
+writable.end();
+console.log(w); // Will be `true`
+```
+
+两点注意的问题：
+
+First, our `_write` implementation fires the callback function immediately after writing, a callback that is always present, regardless of whether the instance `write` method is passed a callback directly. This call is important for indicating the status of the write attempt, whether a failure (error) or a success.
+
+Second, the call to `write` returned true. This indicates that the internal buffer of the `Writable` implementation has been emptied after executing the requested write. What if we sent a very large amount of data, enough to exceed the default size of the internal buffer? Modifying the above example, the following would return `false`:
+```javascript
+var w = writable.write(new Buffer(16384));
+console.log(w); // Will be 'false'
+````
+
+返回false的原因是超过饿了`highWaterMark`。默认16 KB。
+
+What to do when `write` returns false? One should certainly not continue to send data! Node's Stream implementation will emit a `drain` event whenever it is safe to write again. 当`write`返回false，监听`drain`事件再继续写。
+
+Putting together what we have learned, let's create a Writablestream with a highWaterMark value of 10 bytes. We will send a buffer containing more than 10 bytes (composed of Acharacters) to this stream, triggering a `drain` event, at which point we write a single Z character. It should be clear from this example that Node's Stream implementation is managing the buffer overflow of our original payload{{Node会管理溢出的缓存，不会丢失？}}, warning the original write method of this overflow, performing a controlled depletion of the internal buffer, and notifying us when it is safe to write again:
+
+```javascript
+var stream = require('stream');
+var writable = new stream.Writable({
+	highWaterMark: 10
+});
+writable._write = function(chunk, encoding, callback) {
+	process.stdout.write(chunk);
+	callback();
+}
+writable.on("drain", function() {
+	writable.write("Z\n");
+});
+var buf = new Buffer(20, "utf8");
+buf.fill("A");
+console.log(writable.write(buf.toString())); // false
+```
+
+The result should be a string of 20 A characters, followed by false, then followed by the character Z.
+
+----
+`Readable`流中的数据可以被重定向到一个`Writable`流。例如，西面的例子将`stdin`（一个`Readable`流）重定向到`stdout`（`Writable`流）：
+```javascript
+process.stdin.pipe(process.stdout);
+```
+当一个`Writable`流传入`Readable`的`pipe`方法，触发`pipe`事件。当`Writable`被移除后，触发`unpipe`事件：
+```javascript
+unpipe(destination stream)
+```
+----
+
+### 3.1.3 Duplex流
+
+duplex流既可读又可写。例如TCP socket就是：
+```javascript
+var stream = require("stream");
+var net = require("net");
+net.createServer(function(socket) {
+	socket.write("Go ahead and type something!");
+	socket.on("readable", function() {
+		process.stdout.write(this.read())
+	});
+})
+.listen(8080);
+```
+
+When executed, this code will create a TCP server that can be connected to via Telnet:
+```shell
+telnet 127.0.0.1 8080
+```
+
+The options sent when constructing a `Duplex` instance merge those sent to `Readable` and `Writable` streams, with no additional parameters. Indeed, this stream type simply assumes both roles, and the rules for interacting with it follow the rules for the interactive mode being used.
+
+As a Duplex stream assumes both read and write roles, 因此实现要实现`_write`和`_read`方法。
+
+### 3.1.4 Transform流
+
+On occasion stream data needs to be processed, often in cases where one is writing some sort of binary protocol or other "on the fly" data transformation. A `Transform` stream is designed for this purpose, functioning as a `Duplex` stream，位于一个`Readable`流和一个`Writable`流之间。
+
+A `Transform` stream is initialized using the same options used to initialize a typical `Duplex` stream. 但`Transform`要求实现值实现`_transform`方法，不要实现`_write`和`_read`方法。`_transform`方法接受三个参数：发送缓冲、编码（可选）、回调（转换完成后调用）：
+
+```javascript
+_transform = function(buffer, encoding, cb) {
+	var transformation = "...";
+	this.push(transformation)
+	cb();
+}
+```
+
+例子，将ASCII码转换为ASCII字符。
+```javascript
+var stream = require('stream');
+var converter = new stream.Transform();
+converter._transform = function(num, encoding, cb) {
+	this.push(String.fromCharCode(new Number(num)) + "\n")
+	cb();
+}
+process.stdin.pipe(converter).pipe(process.stdout);
+```
+
+### 3.1.5 PassThrough流
+
+This sort of stream is a trivial implementation of a `Transform` stream, which simply passes received input bytes through to an output stream. This is useful if one doesn't require any transformation of the input data, and simply wants to easily pipe a `Readable` stream to a `Writable` stream.
+
+`PassThrough` streams have benefits similar to JavaScript's anonymous functions, making it easy to assert minimal functionality without too much fuss. For example, it is not necessary to implement an abstract base class, as one does with for the `_read` method of a `Readable` stream. Consider the following use of a `PassThrough` stream as an event spy:
+```javascript
+var fs = require('fs');
+var stream = new require('stream').PassThrough();
+spy.on('end', function() {
+	console.log("All data has been sent");
+});
+fs.createReadStream("./passthrough.js").pipe(spy).pipe(process.stdout);
+```
+
+## 3.2 HTTP服务器
+
+利用http模块的`createServer`方法创建一个Node服务器：
+```javascript
+var http = require('http');
+var server = http.createServer(function(request, response) {
+	console.log("Got Request Headers:");
+	console.log(request.headers);
+	response.writeHead(200, {
+		'Content-Type': 'text/plain'
+	});
+	response.write("PONG");
+	response.end();
+});
+server.listen(8080);
+```
+
+`http.createServer`返回值是`http.Server`的一个实例，它也是一个`EventEmitter`。However, it is worth pointing out that directly instantiating the http.Server class is sometimes a useful way to distinguish distinct server/client interactions. We will use that format for the following examples.
+
+例如，下面的服务器在有新连接时报告：
+```javascript
+var http = require('http');
+var server = new http.Server();
+server.on("connection", function(socket) {
+	console.log("Client arrived: " + new Date());
+	socket.on("end", function() {
+		console.log("Client left: " + new Date());
+	});
+})
+server.listen(8080);
+```
+
+连接事件可以用来做一些用户认证工作，including setting or reading of cookies and other session variables, or the broadcasting of a client arrival event to other clients working together in a concurrent real-time application.
+
+By adding a listener for requests we arrive at the more common request/response pattern, handled as a `Readable` stream. When a client POSTs some data, we can catch that data like the following:
+```javascript
+server.on("request", function(request, response) {
+	request.setEncoding("utf8");
+	request.on("readable", function() {
+		console.log(request.read())
+	});
+});
+```
+
+可以对连接设置定时器。Here we terminate client connections that fail to send new data within a roughly two second window:
+```javascript
+server.setTimeout(2000, function(socket) {
+	socket.write("Too Slow!", "utf8");
+	socket.end();
+});
+```
+
+> If one simply wants to set the number of milliseconds of inactivity before a socket is presumed to have timed out, simply use `server.timeout = (Integer)num_milliseconds`. To disable socket timeouts, pass a value of 0(zero).
+
+
+### 3.2.1 发送HTTP请求
+
+例如，下面代码请求*google.com*：
+```javascript
+var http = require('http');
+http.request({
+	host: 'www.google.com',
+	method: 'GET',
+	path: "/"
+}, function(response) {
+	response.setEncoding("utf8");
+	response.on("readable", function() {
+		console.log(response.read())
+	});
+}).end();
+```
+
+> A popular Node module for managing HTTP requests is Mikeal Rogers' request:
+https://github.com/mikeal/request
+
+HTTP GET请求可以直接使用`get`方法：
+```javascript
+http.get("http://www.google.com/", function(response) {
+	console.log("Status: " + response.statusCode);
+}).on('error', function(err) {
+	console.log("Error: " + err.message);
+});
+```
+### 3.2.2 代理和隧道
+
+有时服务器需要充当代理或broker。如用于负载平衡到其他服务器。或让用户间接连接到一台受保护的服务器。
+
+Because Node has a consistent streams interface throughout its network interfaces, 几句代码就可以构建一个HTTP代理。
+```javascript
+var http = require('http');
+var server = new http.Server();
+server.on("request", function(request, socket) {
+	http.request({
+		host: 'www.google.com',
+		method: 'GET',
+		path: "/",
+		port: 80
+	}, function(response) {
+		response.pipe(socket);
+	}).end();
+});
+server.listen(8080);
+```
+
+同样，我们可以创建一个隧道服务，利用Node原生的`CONNECT`支持。Tunneling involves using a proxy server as an intermediary to communicate with a remote server on behalf of a client. Once our proxy server connects to a remote server, it is able to pass messages back and forth between that server and a client. This is advantageous when a direct connection between a client and a remote server is not possible, or not desired.
+
+First, we'll set up a proxy server responding to `HTTP CONNECT` requests, then make a CONNECT request to that server. The proxy receives our client's `Request` object, the client's socket itself, and the `head`(the first packet) of the tunneling stream. We then open the requested remote network socket. All that is left to do is creating the tunnel, which we do by piping remote data to the client, and client data to the remote connection:
+
+```javascript
+var http = require('http');
+var net = require('net');
+var url = require('url');
+var proxy = new http.Server();
+proxy.on('connect', function(request, clientSocket, head) {
+	var reqData = url.parse('http://' + request.url);
+	var remoteSocket = net.connect(reqData.port, reqData.hostname,
+		function() {
+			clientSocket.write('HTTP/1.1 200 \r\n\r\n');
+			remoteSocket.write(head);
+			remoteSocket.pipe(clientSocket);
+			clientSocket.pipe(remoteSocket);
+		});
+}).listen(8080);
+
+var request = http.request({
+	port: 8080,
+	hostname: 'localhost',
+	method: 'CONNECT',
+	path: 'www.google.com:80'
+});
+
+request.end();
+request.on('connect', function(res, socket, head) {
+	socket.setEncoding("utf8");
+	socket.write('GET / HTTP/1.1\r\nHost: www.google.com:80\r\nConnection: close\r\n\r\n');
+	socket.on('readable', function() {
+		console.log(socket.read());
+	});
+	socket.on('end', function() {
+		proxy.close();
+	});
+});
+```
+
+## （未）3.3 HTTPS, TLS (SSL), and securing your server
+
+## 3.4 请求对象
+
+HTTP请求和响应消息结构类似：
+- 状态行。例如请求：`GET/index.html HTTP/1.1`，响应：`HTTP/1.1 200 OK`。
+- 零到多个头。
+- 消息体
+
+### 3.4.1 URL模块
+
+请求对象有一个`url`属性：`request.url`。可以利用URL模块将URL分解开。
+
+![](url_module.png)
+
+利用`url.parse`方法分解字符串。注意到`query`字段仍是一个字符串。如果想让它变成一个键值对，向`url.parse`的第二个参数传true。此时`query`字段会变成对象：
+```javascript
+query: { filter: 'sports', maxresults: '20' }
+```
+
+There is one final argument for url.parse that relates to the difference between these two URLs:
+- http://www.example.org
+- //www.example.org
+
+The second URL here is an example of a (relatively unknown) design feature of the HTTP protocol: the protocol-relative URL (technically, a **network-path reference**), as opposed to the more common *absolute* URL.
+
+> To learn more about how network-path references are used to smooth resource protocol resolution visit the following link:
+http://tools.ietf.org/html/rfc3986#section-4.2
+
+The issue under discussion is this: `url.parse` will treat a string beginning with slashes as indicating a path, not a host. For example, url.parse("//www.example.org") will set the following values in the hostand pathfields:
+
+    host: null,
+    path: '//www.example.org'
+
+What we actually want is the reverse:
+
+    host: 'www.example.org',
+    path: null
+
+To resolve this issue, pass trueas the third argument to url.parse, which indicates to the method that slashes denote a host, not a path:
+```javascript
+url.parse("//www.example.org", null, true)
+```
+
+It is also the case that a developer will want to create a URL, such as when making requests via http.request. The segments of said URL may be spread across various data structures and variables, and will need to be assembled. One accomplishes this by passing an object like the one returned from `url.parse` to the method `url.format`.
+
+The following code will create the URL string *http://www.example.org*:
+```javascript
+url.format({
+	protocol: 'http:',
+	host: 'www.example.org'
+})
+```
+
+Similarly, one may also use the `url.resolve` method to generate URL strings in the common scenario of requiring the concatenating a base URL and a path:
+```javascript
+url.resolve("http://example.org/a/b", "c/d")
+// 'http://example.org/a/c/d'
+url.resolve("http://example.org/a/b", "/c/d")
+// 'http://example.org/c/d'
+url.resolve("http://example.org", "http://google.com")
+// 'http://google.com/'
+```
+
+### 3.4.2 Querystring模块
+
+`query`字符串常需要被解析为键值对。`Querystring`可以将字符串分解为键值对，或把键值对组合为查询字符串。例如`querystring.parse("foo=bar&bingo=bango")`将返回：`{ foo: 'bar', bingo: 'bango' }`。
+
+If our query strings are not formatted using the normal "&" separator and "=" assignment character, the `Querystring` module offers customizable parsing. The second argument to `Querystring` can be a custom *separator* string, and the third a custom *assignment* string. For example, the following will return the same mapping as given previously on a query string with custom formatting:
+```javascript
+var qs = require("querystring");
+console.log(qs.parse("foo:bar^bingo:bango", "^", ":"))
+// { foo: 'bar', bingo: 'bango' }
+```
+
+One can compose a query string using the `Querystring.stringify` method:
+```javascript
+console.log(qs.stringify({ foo: 'bar', bingo: 'bango' }))
+// foo=bar&bingo=bango
+```
+
+As with parse, `stringify` also accepts custom separator and assignment arguments:
+```javascript
+console.log(qs.stringify({ foo: 'bar', bingo: 'bango' }, "^", ":"))
+// foo:bar^bingo:bango
+```
+
+## 3.5 头
+
+利用`request.header`对象读请求头。例如要获取"accept"头，利用：`request.headers.accept`。
+
+> The number of incoming headers can be limited by setting the `maxHeadersCount` property of your HTTP server.
+
+If it is preferredthat headers are read programmatically, Node provides the `response.getHeader` method, accepting the header key as its first argument.
+
+写响应头：
+```javascript
+response.writeHead(200, {
+	'Content-Length': 4096,
+	'Content-Type': 'text/plain' 
+});
+```
+
+还可以利用`response.setHeader`设置头。To set multiple headers with the same name, one may pass an array to `response.setHeader`:
+```javascript
+response.setHeader("Set-Cookie", ["session:12345", "language=en"]);
+```
+
+Occasionally it may be necessary to remove a response header after that header has been "queued". This is accomplished by using `response.removeHeader`, passing the header name to be removed as an argument.
+
+头必须在写响应前设置。否则是错误。
+
+### （未）3.5.1 使用Cookie
+
+Cookies是不安全的。Cookie information flows between a server and a client in plain text. There is any number of tamper points in between. Browsers allow easy access to them, for example. This is a good idea, as nobody wants information on their browser or local machine to be hidden from them, beyond their control.
+
+Nevertheless, cookies are also used rather extensively to maintain state information, or pointers to state information, particularly in the case of user sessions or other authentication scenarios.
+
+
+
+
+
+
+
 
 
 
