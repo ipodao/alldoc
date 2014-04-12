@@ -292,7 +292,8 @@ server.get('/hello/:name', function(req, res, next) {
 
 #### 2.6.1 HttpError
 
-Now the obvious question is what that exactly does (in either case). restify tries to be programmer-friendly with errors by exposing all HTTP status codes as a subclass of `HttpError`. So, for example, you can do this:
+restify为所有的 HTTP 状态码定义了一个`HttpError`的子类。例如
+
 ```javascript
 server.get('/hello/:name', function(req, res, next) {
 	return next(new restify.ConflictError("I just don't like you"));
@@ -318,15 +319,14 @@ Response-Time: 1
 I just don't like you
 ```
 
-The core thing to note about an `HttpError` is that it has a numeric code (statusCode) and a body. The statusCode will automatically set the HTTP response status code, and the body attribute by default will be the message.
+`HttpError`包含一个状态码和一个消息体。
 
-All status codes between 400 and 5xx are automatically converted into an `HttpError` with the name being 'PascalCase' and spaces removed. For the complete list, take a look at the [node source](https://github.com/joyent/node/blob/v0.6/lib/http.js#L152-205).
+400 和 5xx 之间的状态会被转换为一个`HttpError`。名字是驼峰的。例如`418: I'm a teapot`将变成`ImATeapotError`。For the complete list, take a look at the [node source](https://github.com/joyent/node/blob/v0.6/lib/http.js#L152-205).
 
-From that code above `418: I'm a teapot` would be `ImATeapotError`, as an example.
+#### 2.6.2 RestError
 
-### RestError
+REST APIs 的一个常见问题是，需要覆盖 400 和 409，表示另外的含义。并且，期望机器能够识别这些消息。restify 定义了 `RestError`。`RestError` 是 `HttpError` 的子类，additionally sets the body attribute to be a `JS object` with the attributes code and message. For example, here's a built-in `RestError`:
 
-Now, a common problem with REST APIs and HTTP is that they often end up needing to overload 400 and 409 to mean a bunch of different things. There's no real standard on what to do in these cases, but in general you want machines to be able to (safely) parse these things out, and so restify defines a convention of a `RestError`. A `RestError` is a subclass of one of the particular `HttpError` types, and additionally sets the body attribute to be a `JS object` with the attributes code and message. For example, here's a built-in `RestError`:
 ```javascript
 var server = restify.createServer();
 server.get('/hello/:name', function(req, res, next) {
@@ -392,9 +392,9 @@ util.inherits(MyError, restify.RestError);
 
 Basically, a `RestError` takes a statusCode, a restCode, a message, and a "constructorOpt" so that V8 correctly omits your code from the stack trace (you don't have to do that, but you probably want it). In the example above, we also set the name property so `console.log(new MyError())`; looks correct.
 
-## （未）Socket.IO
+### 2.7（未）Socket.IO
 
-## Server API
+### 2.8Server API
 
 ### 事件
 
