@@ -298,6 +298,7 @@ https://github.com/joyent/node/blob/c668185adde3a474585a11f172b8387e270ec23b/lib
 通过`fs.watch`方法可以监听文件系统通知。The `watch` method will broadcast changed events on both files and directories.
 
 `watch`接受三个参数，依次是：
+
 1. 监控的文件或目录的路径。如果文件不存在，将抛出**ENOENT(no entity)**错误。可以先使用`fs.exists`检查。
 1. 一个可选的选项对象：
   - persistent (Boolean): Node keeps processes alive as long as there is "something to do". An active file watcher will by default function as a persistence flag to Node. Setting this option to false flags not keeping the general process alive if the watcher is the only activity keeping it running.
