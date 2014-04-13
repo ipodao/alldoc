@@ -6,7 +6,7 @@
 
 ### 1.1 扩展Javascript
 
-：
+Node：
 - 一个Node程序/进程运行在单线程，ordering execution through an event loop
 - Web applications are I/O intensive, so the focus should be on making I/O fast
 - 通过异步回调推进程序流
@@ -60,11 +60,13 @@ Don't worry if you don't fully understand how Readable is implemented here—str
 It is also important to note the importance of this style of I/O. Because Node's event loop need only commit resources to handling callbacks, many other instructions can be processed in the down time between each interval.
 
 As an exercise, re-implement the previous code snippet such that the emitted data is piped to a file. You'll need to use `fs.createWriteStream`:
+```javascript
 var fs = require('fs');
 var writeStream = fs.createWriteStream("./counter", {
     flags : 'w',
     mode: 0666
 });
+```
 
 #### 1.1.2 模块化
 
@@ -297,9 +299,9 @@ https://github.com/joyent/node/blob/c668185adde3a474585a11f172b8387e270ec23b/lib
 
 `watch`接受三个参数，依次是：
 1. 监控的文件或目录的路径。如果文件不存在，将抛出**ENOENT(no entity)**错误。可以先使用`fs.exists`检查。
-2. 一个可选的选项对象：
+1. 一个可选的选项对象：
   - persistent (Boolean): Node keeps processes alive as long as there is "something to do". An active file watcher will by default function as a persistence flag to Node. Setting this option to false flags not keeping the general process alive if the watcher is the only activity keeping it running.
-3. 监听器函数。接受两个参数：
+1. 监听器函数。接受两个参数：
   - 事件名（`rename`或`change`）。
   - 发生改变的文件名(important when watching directories). Some operating systems will notreturn this argument.
 
@@ -1846,6 +1848,12 @@ fs.readFile('/etc/passwd', function(err, { encoding : "utf8" }, fileData) {
 - `autoClose`：是否自动关闭文件描述符（`fs.close`）。默认为true。You may want to set this to false and close manually if you are sharing a file descriptor across many streams.
 - `start`：开始读取位置。默认为0。
 - `end`：停止读取位置。默认为文件长度。
+
+#### 4.2.4 逐行读取
+
+
+
+
 
 
 
