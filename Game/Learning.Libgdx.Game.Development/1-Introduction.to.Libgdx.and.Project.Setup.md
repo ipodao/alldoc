@@ -1,7 +1,6 @@
 # 1. Libgdx介绍与工程搭建
 
 例子可以运行在以下平台：
-
 * Windows
 * Linux
 * Mac OS X
@@ -31,26 +30,112 @@ Libgdx是一游戏框架而不是一个游戏引擎。
 
 工程名输入`demo`。包名`com.packtpub.libgdx.demo`。
 
-In another box called LIBRARY SELECTION, the status of required libraries is 
-shown. If there is any item listed in red color, it needs to be fixed before any project 
-can be generated. You should see LibGDXbeing listed in red in the Required
-section. Click on the blue folder icon next to it as shown in the following screenshot
-
+在中间*LIBRARY SELECTION*，*LibGDX* 为红色表示需要指定该库位置。点击文件夹。选择文件。如 *libgdx-0.9.7.zip*。此时 *LibGDX* 应该变绿。
 ![](create-project.png)
 
-Then, choose the downloaded archive file libgdx-0.9.7.zipfrom C:\libgdx\ and click on Open.
+产生后，在Eclipse里，选择导入存在的工程。
 
-The text color of the LibGDX label should have changed from red to green by now.
+The second issue requires you to click on the Problems tab in Eclipse. Open the Errors list and right-click on the reported problem, which should say The GWT SDK JAR *gwt-servlet.jar* is missing in the *WEB-INF/lib* directory. Choose Quick Fixfrom the context menu as shown in the following screenshot:
 
-产生后，在Eclipse里导入存在的工程。
-
-The second issue requires you to click on the Problemstab in Eclipse. Open the 
-Errorslist and right-click on the reported problem, which should say The GWT SDK 
-JAR gwt-servlet.jar is missing in the WEB-INF/lib directory. Choose Quick Fix
-from the context menu as shown in the following screenshot:
-
-In the Quick Fix dialog, select Synchronize <WAR>/WEB-INF/lib with SDK 
-librariesas the desired fix and click on the Finishbutton, as shown in the 
-following screenshot:
-
+In the Quick Fix dialog, select Synchronize *[WAR]/WEB-INF/lib* with SDK librariesas the desired fix and click on the Finishbutton, as shown in the following screenshot:
 ![](fix_gwt.png)
+
+## 1.6 Kicking your game to life
+
+讨论一下游戏需要什么。总的来说，需要两方面：资源和逻辑。
+
+## 1.8 Game project – Canyon Bunny
+
+开发计划：
+Name or Working Title: Canyon Bunny
+Genre: 2D Side-Scrolling Jump and Run
+List of actors:
+•  Player character (can jump and move forward; controlled by player)
+•  Rocks, serving as platforms for the player character and items
+•  Canyons in the background (level decoration)
+•  Clouds in the sky (level decoration)
+•  Water at the bottom of the level (deadly for player character)
+•  Collectible items for the player: gold coins, feather power-up
+
+当角色向前时，视图向右水平滚动。背景显示远处的山和云。The bottom of the level is filled with water and will instantly kill the player character if both get into contact with each other.
+
+The player characterwill move on and jump over to random rocks, sticking out of the water. The width and height will be different to make the game more challenging. The player is only in control of a jump button, which will keep the automatically forward-moving player character from falling down into the deadly water.
+
+The level will be randomly populated with collectible items consisting of gold coins and feather power-ups. Collecting the gold coins will increase the player's high score. The feather power-up grants the player character the ability to fly for a limited time and can be used by repeatedly pressing the jump button. The player's goal is to beat the last high score.
+
+![](game_demo.png)
+
+The previous sketch has been created entirely by using vector graphics. Using vector graphics in favor of raster graphics for your sketches can be an advantage as they are infinitely scalable to any size without losing image quality. 但最终在游戏中使用的一般都是位图（rasterized），主要是由于矢量图实时渲染开销更大。So, the common approach is to create vector graphics and later on export them choosing an appropriate rasterized graphics file format, such as .png(Portable Network Graphics) for lossless compression with alpha channel support, or .jpg(JPEG) for lossy but high compression without alpha channel support.
+
+创建矢量图的开源工具：[Inkscape](http://inkscape.org/)。
+
+# 2 跨平台开发：构建一次，四处部署
+
+接下来将学习 Libgdx 框架的以下组件：
+- Backends
+- Modules
+- Application Life-Cycle and Interface
+- Starter Classes
+
+## （未整理）2.1 demo 应用
+
+解释了工程结构。
+
+## 2.2 Backends
+
+Libgdx makes use of several other libraries to interface the specifics of each platform in order to provide cross-platform support for your applications. Generally, a backend is what enables Libgdx to access the corresponding platform functionalities when one of the abstracted (platform-independent) Libgdx methods is called. For example, drawing an image to the upper-left corner of the screen, playing a sound file at a volume of 80 percent, or reading and writing from/to a file.
+
+Libgdx 目前支持下面三种后端：
+- LWJGL (Lightweight Java Game Library)
+- Android
+- JavaScript/WebGL
+
+将来还会有一个 iOS backend。
+
+### LWJGL (Lightweight Java Game Library)
+
+LWJGL(Lightweight Java Game Library) is an open source Java library. Libgdx用它支持桌面，包括Windows, Linux, and Mac OS X。
+
+网站：http://www.lwjgl.org/。
+
+
+### WebGL
+
+WebGL support is one of the latest additions to the Libgdx framework. This backend uses the GWT totranslate Java code into JavaScript and SoundManager2(SM2), among others, to add a combined support for HTML5, WebGL, and audio playback. Note that this backend requires a WebGL-capable web browser to run the application.
+
+You might want to check out the official website of SM2:
+http://www.schillmania.com/projects/soundmanager2/.
+
+You might want to check out the official website of WebGL:
+http://www.khronos.org/webgl/.
+
+There is also a list of unresolved issues you might want to check out at
+ https://github.com/libgdx/libgdx/blob/master/backends/gdx-backendsgwt/issues.txt.
+
+## 2.3 模块
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
