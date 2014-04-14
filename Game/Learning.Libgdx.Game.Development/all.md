@@ -269,11 +269,89 @@ Starter 类是应用入口。需要为不同平台专门编写，为特定平台
 
 #### 在桌面运行
 
+The Starter Class forthe desktop application is called `Main.java`.
+
+The following listing is `Main.java` from demo-desktop:
+
+```java
+package com.packtpub.libgdx.demo;
+import com.badlogic.gdx.backends.lwjgl.LwjglApplication;
+import com.badlogic.gdx.backends.lwjgl.LwjglApplicationConfiguration;
+public class Main {
+	public static void main(String[] args) {
+		LwjglApplicationConfiguration cfg =
+			new LwjglApplicationConfiguration();
+		cfg.title = "demo";
+		cfg.useGL20 = false;
+		cfg.width = 480;
+		cfg.height = 320;
+		new LwjglApplication(new MyDemo(), cfg);
+	}
+}
+```
+
+This is all youn eed to write and configure a Starter Class for a desktop.
+
+#### 在Android上运行
+
+The Starter Class for the Android applicationis called `MainActivity.java`.
+
+The following listing is `MainActivity.java` from demo-android:
+
+```java
+	package com.packtpub.libgdx.demo;
+	import android.os.Bundle;
+	import com.badlogic.gdx.backends.android.AndroidApplication;
+	import com.badlogic.gdx.backends.android.AndroidApplicationConfiguration;
+	public class MainActivity extends AndroidApplication {
+		@Override
+		public void onCreate(Bundle savedInstanceState) {
+			super.onCreate(savedInstanceState);
+			AndroidApplicationConfiguration cfg =
+				new AndroidApplicationConfiguration();
+			cfg.useGL20 = false;
+			initialize(new MyDemo(), cfg);
+		}
+	}
+```
+
+Activity继承自`AndroidApplication`。
+
+So when should GLES2 be used on Android? A better question to ask would be whether you plan to use shaders in your application. If this is the case, opt for GLES2. In any other case, there will be no real benefit except being able to use non-power-of-two textures (also known as NPOT textures); arbitrarily-sized textures that do not equal to widths or heightsrepresentable by the formula `2^n`, such as 32 x 32, 512 x 512, and 128 x 1024.
+
+> NPOT textures are not guaranteed to work on all devices. For example, the Nexus One ignores NPOT textures. Also, they may cause performance penalties on some hardware, so it is best to avoid using this feature at all. In Chapter 4, Gathering Resources, you will learn about a technique called *Texture Atlas*. This will allow you to use arbitrarily-sized textures even when not using GLES2.
+
+The following listing is `AndroidManifest.xml` from demo-android:
 
 
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+	package="com.packtpub.libgdx.demo"
+	android:versionCode="1"
+	android:versionName="1.0" >
+	<uses-sdk android:minSdkVersion="5"
+		android:targetSdkVersion="17" />
+	<application
+		android:icon="@drawable/ic_launcher"
+		android:label="@string/app_name" >
+		<activity
+			android:name=".MainActivity"
+			android:label="@string/app_name"
+			android:screenOrientation="landscape"
+			android:configChanges="keyboard|keyboardHidden|orientation|screenSize">
+			<intent-filter>
+				<action android:name="android.intent.action.MAIN" />
+				<category android:name="android.intent.category.LAUNCHER" />
+			</intent-filter>
+		</activity>
+	</application>
+</manifest>
+```
 
+#### （未）在带有 WebGL 的浏览器上运行
 
-
+### 2.6 demo 应用代码
 
 
 
