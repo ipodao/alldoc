@@ -2213,8 +2213,13 @@ http://swtch.com/~rsc/talks/threads07/
 
 ## 7 利用多进程
 
+As part of that discussion, we will be investigating strategies for parallelism when building data-heavy applications, focused on how to take advantage of multiple CPU environments, use multiple workers, and leverage the OS itself to achieve the efficiency of parallelism. The process of assembling applications out of these contained and efficient processing units will be demonstrated by example.
 
+A process viewer will be useful while working through this chapter. A good one for Unix systems is **htop**, which can be downloaded from http://htop.sourceforge.net/. This tool provides, among other things, a view into CPU and memory usage; here we see how load is spread across all eight cores:
 
+![](htop.png)
+
+### 7.1 Node的单线程模型
 
 
 

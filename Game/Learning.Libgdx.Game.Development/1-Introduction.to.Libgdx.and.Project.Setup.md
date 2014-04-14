@@ -69,51 +69,6 @@ The previous sketch has been created entirely by using vector graphics. Using ve
 
 创建矢量图的开源工具：[Inkscape](http://inkscape.org/)。
 
-# 2 跨平台开发：构建一次，四处部署
-
-接下来将学习 Libgdx 框架的以下组件：
-- Backends
-- Modules
-- Application Life-Cycle and Interface
-- Starter Classes
-
-## （未整理）2.1 demo 应用
-
-解释了工程结构。
-
-## 2.2 Backends
-
-Libgdx makes use of several other libraries to interface the specifics of each platform in order to provide cross-platform support for your applications. Generally, a backend is what enables Libgdx to access the corresponding platform functionalities when one of the abstracted (platform-independent) Libgdx methods is called. For example, drawing an image to the upper-left corner of the screen, playing a sound file at a volume of 80 percent, or reading and writing from/to a file.
-
-Libgdx 目前支持下面三种后端：
-- LWJGL (Lightweight Java Game Library)
-- Android
-- JavaScript/WebGL
-
-将来还会有一个 iOS backend。
-
-### LWJGL (Lightweight Java Game Library)
-
-LWJGL(Lightweight Java Game Library) is an open source Java library. Libgdx用它支持桌面，包括Windows, Linux, and Mac OS X。
-
-网站：http://www.lwjgl.org/。
-
-
-### WebGL
-
-WebGL support is one of the latest additions to the Libgdx framework. This backend uses the GWT totranslate Java code into JavaScript and SoundManager2(SM2), among others, to add a combined support for HTML5, WebGL, and audio playback. Note that this backend requires a WebGL-capable web browser to run the application.
-
-You might want to check out the official website of SM2:
-http://www.schillmania.com/projects/soundmanager2/.
-
-You might want to check out the official website of WebGL:
-http://www.khronos.org/webgl/.
-
-There is also a list of unresolved issues you might want to check out at
- https://github.com/libgdx/libgdx/blob/master/backends/gdx-backendsgwt/issues.txt.
-
-## 2.3 模块
-
 
 
 

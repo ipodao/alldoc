@@ -2,22 +2,22 @@ Node.js.in.Action
 
 [TOC]
 
-# 3 Node编程基础
+## 3 Node编程基础
 
-## 3.1 组织和重用Node功能
+### 3.1 组织和重用Node功能
 
-Node着力避免不小心污染全局命名空间。必须显式指出哪些函数和变量要被暴露给应用。如果模块暴露超过一个函数/变量，通过将这些函数/变量作为`exports`对象的属性实现。If returning a single function/variable then "module.exports" can, instead, be set.
+Node着力避免不小心污染全局命名空间。必须显式指出哪些函数和变量要被暴露给应用。把要暴露的函数/变量作为`exports`对象的属性。如果模块值暴露一个函数/变量，将这个函数/变量直接赋给`module.exports`。（注意区别两个变量：`exports`和`module.exports`。）
 
-模块可以发布到npm (Node Package Manager)仓库，一个在线Node模块仓库。第13章将介绍如何发布模块到npm仓库。
+模块可以发布到 npm 仓库。第13章将介绍如何发布模块到npm仓库。
 
-### 3.1.1 创建模块
+#### 3.1.1 创建模块
 
-模块可以是单个文件或一个目录。如果模块是目录，一般需要有一个"`index.js` 定义模块 (although this can be overridden: see Section 3.1.4 "Caveats")。
+模块可以是单个文件或一个目录。如果模块是目录，一般需要有一个"`index.js` 定义模块（这个文件名可以被覆盖）。
 
 可以通过`exports`对象暴露任何形式的数据，如字符串、对象、函数。
 
 例子：构建货币转换功能，放入文件`currency.js`。
-Listing 3.1 Defining a Node module
+
 ```javascript
 var canadianDollar = 0.91;
 function roundTwoDecimals(amount) {
@@ -31,8 +31,8 @@ exports.USToCanadian = function(us) {
 }
 ```
 
-若想使用你的新模块，使用Node的`require`函数。参数是模块的位置。`require`函数是同步的，加载是同步的。
-Listing 3.2 test-currency.js: Requiring a module
+使用一个模块需要`require`函数。参数是模块的位置。`require`函数是同步的，加载是同步的。
+
 ```javascript
 var currency = require('./currency');
 console.log('50 Canadian dollars equals this amount of US dollars:');
@@ -41,20 +41,20 @@ console.log('30 US dollars equals this amount of Canadian dollars:');
 console.log(currency.USToCanadian(30));
 ```
 
-如果模块文件扩展名为js，可以省略。
+如果模块文件扩展名为`js`，可以省略。
 
-### 3.1.2 module.exports控制模块创建
+#### 3.1.2 `module.exports`控制模块创建
 
-下面这个货币转换器模块，返回的是一个Javascript类，而不是一个包含函数的对象。
+重写之前的货币转换器模块，期望`require`该模块的返回值是一个Javascript类的构造函数。期望的使用方式如下：
+
 ```javascript
 var Currency = require('./currency'), canadianDollar = 0.91;
 currency = new Currency(canadianDollar);
 console.log(currency.canadianToUS(50));
 ```
 
-Node期望`exports`是一个包含函数对象。因此你不能将其赋值为一个函数（如这里需要是类的构造函数）。下面的代码将导致`TypeError: object is not a function exception will be raised`。
+要实现上面的用法。不能用`exports`。因为`exports`是一个包含函数/变量对象。因此不能将其赋值为一个函数（构造函数）。下面的代码是错误的，将导致`TypeError: object is not a function exception will be raised`。
 
-Listing 3.3 incorrect_module.js This module won't work as expected
 ```javascript
 var Currency = function(canadianDollar) {
 	this.canadianDollar = canadianDollar;
@@ -71,9 +71,17 @@ Currency.prototype.USToCanadian = function(us) {
 exports = Currency;
 ```
 
-解决办法是使用`module.exports`。如果你的模块同时填充了`exports`和`module.exports`，则只使用`module.exports`，`exports`会被忽略。
+解决办法是将构造函数赋给`module.exports`。
 
-### 3.1.3 使用"node_modules"文件夹重用模块
+如果你的模块同时填充了`exports`和`module.exports`，则只使用`module.exports`，`exports`会被忽略。
+
+> 为什么不能给`exports`赋值
+模块最终导出的是`module.exports`。`exports`是一个全局引用，指向`module.exports`。因此`exports.myFunc`其实是`module.exports.myFunc`的缩写。如果给`exports`赋别的值，它和`module.exports`将不再指向头一个对象。修改`exports`不能改变`module.exports`。因为最终导出的是`module.exports`，所以相当于什么也没导出。。If you want to maintain that link, you can make `module.exports` reference `exports` again as follows:
+```javascript
+module.exports= exports= Currency;
+```
+
+#### 3.1.3 使用"node_modules"文件夹重用模块
 
 将模块放在文件系统上的相对位置，有利于组织你的应用代码。但不易于与其他应用分享你的代码。为了代码重用，Node创建了一种机制，允许`require`模块时不必知道其位置。该机制使用了`node_modules`目录。
 
@@ -84,9 +92,10 @@ Figure 3.5 Steps to finding a module
 
 The `NODE_PATH` environmental variable provides a way to specify alternative locations for Node modules. If used, `NODE_PATH` should be set to a list of directories, separated by semi-colons in Windows or colons in other operating systems.
 
-### 3.1.4 警告
+#### 3.1.4 警告
 
 如果模块是目录，目录下模块需要定义在`index.js`中。还有一种方式是，定义`package.json`，通过main属性指定主文件。
+
 ```javascript
 {
 	"main": "./currency.js"
@@ -95,11 +104,11 @@ The `NODE_PATH` environmental variable provides a way to specify alternative loc
 
 Node能将模块缓存为对象。如果应用中有两个文件使用相同模块，第二次使用将不必再访问处理源文件。第二次`require`有机会修改缓存数据。This "monkey patching" capability allows one module to modify the behaviour of another, freeing the developer from having to create a new version of it.
 
-##  3.2 异步开发的挑战
+###  3.2 异步开发的挑战
 
 Node是事件循环会跟踪尚未处理完成的异步逻辑。只要有未完成的异步逻辑，Node进程就不会退出。例如，事件循环将跟踪数据库连接直到它们被关闭，阻止Node退出。
 
-## 3.3 异步编程技术
+### 3.3 异步编程技术
 
 Event emitters主要用于发送事件，但它们也能用于接受事件。可以为不同类型的事件添加监听器，每种事件类型都有一个名字。事件可以由event emitter使用事件类型名触发。例如，Node的HTTP服务器使用event emitters处理请求，使用一个事件监听器处理响应逻辑。
 
