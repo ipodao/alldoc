@@ -353,17 +353,241 @@ The following listing is `AndroidManifest.xml` from demo-android:
 
 ### 2.6 demo 应用代码
 
+分析`MyDemo.java`：
 
+```java
+public class MyDemo implements ApplicationListener {
+	private OrthographicCamera camera;
+	private SpriteBatch batch;
+	private Texture texture;
+	private Sprite sprite;
+}
+```
 
+We will use the orthographic camera for displaying our 2D scenes. The camera is the player's view of the actual scene in the game which is defined by a certain width and height (also called *viewport*).
 
+For more information about projections, check out the great article *Orthographic vs. Perspective* by Jeff Lamarche at http://iphonedevelopment.blogspot.de/2009/04/opengl-es-from-ground-up-part-3.html.
 
+The `batch` variable is of the class type `SpriteBatch`. This is where you send all your drawing commands to Libgdx. Beyond the ability of this class to draw images, it is also capable of optimizing the drawing performance under certain circumstances.
 
+The `texture` variable is of the class type `Texture`. It holds a reference to the actual image; the texture data that is stored in memory at runtime.
 
+The `sprite` variable is of the class type `Sprite`. It is a complex data type that contains lots of attributes to represent a graphical object that has a position in 2D space, width, and height. It can also be rotated and scaled. Internally, it holds a reference to a `TextureRegion` class that in turn is a means to cut out a certain portion of a texture.
 
+Now that we have a basic knowledge of the involved data types, we can advance to the implementation details of the `ApplicationListener` interface.
 
+In the MyDemo class, the only methods containing code are `create()`, `render()`, and `dispose()`. The remaining three methods are left empty, which is just fine.
 
+#### create() 方法
 
+```java
+	@Override
+	public void create() {
+		float w = Gdx.graphics.getWidth();
+		float h = Gdx.graphics.getHeight();
+		camera = new OrthographicCamera(1, h / w);
+		batch = new SpriteBatch();
+		texture = new Texture(Gdx.files.internal("data/libgdx.png"));
+		texture.setFilter(TextureFilter.Linear, TextureFilter.Linear);
+		TextureRegion region = new TextureRegion(texture, 0, 0, 512, 275);
+		sprite = new Sprite(region);
+		sprite.setSize(0.9f, 0.9f * sprite.getHeight() / sprite.getWidth());
+		sprite.setOrigin(sprite.getWidth() / 2, sprite.getHeight() / 2);
+		sprite.setPosition(-sprite.getWidth() / 2, -sprite.getHeight() / 2);
+	}
+```
 
+Then a new instance of `SpriteBatch` is created so that images can be drawn and made visible with the camera.
 
+In order to be able to use the filled part of this image only, a new instance of `TextureRegion` is created. It references the previously loaded texture that contains the full image and has the additional information to cut out all the pixels starting from (0, 0) to (512, 275). These two points describe a rectangle starting at the top-left corner of the image with a width and height of 512 by 275 pixels. Finally, a sprite is created using the information of the previously created texture region. The sprite's size is set to 90 percent of its original size. 精灵的原点设在屏幕中央。然后设置相对位置，反向平移半个精灵大小，这样精灵就能完全居中了。
 
+> Libgdx 的坐标原点位于屏幕左下角。This means that the positive x axis points right while the positive y axis points up.
 
+#### render() 方法
+
+```java
+@Override
+public void render() {
+	Gdx.gl.glClearColor(1, 1, 1, 1);
+	Gdx.gl.glClear(GL10.GL_COLOR_BUFFER_BIT);
+	batch.setProjectionMatrix(camera.combined);
+	batch.begin();
+	sprite.draw(batch);
+	batch.end();
+}
+```
+
+The first two lines call low-level OpenGL methods to set the clear color to a solid white and then execute the clear screen command.
+
+Next, the projection matrix of the sprite batch is set to the camera's combined projection and view matrix. You do not have to understand what this means in detail at the moment. It basically just means that every following drawing command will behave to the rules of an orthographic projection, or simply spoken drawing will be done in 2D space using the position and bounds of the given camera.
+
+`begin()` 和 `end()` 总应该成对出现，且不能有嵌套，否则会出错。The actual drawing of the sprite is accomplished by calling the `draw()` method of the sprite to draw and pass the instance of the sprite batch.
+
+#### dispose() 方法
+
+This is the place where you should clean up and free all resources that are still in use by an application:
+
+```java
+@Override
+public void dispose() {
+	batch.dispose();
+	texture.dispose();
+}
+```
+
+每个需要分配资源（及内存）的 Libgdx 类都会实现 `Disposable` 接口。可以通过 `dispose()` 方法解除分配。
+
+完整代码
+```java
+package com.packtpub.libgdx.demo;
+
+import com.badlogic.gdx.ApplicationListener;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.GL10;
+import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.Texture.TextureFilter;
+import com.badlogic.gdx.graphics.g2d.Sprite;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+public class MyDemo implements ApplicationListener {
+	private OrthographicCamera camera;
+	private SpriteBatch batch;
+	private Texture texture;
+	private Sprite sprite;
+	@Override
+	public void create() {
+	float w = Gdx.graphics.getWidth();
+	float h = Gdx.graphics.getHeight();
+	camera = new OrthographicCamera(1, h / w);
+	batch = new SpriteBatch();
+	texture = new Texture(Gdx.files.internal("data/libgdx.png"));
+	texture.setFilter(TextureFilter.Linear, TextureFilter.Linear);
+	TextureRegion region = new TextureRegion(texture, 0, 0, 512, 275);
+	sprite = new Sprite(region);
+	sprite.setSize(0.9f, 0.9f * sprite.getHeight() / sprite.getWidth());
+	sprite.setOrigin(sprite.getWidth() / 2, sprite.getHeight() / 2);
+	sprite.setPosition(-sprite.getWidth() / 2, -sprite.getHeight() / 2);
+	}
+	@Override
+	public void dispose() {
+		batch.dispose();
+		texture.dispose();
+	}
+	@Override
+	public void render() {
+		Gdx.gl.glClearColor(1, 1, 1, 1);
+		Gdx.gl.glClear(GL10.GL_COLOR_BUFFER_BIT);
+		batch.setProjectionMatrix(camera.combined);
+		batch.begin();
+		sprite.draw(batch);
+		batch.end();
+	}
+	@Override
+	public void resize(int width, int height) {
+	}
+	@Override
+	public void pause() {
+	}
+	@Override
+	public void resume() {
+	}
+}
+```
+
+#### 旋转
+
+持续旋转：
+```java
+private float rot;
+@Override
+public void render() {
+	Gdx.gl.glClearColor(1, 1, 1, 1);
+	Gdx.gl.glClear(GL10.GL_COLOR_BUFFER_BIT);
+	batch.setProjectionMatrix(camera.combined);
+	batch.begin();
+	final float degressPerSecond = 10.0f;
+	rot = (rot + Gdx.graphics.getDeltaTime() * degressPerSecond) % 360;
+	sprite.setRotation(rot);
+	sprite.draw(batch);
+	batch.end();
+}
+```
+
+变量`rot`跟踪当前角度。
+
+Since the Sine (or Cosine) function has an oscillating behavior, we can make perfect use of it to make the image shake by a certain amount to the left and right. The amount (amplitude) can be increased and decreased by multiplying it with the answer of the Sine function.
+
+```java
+@Override
+public void render() {
+	Gdx.gl.glClearColor(1, 1, 1, 1);
+	Gdx.gl.glClear(GL10.GL_COLOR_BUFFER_BIT);
+	batch.setProjectionMatrix(camera.combined);
+	batch.begin();
+	float degressPerSecond = 10.0f;
+	rot = (rot + Gdx.graphics.getDeltaTime() * degressPerSecond) % 360;
+	final float shakeAmplitudeInDegrees = 5.0f;
+	float shake = MathUtils.sin(rot) * shakeAmplitudeInDegrees;
+	sprite.setRotation(shake);
+	sprite.draw(batch);
+	batch.end();
+}
+```
+
+## 3 配置游戏
+
+本章开始构建游戏 **Canyon Bunny**。
+
+### 3.1 建立 Canyon Bunny 工程
+
+Run the **gdx-setup-ui** tool from Libgdx and use the followingsettings:
+* Name: CanyonBunny
+* Package: com.packtpub.libgdx.canyonbunny
+* Game class: CanyonBunnyMain
+* Destination: C:\libgdx
+* Generate the desktop project: select the checkbox
+* Generate the html project: select the checkbox
+
+产生四个工程：CanyonBunny, CanyonBunny-desktop, CanyonBunny-android, and CanyonBunny-html.
+
+打开`CanyonBunny-android/res/strings.xml`，修改应用名：
+```xml
+<string name="app_name">Canyon Bunny</string>
+```
+
+移除以下目录和文件：
+* CanyonBunny/src/com/packtpub/libgdx/canyonbunny/CanyonBunnyMain.java
+* CanyonBunny-android/assets/data/libgdx.png
+* CanyonBunny-android/assets/data/
+
+Then, open `CanyonBunny-desktop/com/packtpub/libgdx/canyonbunny/Main.java` and change the resolution parameters for width and height to 800 x 480 pixels like this:
+```java
+cfg.width = 800;
+cfg.height = 480;
+```
+
+### UML
+
+![](CanyonBunny_UML.png)
+
+The `Assets` class that will be used to organize and simplify the way to access the game's assets.
+
+The `WorldController` class contains all the game logic to initialize and modify the game world. It also needs access to `CameraHelper`, a helper class for the camera that, for example, enables it to target and follow any game object; `Level` that holds the level data; and a list of `AbstractGameObject` instances representing any game object that exists in the game world.
+
+The rendering takes place in `WorldRenderer` that apparently also requires it to have access to the list of `AbstractGameObject` instances. Since the game objects need to be created before the process of modification and rendering, `Level` needs access to the list of `AbstractGameObject` instances as well when a level is loaded from a level file at the beginning of the game.
+
+最下面一行都是`AbstractGameObject`的子类，它们都可以被渲染到游戏中。这些类按照它们的目的被分组：
+- 玩家角色
+  - BunnyHead：表示玩家控制的角色
+- Level Objects
+  - Rock: 表示一个平台，有左右边界，中间部分可以设置为任意长度。It is the ground in a level where the player will move on.
+- Level Items
+  - GoldCoin: 拾起后增加玩家分数。
+  - Feather：拾起后可以让玩家飞行。
+- Level Decorations
+  - WaterOverlay: It represents an image that is attached to the camera's horizontal position，因此不管摄像头在x轴如何移动，它总是可见的。
+  - Mountains: 两个山的图像，以不同的速度移动，以模拟视差幻觉（parallax optical illusion）
+  - Cloud: 云，向左边慢慢移动。
+
+### Laying foundations

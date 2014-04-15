@@ -1,4 +1,6 @@
-# 图像 
+# 图像
+
+[toc]
 
 ## 参考
 
@@ -13,12 +15,12 @@
 显示图像的最简单的方式是，在布局文件中声明一个ImageView，`src`特性指向一个图像资源（位于`/res/drawable`）。
 
 ```xml
-<ImageView
-    android:id="@+id/image"
-    android:layout_width=”match_parent"
-    android:layout_height="match_parent"
-    android:scaleType="center"
-    android:src="@drawable/ico" />
+	<ImageView
+		android:id="@+id/image"
+		android:layout_width=”match_parent"
+		android:layout_height="match_parent"
+		android:scaleType="center"
+		android:src="@drawable/ico" />
 ```
 
 ImageView会负责加载和缩放。选择`android:scaleType`为`center`，图像将以原来的分辨率显示在View中央。其他`android:scaleType`见下表：
