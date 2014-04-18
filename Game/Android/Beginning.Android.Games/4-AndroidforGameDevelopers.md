@@ -138,48 +138,41 @@ Usually we instantiate the WakeLock instance on the `Activity.onCreate()` method
 
 上述方法要在设置活动的View之前调用。
 
-#### Continuous Rendering in the UI Thread
+#### 在UI线程中做连续渲染
 
-创建定制View，在屏幕上绘图。We also want it to redraw itself as often as possible.
+创建定制View，在屏幕上绘图。还想尽可能频繁的重绘。
 
-继承View类，实现`View.onDraw()`。Android系统会在每次需要重绘时调用该方法。
+继承`View`类，实现`View.onDraw()`。Android系统会在每次需要重绘时调用该方法。
 
-	class RenderView extends View { 
-		public RenderView(Context context) { 
-			super(context); 
-		} 
-		protected void onDraw(Canvas canvas) { 
-			// all drawing goes here 
-			invalidate(); 
-		} 
+```java
+class RenderView extends View {
+	public RenderView(Context context) {
+		super(context);
 	}
+	protected void onDraw(Canvas canvas) {
+		// all drawing goes here
+		invalidate();
+	}
+}
+```
+`View.invalidate()`告诉 Android，一旦系统有时间，尽可能早的重绘`RenderView`。所有这些操作都发生在UI线程。
 
-The call to the `View.invalidate()` method at the end of onDraw() will tell the Android system to redraw the RenderViewas soon as it finds time to do that again. All this still happens on the UI thread, which is a bit of a lazy horse. But we actually have continuous rendering with the `onDraw()` method, albeit relatively slow continuous rendering. We’ll fix that later; for now its uffices for our needs. 
+`Canvas`类是底层 Skia 库的封装，使用 CPU 绘制 2D 图形。`Canvas`可以绘制形状、bitmaps甚至文字。
 
-`Canvas`类是底层Skia库的封装，使用CPU绘制2D图形。`Canvas`可以绘制形状、bitmaps甚至文字。
+绘制到哪里？不一定。`Canvas`可以绘到一个`Bitmap`实例上。而在上面的例子中，是绘到View所占的屏幕上。不过，这是个过度简化的说法。实际上，不是直接绘制到屏幕上，而是某种bitmap上，接下来系统会将其与活动中其他 View 的bitmap组合，构成最后的输出图像。此图形会被交给GPU。
 
-绘制到哪里？不一定。`Canvas`可以绘到一个`Bitmap`实例上。而在上面的例子中，回到View所占的屏幕上。不过，这是个过度简化的说法。实际上，不是直接绘制到屏幕上，而是某种bitmap上，接下来系统会将其与活动中其他View的bitmap组合，构成最后的输出图像。此图形会被交给GPU, which will display it on the screen through another set of mysterious paths。 
+只要系统允许`onDraw()`会被以尽可能快的速度调用。它跟游戏的主循环非常类似。但不要把游戏逻辑放在该方法内，至少处于性能。
 
-The onDraw() method will be called as often as the system permits. For us, it is very 
-similar to the body of our theoretical game main loop. If we were to implement a game 
-with this method, we’d place all our game logic into this method. Wewon’t do that for 
-various reasons, though, performance being one of them. 
-
-So let’s do something interesting. Every time I get access toa new drawing API, I write a 
-little test that checks if the screen is really redrawn frequently. It’s a sort of a poor man’s 
-light show. All I do in each call to the redraw method is fill the screen with a new random 
-color. That way I only need to find the method of that API that allows me to fill the 
-screen, without needing to knowa lot about the nitty-grittydetails. Let’s write such a 
-test with our own custom RenderViewimplementation. 
-
+下面编写一个代码，看系统重绘的有多快。方法是随机颜色填充屏幕。
 
 `Canvas`用某个单色填充目标的方法是：`Canvas.drawRGB(int r, int g, int b);`。
-
-	protected voidonDraw(Canvas canvas) { 
-		canvas.drawRGB(rand.nextInt(256), rand.nextInt(256), 
-			rand.nextInt(256)); 
-		invalidate(); 
-	} 
+```java
+protected voidonDraw(Canvas canvas) {
+	canvas.drawRGB(rand.nextInt(256), rand.nextInt(256),
+		rand.nextInt(256));
+	invalidate();
+}
+```
 
 #### 获取屏幕分辨率（和坐标系统）
 
@@ -225,16 +218,13 @@ on.
 
 	Paint.setStyle(Style style); 
 
-Styleis an enumeration that has the values `Style.FILL`, `Style.STROKE`, and 
-`Style.FILL_AND_STROKE`. If we specify Style.FILL, the rectangle will be filled with the 
-color of the Paint. If we specify Style.STROKE, only the outline of the rectangle will be 
-drawn, again with the colorand stroke width of the Paint. If Style.FILL_AND_STROKEis 
-set, the rectangle will be filled, and the outline will be drawn with the given color and 
-stroke width.
+Styleis an enumeration that has the values `Style.FILL`, `Style.STROKE`, and `Style.FILL_AND_STROKE`. If we specify Style.FILL, the rectangle will be filled with the color of the Paint. If we specify Style.STROKE, only the outline of the rectangle will be drawn, again with the colorand stroke width of the Paint. If Style.FILL_AND_STROKE is set, the rectangle will be filled, and the outline will be drawn with the given color and stroke width.
 
 ##### 圆
 
-	Canvas.drawCircle(float centerX, float centerY, float radius, Paint paint); 
+```java
+Canvas.drawCircle(float centerX, float centerY, float radius, Paint paint);
+```
 
 圆也可以有样式。
 
@@ -260,21 +250,12 @@ stroke width.
 
 `Bitmap.Config`取值：`Config.ALPHA_8`、`Config.ARGB_4444`、`Config.ARGB_8888`、`Config.RGB_565`。
 
-Interestingly there’s no RGB888 color format. PNG only supports ARGB8888, RGB888,
-and palettized colors. What color format would an RGB888 PNG be loaded to?
-`BitmapConfig.RGB_565` is the answer. This happens automatically for any RGB888 PNG
-we load via the BitmapFactory. The reason for this is that the actual framebuffer of most
-Android devices works with that color format. It would be a waste of memory to load an
-image with a higher bit depth per pixel, as the pixels would need to be converted to
+Interestingly there’s no RGB888 color format. PNG only supports ARGB8888, RGB888, and palettized colors. What color format would an RGB888 PNG be loaded to? `BitmapConfig.RGB_565` is the answer. This happens automatically for any RGB888 PNG we load via the BitmapFactory. The reason for this is that the actual framebuffer of most Android devices works with that color format. It would be a waste of memory to load an image with a higher bit depth per pixel, as the pixels would need to be converted to
 RGB565 anyway for final rendering.
 
-So why is there the Config.ARGB_8888 configuration then? Because image composition
-can be done on the CPU prior to actually drawing the final image to the framebuffer. In
-the case of the alpha component, we also have a lot more bit depth than with
-Config.ARGB_4444, which might be necessary for some high-quality image processing. 
+So why is there the Config.ARGB_8888 configuration then? Because image composition can be done on the CPU prior to actually drawing the final image to the framebuffer. In the case of the alpha component, we also have a lot more bit depth than with Config.ARGB_4444, which might be necessary for some high-quality image processing.
 
-An ARGB8888 PNG image would be loaded to a Bitmap with a Config.ARGB_8888
-configuration. The other two color formats are barely used. 我们也可以要求`BitmapFactory`加载特定颜色格式的图像，即使与图像本身的格式不同。
+An ARGB8888 PNG image would be loaded to a Bitmap with a Config.ARGB_8888 configuration. The other two color formats are barely used. 我们也可以要求`BitmapFactory`加载特定颜色格式的图像，即使与图像本身的格式不同。
 
 	InputStream inputStream = assetManager.open("bob.png"); 
 	BitmapFactory.Options options = new BitmapFactory.Options(); 
@@ -312,11 +293,7 @@ We should thus always dispose of any `Bitmap` instance we no longer need via the
 `src`指定只绘制Bitmap的一部分。传null表示绘制全部。`dst`指定绘制目标位置。两个`Rect`不必一样大。如果`dst`比`src`小，Canvas will automatically scale for us。The same is true for specifying a larger destination 
 rectangle, of course. 最后一个参数一般是null。注意，缩放操作非常昂贵。只有绝对必要时才能做。
 
-So, you might wonder, if we have Bitmapinstances with different color formats, do we 
-need to convert them to some kind of standard format before wecan draw them via a 
-Canvas? The answer is no. The Canvaswill do this for us automatically. Of course, it will 
-be a bit faster if we use color formats that are equal to the native framebuffer format. 
-Usually we just ignore this, though. 
+So, you might wonder, if we have Bitmapinstances with different color formats, do we need to convert them to some kind of standard format before wecan draw them via a Canvas? The answer is no. The Canvaswill do this for us automatically. Of course, it will be a bit faster if we use color formats that are equal to the native framebuffer format. Usually we just ignore this, though.
 
 	public class BitmapTest extendsActivity { 
 		class RenderView extends View { 
