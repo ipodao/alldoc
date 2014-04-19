@@ -80,15 +80,7 @@
 
 这里`style`特性指向**主题**提供的一个**特性**（`progressBarStyleHorizontal`）。在Android源代码中，它是一个style资源：`@android:style/Widget.ProgressBar.Horizontal`。Hence, we are saying to Android that we want our `ProgressBar` styled as `@android:style/Widget.ProgressBar.Horizontal`, via the indirection of `?android:attr/progressBarStyleHorizontal`.
 
-This is one place where inheriting a style becomes important. In the first example shown in this section, we inherited from Theme.Holo, because we specifically wanted the activatedBackgroundIndicator value from Theme.Holo. That value might not exist in other styles, or it might not have the value we want. 
-
-
-
-
-
-
-
-
+This is one place where inheriting a style becomes important. In the first example shown in this section, we inherited from Theme.Holo, because we specifically wanted the activatedBackgroundIndicator value from Theme.Holo. That value might not exist in other styles, or it might not have the value we want.
 
 
 ## 主题
@@ -107,10 +99,10 @@ This is one place where inheriting a style becomes important. In the first examp
 主题可以设定Activity的样式。例如下面是`@android:style/Theme.NoTitleBar.Fullscreen`主题：
 
 ```xml
-<!-- Variant of the default (dark) theme that has no title bar and fills the entire screen --> 
-<style name="Theme.NoTitleBar.Fullscreen"> 
-  <item name="android:windowFullscreen">true</item> 
-  <item name="android:windowContentOverlay">@null</item> 
+<!-- Variant of the default (dark) theme that has no title bar and fills the entire screen -->
+<style name="Theme.NoTitleBar.Fullscreen">
+  <item name="android:windowFullscreen">true</item>
+  <item name="android:windowContentOverlay">@null</item>
 </style>
 ```
 

@@ -3,19 +3,19 @@
 When the user selects your app icon from the Home screen, the system calls the onCreate() method for the Activity in your app that you've declared to be the "launcher" (or "main") activity. This is the activity that serves as the main entry point to your app's user interface.
 
 可以在AndroidManifest.xml中定义哪个活动是主活动。The main activity for your app must be declared in the manifest with an `<intent-filter>` that includes the MAIN action and LAUNCHER category. For example:
-
-	<activity android:name=".MainActivity" android:label="@string/app_name">
-	    <intent-filter>
-	        <action android:name="android.intent.action.MAIN" />
-	        <category android:name="android.intent.category.LAUNCHER" />
-	    </intent-filter>
-	</activity>
-
+```xml
+<activity android:name=".MainActivity" android:label="@string/app_name">
+	<intent-filter>
+		<action android:name="android.intent.action.MAIN" />
+		<category android:name="android.intent.category.LAUNCHER" />
+	</intent-filter>
+</activity>
+```
 If either the MAIN action or LAUNCHER category are not declared for one of your activities, then your app icon will not appear in the Home screen's list of apps.
 
 # 生命周期
 
->理解活动生命周期的前提是理解**Android对进程策略**，及在资源不足的情况下，Android对进程和Android应用**强杀的策略**。理解在资源不足去情况下，强杀活动和进程的策略。例如`onPause`分隔的Activity两个状态是：活跃和可视，`onStop`分隔的Activity两个状态是：可视和后台。在资源不足的情况下，Android先杀后台Activity，一般不会杀死可视的，更不会杀活跃的（杀死别的活动目的就是让活跃的Activity拥有资源）。既然如此，在`onStop`中释放资源几乎是完全安全的，因为`onStop`几乎一定会被调用，因为不调用它，活动就不会进入后台状态，就不会被强杀。
+> 理解活动生命周期的前提是理解**Android对进程策略**，及在资源不足的情况下，Android对进程和Android应用**强杀的策略**。理解在资源不足去情况下，强杀活动和进程的策略。例如`onPause`分隔的Activity两个状态是：活跃和可视，`onStop`分隔的Activity两个状态是：可视和后台。在资源不足的情况下，Android先杀后台Activity，一般不会杀死可视的，更不会杀活跃的（杀死别的活动目的就是让活跃的Activity拥有资源）。既然如此，在`onStop`中释放资源几乎是完全安全的，因为`onStop`几乎一定会被调用，因为不调用它，活动就不会进入后台状态，就不会被强杀。
 
 ## 目标与考量
 
@@ -53,12 +53,14 @@ onCreate()完成后，系统快速调用onStart()和onResume()，不会停留于
 
 多数应用不需要实现该方法，because local class references are destroyed with the activity，多数清理工作在onPause()和onStop()中做。但如果活动在onCreate()中开启了后台线程，或其他可能导致内存泄漏的资源，应该在onDestroy()中销毁。
 
-	@Override
-	public void onDestroy() {
-	    super.onDestroy();  // Always call the superclass
-	    // Stop method tracing that the activity started during onCreate()
-	    android.os.Debug.stopMethodTracing();
-	}
+```java
+@Override
+public void onDestroy() {
+	super.onDestroy();  // Always call the superclass
+	// Stop method tracing that the activity started during onCreate()
+	android.os.Debug.stopMethodTracing();
+}
+```
 
 > 注意：系统会在onDestroy()前先调用onPause()和onStop()。*但如果在onCreate()中直接调用了finish()，系统将直接调用onDestroy()，不再调用其他生命周期方法*。
 
@@ -66,23 +68,25 @@ onCreate()完成后，系统快速调用onStart()和onResume()，不会停留于
 
 下面的onCreate()定义了UI（布局）、成员变量和UI的一些配置：
 
-	TextView mTextView; // Member variable for text view in the layout
-	@Override
-	public void onCreate(Bundle savedInstanceState) {
-	    super.onCreate(savedInstanceState);
-	    setContentView(R.layout.main_activity);
-	    
-	    // Initialize member TextView so we can manipulate it later
-	    mTextView = (TextView) findViewById(R.id.text_message);
-	    
-	    // Make sure we're running on Honeycomb or higher to use ActionBar APIs
-	    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-	        // For the main activity, make sure the app icon in the action bar
-	        // does not behave as a button
-	        ActionBar actionBar = getActionBar();
-	        actionBar.setHomeButtonEnabled(false);
-	    }
+```java
+TextView mTextView; // Member variable for text view in the layout
+@Override
+public void onCreate(Bundle savedInstanceState) {
+	super.onCreate(savedInstanceState);
+	setContentView(R.layout.main_activity);
+
+	// Initialize member TextView so we can manipulate it later
+	mTextView = (TextView) findViewById(R.id.text_message);
+
+	// Make sure we're running on Honeycomb or higher to use ActionBar APIs
+	if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+		// For the main activity, make sure the app icon in the action bar
+		// does not behave as a button
+		ActionBar actionBar = getActionBar();
+		actionBar.setHomeButtonEnabled(false);
 	}
+}
+```
 
 > Caution: Using the SDK_INT to prevent older systems from executing new APIs works in this way on Android 2.0 (API level 5) and higher only. Older versions will encounter a runtime exception.
 
