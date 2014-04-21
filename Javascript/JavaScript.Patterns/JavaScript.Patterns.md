@@ -1,7 +1,5 @@
 Copyright © 2010 Yahoo!, Inc.. All rights reserved.
 
-Pro JavaScript Design Patterns
-
 [toc]
 
 ## 1 介绍
