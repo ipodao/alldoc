@@ -179,7 +179,82 @@ myDomain.on('error', function(err){
 
 Whether  you’re  in  the  browser  or  on  the  server,  global  exception  handlers should be seen as a measure of last resort. Use them only for debugging.
 
-### 1.5 Un-nesting Callbacks
+### 1.5 过度嵌套的回调
+
+下面的代码功能上没有问题，但却有三层回调：`db.query`、`hash`和`callback`:
+```javascript
+function checkPassword(username, passwordGuess, callback){
+	var queryStr = 'SELECT * FROM user WHERE username = ?';
+	db.query(selectUser, username, function(err, result){
+		if(err) throw err;
+		hash(passwordGuess, function(passwordGuessHash){
+			callback(passwordGuessHash === result['password_hash']);
+		});
+	});
+}
+```
+
+可以改写为始终只有一层回调：
+```javascript
+function checkPassword(username, passwordGuess, callback){
+	var passwordHash;
+	var queryStr = 'SELECT * FROM user WHERE username = ?';
+	db.query(selectUser, username, queryCallback);
+
+	function queryCallback(err, result){
+		if(err) throw err;
+		passwordHash = result['password_hash'];
+		hash(passwordGuess, hashCallback);
+	}
+
+	function hashCallback(passwordGuessHash){
+		callback(passwordHash === passwordGuessHash);
+	}
+}
+```
+
+｛｛副作用，无法使用闭包｝｝
+
+## 2 分发事件
+
+如何处理事件？最直观的理解：一个事件，一个处理器。但有时事件会触发大量操作，如Gmail中的按键事件，可能触发：屏幕显示这个字符，移动光标，拼写检查，自动保存等等。
+
+我们需要能够分发事件（use distributed events）。
+
+本章介绍发布/订阅模式。介绍实际中的表现：Node 的 `EventEmitter`，Backbone 的事件模型，jQuery 的自定义事件。
+
+
+### 2.1 PubSub
+
+最早的方式：`link.onclick = clickHandler;`。
+如果想指定多个处理器，需要手工包装：
+```javascript
+link.onclick = function(){
+	clickHandler1.apply(this,arguments);
+	clickHandler2.apply(this,arguments);
+};
+```
+
+W3C引入`addEventListener`，消除了手工包装的需要。在jQuery中，对应`bind`和`on`。
+
+Node.js中则是`EventEmitter`：
+```javascript
+['room','moon','cowjumpingoverthemoon']
+	.forEach(function(name){
+		process.on('exit', function(){
+		console.log('Goodnight,' + name);
+	});
+});
+```
+
+发布订阅有多种实现。当jQuery团队意识到库中发布订阅实现有多种时，they decided to abstract them with `$.Callbacks` in jQuery 1.7. Instead of using an array to store the handlers corresponding to an event type, you could use a `$.Callbacks` instance.
+
+Many PubSub implementations parse the event string to provide special features. For example, you may be familiar with namespaced events in jQuery: if I bind events named "`click.tbb`" and "`hover.tbb`", I can unbind them both by simply calling `unbind(".tbb")`. Backbone.js lets you bind handlers to the "all" event type, causing them to go off whenever anything happens. Both jQuery and Backbone let you bind or emit multiple event types simultaneously by separating them with spaces, e.g., "keypress mousemove".
+
+注意，上述的事件回调/处理器都是同步的。
+
+### 2.2 Evented Models
+
 
 
 
