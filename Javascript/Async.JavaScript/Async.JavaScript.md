@@ -253,8 +253,9 @@ Many PubSub implementations parse the event string to provide special features. 
 
 注意，上述的事件回调/处理器都是同步的。
 
-### 2.2 Evented Models
+### （未）2.2 Evented Models
 
+### （未）2.3 Custom jQuery Events
 
 
 
