@@ -2,7 +2,7 @@ Android.UI.Fundamentals
 
 [toc]
 
-## 10. 创建定制View
+## 10 创建定制View
 
 Android绘制View分为两阶段，测量阶段和布局阶段。创建定制View需要覆盖`onMeasure`和`onDraw`方法；定制的View特性（attributes）需要定义新的XML命名空间。还可以将多个View组合成复合View。
 
@@ -112,24 +112,24 @@ To make your drawing code simpler, scale the canvas based on the size of the vie
 
 在布局中使用：
 ```xml
-	<?xml version=”1.0” encoding=”utf-8”?>
-	<LinearLayout xmlns:android=”http://schemas.android.com/apk/res/android”
-	android:layout_width=”fill_parent”
-	android:layout_height=”fill_parent”
-	android:orientation=”vertical”
-	android:gravity=”center_horizontal” >
+	<?xml version="1.0" encoding="utf-8"?>
+	<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:orientation="vertical"
+	android:gravity="center_horizontal" >
 		 <com.example.CrossView
-			 android:layout_width=”wrap_content”
-			 android:layout_height=”wrap_content” />
+			 android:layout_width="wrap_content"
+			 android:layout_height="wrap_content" />
 	</LinearLayout>
 ```
 
 自定义View类的全限名作为XML标签名。但如果View类是内部类。由于`$`不是有效字符。因此需要使用`class`特性：
 ```xml
 	<view
-		class=”com.example.CustomViewsActivity$CrossView”
-		android:layout_width=”wrap_content”
-		android:layout_height=”wrap_content”/>
+		class="com.example.CustomViewsActivity$CrossView"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"/>
 ```
 
 注意`<view>`是全小写的。
@@ -145,11 +145,11 @@ To make your drawing code simpler, scale the canvas based on the size of the vie
 为`CrossView`定义特性：
 
 ```xml
-	<?xml version=”1.0” encoding=”utf-8”?>
+	<?xml version="1.0" encoding="utf-8"?>
 	<resources>
-		<declare-styleable name=”cross”>
-			<attr name=”android:color” />
-			<attr name=”rotation” format=”string” />
+		<declare-styleable name="cross">
+			<attr name="android:color" />
+			<attr name="rotation" format="string" />
 		</declare-styleable>
 	</resources>
 ```
@@ -159,14 +159,14 @@ To make your drawing code simpler, scale the canvas based on the size of the vie
 Every attribute with a format can be declared only once. This example works because it uses the existing `android:color` format. 若你尝试使用其他格式，工程就无法构建。如果想在多个*styleable*中重用一个特性，可以将它放在`<resources>`下，需要指定`format`。然后在`<declare-styleable>`中使用它时，不要带`format`。例子：
 
 ```xml
-	<?xml version=”1.0” encoding=”utf-8”?>
+	<?xml version="1.0" encoding="utf-8"?>
 	<resources>
-		<attr name=”test” format=”string” />
-		<declare-styleable name=”foo”>
-			<attr name=”test” />
+		<attr name="test" format="string" />
+		<declare-styleable name="foo">
+			<attr name="test" />
 		</declare-styleable>
-		<declare-styleable name=”bar”>
-			<attr name=”test” />
+		<declare-styleable name="bar">
+			<attr name="test" />
 		</declare-styleable>
 	</resources>
 ```
@@ -175,19 +175,19 @@ Every attribute with a format can be declared only once. This example works beca
 
 You can create custom attributes with predefined values that are similar to the built-in attributes like `wrap_content` and `match_parent`. To do that, you declare the values using `<enum>` or `<flag>` elements:
 ```xml
-	<attr name=”enum_attr”>
-		<enum name=”value1” value=”1” />
-		<enum name=”value2” value=”2” />
+	<attr name="enum_attr">
+		<enum name="value1" value="1" />
+		<enum name="value2" value="2" />
 	</attr>
-	<attr name=”flag_attr”>
-		<flag name=”flag1” value=”0x01” />
-		<flag name=”flag2” value=”0x02” />
+	<attr name="flag_attr">
+		<flag name="flag1" value="0x01" />
+		<flag name="flag2" value="0x02" />
 	</attr>
 ```
 
 Enums and flags are required to be integers. The difference between them is that the flag attributes can be combined using a bitwise *OR* operation. Use flags when you want the option to combine multiple attribute values:
 ```xml
-	<com.example.Foo example:flag_attr=”flag1|flag2” />
+	<com.example.Foo example:flag_attr="flag1|flag2" />
 ```
 
 #### 10.3.2 在XML中使用特性
@@ -195,28 +195,28 @@ Enums and flags are required to be integers. The difference between them is that
 要使用新特性，需要先声明命名空间。This prevents your custom attributes from colliding with system attributes that may be defined in later versions of Android.
 
 ```xml
-	<?xml version=”1.0” encoding=”utf-8”?>
+	<?xml version="1.0" encoding="utf-8"?>
 	<LinearLayout
-		xmlns:android=”http://schemas.android.com/apk/res/android”
-		xmlns:example=”http://schemas.android.com/apk/res/com.example”
-		android:layout_width=”fill_parent”
-		android:layout_height=”fill_parent”
-		android:orientation=”vertical”
-		android:gravity=”center_horizontal” >
+		xmlns:android="http://schemas.android.com/apk/res/android"
+		xmlns:example="http://schemas.android.com/apk/res/com.example"
+		android:layout_width="fill_parent"
+		android:layout_height="fill_parent"
+		android:orientation="vertical"
+		android:gravity="center_horizontal" >
 
 		<com.example.CrossView
-			android:layout_width=”wrap_content”
-			android:layout_height=”wrap_content” />
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content" />
 		<com.example.CrossView
-			android:layout_width=”wrap_content”
-			android:layout_height=”wrap_content”
-			example:rotation=”30”
-			android:color=”#0000FF”/>
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			example:rotation="30"
+			android:color="#0000FF"/>
 		<com.example.CrossView
-			android:layout_width=”wrap_content”
-			android:layout_height=”wrap_content”
-			example:rotation=”45”
-			android:color=”#FFFF00”/>
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			example:rotation="45"
+			android:color="#FFFF00"/>
 	</LinearLayout>
 ```
 
@@ -255,9 +255,103 @@ public CrossView(Context context, AttributeSet attrs) {
 
 指扩展Android内建的View，增强其功能。
 
+#### 10.4.1 创建复合组件
 
+复合组件比定制View有两个优势：1、利用存在的view group类做布局；2、不必覆盖`onMeasure`和`onDraw`方法。
 
+创建一个新的布局`toggle_text.xml`：
+```xml
+	<?xml version="1.0" encoding="utf-8"?>
+	<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:orientation="horizontal" >
+		<ToggleButton
+			android:id="@+id/toggle_button"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="ToggleButton" />
+		<EditText
+			android:id="@+id/edit_text"
+			android:layout_width="0dp"
+			android:layout_height="wrap_content"
+			android:layout_weight="1" >
+			<requestFocus />
+		</EditText>
+	</LinearLayout>
+```
 
+创建一个新类，继承`LinearLayout`。利用系统服务`LayoutInflater`充气布局：
+```java
+public class ToggleText extends LinearLayout {
+	public ToggleText(Context context, AttributeSet attrs) {
+		super(context, attrs);
+		LayoutInflater inflater = (LayoutInflater) context.
+			getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+		View view = inflater.inflate(R.layout.toggle_text, this);
+	}
+}
+```
 
+充气时，将`this`作为父容器。
 
+添加定制功能。监听按钮改变，设置`EditText`状态：
 
+```java
+public class ToggleText extends LinearLayout
+	implements OnCheckedChangeListener {
+	
+	EditText mTextView;
+	public ToggleText(Context context, AttributeSet attrs) {
+		super(context, attrs);
+		LayoutInflater inflater = (LayoutInflater) context.
+			getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+		View view = inflater.inflate(R.layout.toggle_text, this);
+		mTextView = (EditText) view.findViewById(R.id.edit_text);
+		ToggleButton toggle = (ToggleButton) view.findViewById(R.id.toggle_button);
+		toggle.setChecked(true);
+		toggle.setOnCheckedChangeListener(this);
+	}
+
+	@Override
+	public void onCheckedChanged(CompoundButton buttonView,
+		boolean isChecked) {
+		mTextView.setEnabled(isChecked);
+	}
+}
+```
+
+#### 10.4.2 优化布局
+
+查看布局，发现`ToggleText`有单个孩子，是个`LinearLayout`。但`ToggleText`本身就是一个个`LinearLayout`（继承自个`LinearLayout`）。因此需要移掉多余的`LinearLayout`。
+
+![](toggle_text_bad_layout.png)
+
+通过`<merge>`解决：
+
+```xml
+	<?xml version="1.0" encoding="utf-8"?>
+	<merge xmlns:android="http://schemas.android.com/apk/res/android"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:orientation="horizontal" >
+		<ToggleButton
+			android:id="@+id/toggle_button"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="ToggleButton" />
+		<EditText
+			android:id="@+id/edit_text"
+			android:layout_width="0dp"
+			android:layout_height="wrap_content"
+			android:layout_weight="1" >
+			<requestFocus />
+		</EditText>
+	</merge>
+```
+
+改后的层级：
+
+![](toggle_text_good_layout.png)
+
+## 11 创建高级图形
