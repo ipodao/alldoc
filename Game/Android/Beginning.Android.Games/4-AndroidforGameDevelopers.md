@@ -161,7 +161,7 @@ class RenderView extends View {
 
 绘制到哪里？不一定。`Canvas`可以绘到一个`Bitmap`实例上。而在上面的例子中，是绘到View所占的屏幕上。不过，这是个过度简化的说法。实际上，不是直接绘制到屏幕上，而是某种bitmap上，接下来系统会将其与活动中其他 View 的bitmap组合，构成最后的输出图像。此图形会被交给GPU。
 
-只要系统允许`onDraw()`会被以尽可能快的速度调用。它跟游戏的主循环非常类似。但不要把游戏逻辑放在该方法内，至少处于性能。
+只要系统允许，`onDraw()`会被以尽可能快的速度调用。它跟游戏的主循环非常类似。但不要把游戏逻辑放在该方法内——至少出于性能。
 
 下面编写一个代码，看系统重绘的有多快。方法是随机颜色填充屏幕。
 
@@ -196,10 +196,7 @@ Paint封装颜色和样式。对于点来说，只有颜色。
 
 	Paint.setColor(0xff00ff00); 
 
-We pass a 32-bit integer to this method. It again encodes an ARGB8888 color; in this 
-case it’s the color green with alpha set to full opacity. The Colorclass defines some 
-static constants that encode some standard colors like Color.RED, Color.YELLOW, and so 
-on.
+We pass a 32-bit integer to this method. It again encodes an ARGB8888 color; in this case it’s the color green with alpha set to full opacity. The Color class defines some static constants that encode some standard colors like Color.RED, Color.YELLOW, and so on.
 
 ##### 线
 
