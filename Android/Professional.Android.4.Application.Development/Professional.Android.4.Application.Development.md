@@ -1,11 +1,66 @@
 [toc]
 
-### 4.7 创建新View
+### 4.8 Adapter 介绍
 
-#### 4.7.1 修改存在的View
+Adapters 负责将数据绑定到`AdapterView`的子类（如`ListView`或`Gallery`。Adapters负责创建表示底层数据项的子View。
 
+#### 4.8.1 原生适配器介绍
 
+两个最常用的原生适配器：
 
+- `ArrayAdapter`：默认，`ArrayAdapter`对数组中的每个对象调用`toString`，将结果填充到`TextView`s。通过构造器可以指定更复杂的布局。
+- `SimpleCursorAdapter`：The Simple Cursor Adapter enables you to bind the Views within a layout to specific columns contained within a Cursor (typically returned from a Content Provider query). You specify an XML layout to inflate and populate to display each child, and then bind each column in the Cursor to a particular View within that layout. The adapter will create a new View for each Cursor entry and inflate the layout into it, populating each View within the layout using the Cursor’s corresponding column value.
+
+#### 4.8.2 定制 Array Adapter
+
+覆盖`getView`，定制数据项的布局。
+
+```java
+	public class MyArrayAdapter extends ArrayAdapter<MyClass> {
+		int resource;
+		public MyArrayAdapter(Context context, int _resource,
+			List<MyClass> items) {
+			super(context, _resource, items);
+			resource = _resource;
+		}
+		@Override
+		public View getView(int position, View convertView, ViewGroup parent) {
+			// Create and inflate the View to display
+			LinearLayout newView;
+			if (convertView == null) {
+				// Inflate a new view if this is not an update.
+				newView = new LinearLayout(getContext());
+				String inflater = Context.LAYOUT_INFLATER_SERVICE;
+				LayoutInflater li;
+				li = (LayoutInflater)getContext().getSystemService(inflater);
+				li.inflate(resource, newView, true);
+			} else {
+				// Otherwise we’ll update the existing View
+				newView = (LinearLayout)convertView;
+			}
+			MyClass classInstance = getItem(position);
+			// TODO Retrieve values to display from the
+			// classInstance variable.
+			// TODO Get references to the Views to populate from the layout.
+			// TODO Populate the Views with object property values.
+			return newView;
+		}
+	}
+```
+
+`getView`的`position`参数给出数据项的显示位置。`getItem`获取数据项内容。
+
+#### 4.8.3 利用适配器将数据绑定到View
+
+调用`AdapterView`的`setAdapter`方法，将适配器绑定到`AdapterView`。
+
+```java
+	ArrayList<String> myStringArray = new ArrayList<String>();
+	int layoutID = android.R.layout.simple_list_item_1;
+	ArrayAdapter<String> myAdapterInstance;
+	myAdapterInstance = new ArrayAdapter<String>(this, layoutID, myStringArray);
+	myListView.setAdapter(myAdapterInstance);
+```
 
 
 ### 11.7 增强你的View
