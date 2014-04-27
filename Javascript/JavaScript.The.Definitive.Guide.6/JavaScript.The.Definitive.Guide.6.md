@@ -145,7 +145,7 @@ javascript:void setInterval(function() {scrollBy(0,10)}, 200);
 
 The behavior of `scrollIntoView()` is similar to what the browser does when you set `window.location.hash` to the name of a named anchor (an `<a name="">` element).
 
-#### 元素大小、位置、浮动：更多信息
+#### 15.8.5 元素大小、位置、浮动：更多信息
 
 `getBoundingClientRect()`不能在老的浏览器使用。对于位置，查看只读属性`offsetWidth`和`offsetHeight`。单位像素。包含元素的 border 和 padding，不包含 margin。
 

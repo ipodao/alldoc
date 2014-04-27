@@ -1,5 +1,7 @@
 ## 文件
 
+[toc]
+
 A [File](http://developer.android.com/reference/java/io/File.html) object is suited to reading or writing large amounts of data in start-to-finish order without skipping around. For example, it's good for image files or anything exchanged over a network.
 
 > Tip: If you want to save a static file in your application at compile time, save the file in your project `res/raw/` directory. You can open it with `openRawResource()`, passing the `R.raw.<filename>` resource ID. This method returns an InputStream that you can use to read the file (but you cannot write to the original file).
@@ -84,8 +86,8 @@ API：
 
 ### 外部存储
 
-> 向Media Scanner隐藏你的文件  
-Include an empty file named .nomedia in your external files directory (note the dot prefix in the filename). This prevents media scanner from reading your media files and providing them to other apps through the MediaStore content provider. 但如果想让你的文件完全私有，应该将它们存放在*app-private*目录。
+> 向Media Scanner隐藏你的文件
+ Include an empty file named .nomedia in your external files directory (note the dot prefix in the filename). This prevents media scanner from reading your media files and providing them to other apps through the MediaStore content provider. 但如果想让你的文件完全私有，应该将它们存放在*app-private*目录。
 
 外部存储可以被用户或其他App需改。文件可分为两类：
 
@@ -94,7 +96,7 @@ Include an empty file named .nomedia in your external files directory (note the 
 
 #### 可用性检查
 
-由于外部存储可能无法使用，使用前先查询状态。调用`getExternalStorageState()`，如果返回`MEDIA_MOUNTED`，则可读写。
+由于外部存储可能无法使用，使用前先查询状态。调用` Environment.getExternalStorageState()`，如果返回`MEDIA_MOUNTED`，则可读写。
 
 	/* Checks if external storage is available for read and write */
 	public boolean isExternalStorageWritable() {

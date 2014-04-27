@@ -87,61 +87,7 @@ I'm fairly excited about this direction for the language, and am looking forward
 
 ## xxx If, Else, Unless 与条件赋值
 
-## Splats...
-
-JavaScript中通过`arguments`对象实现可变数量参数。CoffeeScript provides splats `...`, both for function definition as well as invocation, making variable numbers of arguments a little bit more palatable.
-
-```javascript
-gold = silver = rest = "unknown"
-
-awardMedals = (first, second, others...) ->
-  gold   = first
-  silver = second
-  rest   = others
-
-contenders = [
-  "Michael Phelps"
-  "Liu Xiang"
-  "Yao Ming"
-  "Allyson Felix"
-  "Shawn Johnson"
-  "Roman Sebrle"
-  "Guo Jingjing"
-  "Tyson Gay"
-  "Asafa Powell"
-  "Usain Bolt"
-]
-
-awardMedals contenders...
-
-alert "Gold: " + gold
-alert "Silver: " + silver
-alert "The Field: " + rest
-```
-```javascript
-var awardMedals, contenders, gold, rest, silver,
-  __slice = [].slice;
-
-gold = silver = rest = "unknown";
-
-awardMedals = function() {
-  var first, others, second;
-  first = arguments[0], second = arguments[1], others = 3 <= arguments.length ? __slice.call(arguments, 2) : [];
-  gold = first;
-  silver = second;
-  return rest = others;
-};
-
-contenders = ["Michael Phelps", "Liu Xiang", "Yao Ming", "Allyson Felix", "Shawn Johnson", "Roman Sebrle", "Guo Jingjing", "Tyson Gay", "Asafa Powell", "Usain Bolt"];
-
-awardMedals.apply(null, contenders);
-
-alert("Gold: " + gold);
-
-alert("Silver: " + silver);
-
-alert("The Field: " + rest);
-```
+## xxx Splats...
 
 ## 循环与Comprehensions
 
@@ -566,37 +512,7 @@ tim = new Person({
 });
 ```
 
-## 函数绑定
-
-In JavaScript, the `this` keyword is dynamically scoped to mean the object that the current function is attached to. If you pass a function as a callback or attach it to a different object, the original value of this will be lost. If you're not familiar with this behavior, this [Digital Web article](http://www.digital-web.com/articles/scope_in_javascript/) gives a good overview of the quirks.
-
-The fat arrow `=>` can be used to both define a function, and to bind it to the current value of `this`, right on the spot. This is helpful when using callback-based libraries like Prototype or jQuery, for creating iterator functions to pass to `each`, or event-handler functions to use with `bind`. Functions created with the fat arrow are able to access properties of the `this` where they're defined.
-
-```javascript
-Account = (customer, cart) ->
-  @customer = customer
-  @cart = cart
-
-  $('.shopping_cart').bind 'click', (event) =>
-    @customer.purchase @cart
-```
-```javascript
-var Account;
-
-Account = function(customer, cart) {
-  this.customer = customer;
-  this.cart = cart;
-  return $('.shopping_cart').bind('click', (function(_this) {
-    return function(event) {
-      return _this.customer.purchase(_this.cart);
-    };
-  })(this));
-};
-```
-
-If we had used `->` in the callback above, `@customer` would have referred to the undefined "customer" property of the DOM element, and trying to call `purchase()` on it would have raised an exception.
-
-When used in a class definition, methods declared with the fat arrow will be automatically bound to each instance of the class when the instance is constructed.
+## xxx 函数绑定
 
 ## 嵌入Javascript
 

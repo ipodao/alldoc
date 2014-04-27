@@ -1,22 +1,24 @@
-# 布局
+## 布局、容器
 
-## 定义布局
+[toc]
 
-### 通过代码
+### 通过代码定义布局
 
-	LinearLayout ll = new LinearLayout(this);
-	ll.setOrientation(LinearLayout.VERTICAL);
-	TextView myTextView = new TextView(this);
-	EditText myEditText = new EditText(this);
-	myTextView.setText(“Enter Text Below”);
-	myEditText.setText(“Text Goes Here!”);
-	int lHeight = LinearLayout.LayoutParams.MATCH_PARENT;
-	int lWidth = LinearLayout.LayoutParams.WRAP_CONTENT;
-	ll.addView(myTextView, new LinearLayout.LayoutParams(lHeight, lWidth));
-	ll.addView(myEditText, new LinearLayout.LayoutParams(lHeight, lWidth));
-	setContentView(ll);
+```java
+LinearLayout ll = new LinearLayout(this);
+ll.setOrientation(LinearLayout.VERTICAL);
+TextView myTextView = new TextView(this);
+EditText myEditText = new EditText(this);
+myTextView.setText(“Enter Text Below");
+myEditText.setText(“Text Goes Here!");
+int lHeight = LinearLayout.LayoutParams.MATCH_PARENT;
+int lWidth = LinearLayout.LayoutParams.WRAP_CONTENT;
+ll.addView(myTextView, new LinearLayout.LayoutParams(lHeight, lWidth));
+ll.addView(myEditText, new LinearLayout.LayoutParams(lHeight, lWidth));
+setContentView(ll);
+```
 
-## FrameLayout
+### FrameLayout
 
 最简单的比较容器是FrameLayout。该容器根本不会排列孩子。他只是将一个孩子堆在另一个上面。定义在后面的在视图上面。FrameLayout常用于创建自定义的可触摸元素。
 
@@ -24,7 +26,7 @@
 
 可以使用FrameLayout组合一个按钮和一个ImageView。将按钮背景设为透明。这种方式与设置背景相比，**能对按钮图像的padding和缩放做更好的控制**。
 
-## LinearLayout
+### LinearLayout
 
 5个方面的控制：朝向（Orientation）、大小、weight、gravity和padding。
 
@@ -111,7 +113,7 @@
 		} 
 	}
 
-## RelativeLayout
+### RelativeLayout
 
 相对于容器或兄弟组件定位。
 
@@ -187,7 +189,7 @@
 			android:text="Cancel" /> 
 	</RelativeLayout>
 
-### 重叠
+#### 重叠
 
 相对布局中如果两个小部件占据相同位置，后定义的覆盖在先定义的之上。
 
@@ -211,7 +213,7 @@
  
 点击下面的按钮仍然有效。点击小按钮不会引发大按钮也被点击。
 
-## TableLayout
+### TableLayout
 
 TableLayout搭配TableRow使用。组件放入TableRow中。TableRow决定行数。
 列数由最长的行的列数决定。小部件可以占据多列，由`android:layout_span`控制。例如：
@@ -234,7 +236,7 @@ TableLayout内除了可以直接放TableRow，还可以放其他小部件。此�
 
 	<View android:layout_height="2dip" android:background="#0000FF" />
 
-### 拉伸、收缩、收起（Stretch, Shrink, and Collapse）
+#### 拉伸、收缩、收起（Stretch, Shrink, and Collapse）
 
 默认，列的宽度为此列最宽的小部件的自然大小（会考虑跨多列）。
 
@@ -267,7 +269,7 @@ TableLayout内除了可以直接放TableRow，还可以放其他小部件。此�
 
 ![](tablelayout_ex1.png)
 
-## GridLayout
+### GridLayout
 GridLayout是Android 4新引入的。GridLayout is a layout that places its children onto a grid of infinitely detailed lines that separate the area into cells. The key to GridLayout’s fine control is that the number of cells or, more accurately, grid lines used to describe the cells has no limit or threshold— you specify how many or how few grid lines your GridLayout should have, using `rowSpec` and `columnSpec` properties. This means you could create a layout that mimics a simple table with a few cells (that is, rows and columns) or, for those demanding situations where you need fantastically fine precision, 可以指定成千上万的网格。｛｛这些网格是用于布局的！｝｝
 
 > 一般使用Layout Editor构建你的Grid Layout，而不是手工写XML。
@@ -294,8 +296,59 @@ Our buttons have followed their various gravity directions to place themselves o
 	<Button android:text="Falling like an apple" android:layout_gravity="bottom" /> 
 	...
 
+### ScrollView
 
+ScrollView为内容提供滚动功能。**仅支持上下滚动**。
 
+ScrollView实际是FrameLayout的一个子类**。一般要在ScrollView内放置另一个布局容器**。
+
+例子：
+```xml
+<ScrollView
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="wrap_content">
+	<TableLayout
+		android:layout_width="fill_parent"
+		android:layout_height="fill_parent"
+		android:stretchColumns="0">
+		...
+	</TableLayout>
+</ScrollView>
+```
+
+注意在右边留点padding，因为滚动条会遮住部分内容。
+
+Android 1.5引入了`HorizontalScrollView`，水平滚动。注意Android不支持左右和上下同时滚动，ScrollView和HorizontalScrollView都是单向的。
+
+注意不要把**可滚动内容**放入ScrollView。例如ListView自身已能滚动，把ListView放入ScrollView，反而会不能正常工作。如果你发现你想要用二者，重新设计你的App。
+
+#### `android:fillViewport`
+
+将`LinearLayout`包裹进`ScrollView`：
+```xml
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+	 android:layout_width="match_parent"
+	 android:layout_height="match_parent"
+	 android:fillViewport="true">
+	<LinearLayout>
+	<!-- Rest of code here -->
+	</LinearLayout>
+</ScrollView>
+```
+
+如果内容比`ScrollView`大没有问题，会滚动。但如果内容比显示区小，`ScrollView`默认会将自己收缩为内容的大小。如果想要`ScrollView`展开到显示区的大小，设置`fillViewPort`为true。
+
+```xml
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:fillViewport="true">
+
+```
+
+文字过小时默认的效果和设置`fillViewport`后的效果：
+![](fillViewport.png)
 
 
 

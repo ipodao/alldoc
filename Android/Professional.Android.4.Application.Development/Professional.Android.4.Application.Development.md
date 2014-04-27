@@ -100,18 +100,16 @@ Android不支持矢量绘制，支持传统的光栅（raster）图。
 
 ##### `Paint`
 
-通过`Pain`，可以控制颜色、样式、字体和特效。
+通过`Paint`，可以控制颜色、样式、字体和特效。
 
-> Not all the `Paint` options described here are available if you’re using hardware acceleration to improve 2D drawing performance. As a result, it’s important to check how hardware acceleration affects your 2D drawing.
+> 如果你使用了硬件加速，则`Paint`的部分选项将无法使用。
 
-`setColor`设置的Paint的颜色。
-`setStyle`设置`Paint`的样式，to decide if you want to draw only the outline of a drawing object (`STROKE`), just the filled portion (`FILL`), or both (STROKE_AND_FILL).
+`setColor`设置的Paint的颜色。`setStyle`设置`Paint`的样式：是否只画出形状的轮廓（`STROKE`），只填充（`FILL`），或二者都要。
 
 `Paint`类还支持透明，可以被 Shaders, filters, and effects 修饰。
 
 The Android SDK includes several excellent projects that demonstrate most of the features available in the `Paint` class. They are available in the graphics subfolder of the API demos at:
-
-	[sdk root folder]\samples\android-15\ApiDemos\src\com\example\android\apis\graphics
+`\samples\android-15\ApiDemos\src\com\example\android\apis\graphics`
 
 ###### 半透明
 
@@ -134,9 +132,9 @@ You can use transparency effects in any class or method that uses colors includi
 
 ###### Shaders
 
-Extensions of the `Shader` class let you create Paints that fill drawn objects with more than a single solid color.
+扩展`Shader`类，能让你以多种颜色填充对象。
 
-Shaders的最常见的用法是渐变填充，渐变是向 2D 添加深度和纹理的好方式。Android包含三个渐变Shaders，及一个Bitmap Shader和一个Compose Shader。
+Shaders的最常见的用法是渐变填充。渐变是向 2D 添加深度和纹理的好方式。Android包含三个渐变Shaders，及一个Bitmap Shader和一个Compose Shader。
 
 Trying to describe painting techniques seems inherently futile, so Figure 11-7 shows how each Shader works. Represented from left to right are `LinearGradient`, `RadialGradient`, and `SweepGradient`.
 
@@ -152,7 +150,7 @@ LinearGradient myLinearGradient =
 	new LinearGradient(x1, y1, x2, y2, colorFrom, colorTo, TileMode.CLAMP);
 ```
 
-第二种，指定督工额渐变色：
+第二种，指定多个渐变色：
 ```java
 int[] gradientColors = new int[3];
 gradientColors[0] = Color.GREEN;
@@ -175,24 +173,26 @@ RadialGradient radialGradientShader
 shaderPaint.setShader(myLinearGradient);
 ```
 
-Anything you draw with this Paint will be filled with the Shader you specified rather than the paint color.
+使用此 `Paint` 的图形，将以指定的 Shader 填充，而不是 Paint 的 color。
 
 ###### Shader Tile Modes
 
-The brush sizes of the gradient Shaders are defined using explicit bounding rectangles or center points and radius lengths; the Bitmap Shader implies a brush size through its bitmap size.
+The brush sizes of the *gradient* Shaders are defined using explicit bounding rectangles or center points and radius lengths; the Bitmap Shader implies a brush size through its bitmap size.
 
 如果Shader brush定义的区域小于要填充的区域，`TileMode`定义剩余区域如何被填充。可用值：
-- CLAMP：使用Shader边缘色填充额外空间
-- MIRROR：水平/垂直反转Shader图像，让图片看上去能连起来
-- REPEAT：重复，但不反转
+
+- `CLAMP`：使用Shader边缘色填充额外空间
+- `MIRROR`：水平/垂直反转Shader图像，让图片看上去能连起来
+- `REPEAT`：重复，但不反转
 
 ###### Mask Filters
 
-The `MaskFilter` classes let you assign **edge effects** to your Paint. **Mask Filters are not supported when the Canvas is hardware-accelerated.**
+The `MaskFilter` classes let you assign **edge effects** to your Paint. **当Canvas启用硬件加速后，不支持Mask Filters**
 
-Extensions to MaskFilter apply transformations to the alpha-channel of a Paint along its outer edge. Android includes the following Mask Filters:
-- BlurMaskFilter — Specifies a blur style and radius to feather the edges of your Paint
-- EmbossMaskFilter — Specifies the direction of the light source and ambient light level to add an embossing effect(浮雕特效)
+Extensions to MaskFilter apply transformations to the alpha-channel of a Paint along its outer edge. 有以下可用的 Mask Filters:
+
+- `BlurMaskFilter` — Specifies a blur style and radius to feather the edges of your Paint
+- `EmbossMaskFilter` — Specifies the direction of the light source and ambient light level to add an embossing effect(浮雕特效)
 
 To apply a Mask Filter, use the `setMaskFilter` method, passing in a `MaskFilter` object:
 ```java
@@ -214,10 +214,11 @@ The FingerPaintAPI demo included in the SDK is an excellent example of how to us
 
 ###### Color Filters
 
-Whereas **Mask Filters are transformations of a Paint’s alpha-channel**, a `ColorFilter` applies a transformation to each of the RGB channels. All ColorFilter-derived classes ignore the alpha channel when performing their transformations.
+Mask Filters 变换的是 Paint 的 alpha 通道。而`ColorFilter` 变换的是每个 RGB 通道。All ColorFilter-derived classes ignore the alpha channel when performing their transformations.
 
-Android includes three Color Filters:
-- `ColorMatrixColorFilter`：Lets you specify a 4 x 5 ColorMatrixto apply to a Paint. Color Matrixes are commonly used to perform image processing programmatically and are useful because they support chaining transformations using matrix multiplication.
+可用的 Color Filters:
+
+- `ColorMatrixColorFilter`：Lets you specify a 4 x 5 ColorMatrix to apply to a Paint. Color Matrixes are commonly used to perform image processing programmatically and are useful because they support chaining transformations using matrix multiplication.
 - `LightingColorFilter` — Multiplies the RGB channels by the first color before adding the second. The result of each transformation will be clamped between 0 and 255.
 - `PorterDuffColorFilter` — Lets you use any one of the 16 Porter-Duff rules for digital image compositing to apply a specified color to the Paint. The Porter-Duff rules are defined here at http://developer.android.com/reference/android/graphics/PorterDuff.Mode.html.
 
@@ -231,23 +232,25 @@ samples\android-15\ApiDemos\src\com\example\android\apis\graphics\ColorMatrixSam
 
 ###### Path Effects
 
-The effects described so far affect the way the Paint **fills** a drawing; Path Effects are used to control how its outline (or stroke) is drawn.
+之前讨论的特效影响的是 Paint 的填充效果。Path Effects 控制的是轮廓（stroke）。
 
 Path Effects are particularly useful for drawing Path primitives, but they can be applied to any Paint to affect the way the stroke is drawn.
 
 Using Path Effects, you can change the appearance of a shape’s corners and control the appearance of the outline. Android includes several Path Effects, including the following:
+
 - `CornerPathEffect`：Lets you smooth sharp corners in the shape of a primitive by replacing them with rounded corners.
 - `DashPathEffect`：Rather than drawing a solid outline, you can use the DashPathEffect to create an outline of broken lines (dashes/dots). You can specify any repeating pattern of solid/empty line segments.
 - `DiscretePathEffect` — Similar to the DashPathEffect, but with added randomness. Specifies the length of each segment and a degree of deviation from the original path to use when drawing it.
 - `PathDashPathEffect` — Enables you to define a new shape (path) to use as a stamp to outline the original path.
 
 The following effects let you combine multiple Path Effects to a single Paint:
+
 - `SumPathEffect` — Adds two effects to a path in sequence, such that each effect is applied to the original path and the two results are combined.
 - `ComposePathEffect` — Applies first one effect and then applies the second effect to the result of the first.
 
 Path Effects that modify the shape of the object being drawn change the area of the affected shape. This ensures that any fill effects applied to the same shape are drawn within the new bounds.
 
-Path Effects are applied to Paintobjects using the `setPathEffect` method:
+Path Effects are applied to `Paint` objects using the `setPathEffect` method:
 ```java
 borderPaint.setPathEffect(new CornerPathEffect(5));
 ```
@@ -286,9 +289,9 @@ myPaint.setSubpixelText(true);
 myPaint.setAntiAlias(true);
 ```
 
-##### Canvas 绘制最佳实践
+##### （未）Canvas 绘制最佳实践
 
-
+##### （未）Advanced Compass Face Example
 
 
 

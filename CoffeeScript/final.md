@@ -1,6 +1,13 @@
 
 [toc]
 
+## 源
+
+* 官方文档
+* CoffeeScript: Accelerated JavaScript Development
+	已整理：1、2
+
+
 ## 语言基础
 
 CoffeeScript 使用空白符区分代码块。不需要使用分号分隔表达式。行尾就是分隔。（分号用于分隔一行上的多个表达式）。
@@ -165,6 +172,14 @@ if (pick === 47 || pick === 92 || pick === 13) {
 print(inspect("My name is " + this.name));
 ```
 
+注意，`+`用于连接字符串时需要在两端留空格。下面的写法会报错：
+```javascript
+color = 'red'
+x = color +5
+```
+因为`color +5`会被编译为`color(+5)`。因为前缀`+`是字符串转换为数字的捷径。
+
+
 #### 链式比较
 
 CoffeeScript borrows chained comparisons from Python — making it easy to test if a value falls within a certain range.
@@ -260,6 +275,36 @@ if (happy && knowsIt) {
 
 date = friday ? sue : jill;
 ```
+
+### 后缀表达式
+
+一个使用后缀表达式改写的例子。原来的代码：
+```javascript
+odd = (num)->
+	if typeof num is 'number'
+		if num is Math.round num
+			if num >0
+				num % 2 is 1
+			else
+			throw "#{num}is not positive"
+		else
+			throw"#{num}is not an integer"
+	else
+		throw"#{num}is not a number"
+```
+
+改写后：
+```javascript
+odd = (num)->
+	unless typeof num is 'number'
+		throw "#{num} is not a number"
+	unless num is Math.round num
+		throw "#{num} is not an integer"
+	unless num >0
+		throw "#{num} is not positive"
+	num % 2 is 1
+```
+
 
 ### 循环与Comprehensions
 
@@ -361,8 +406,6 @@ ages = (function() {
 
 ## 函数
 
-### 函数定义
-
 函数定义包括：参数列表（括号内，可选）、箭头、函数体。空函数: `->`
 
 ```javascript
@@ -382,6 +425,132 @@ cube = function(x) {
 };
 ```
 
+最简单的函数：`-> 'hello'。
+
+利用`do`直接运行函数：
+```javascript
+console.log do -> 'hello'
+```
+其实就相当于：
+```javascript
+console.log (-> 'hello')()
+```
+
+函数隐式返回最后一个表达式的值。但可以显式使用return。
+
+> 两种函数声明
+ 在Javascript中有两种函数声明方式。一种是：
+ ```javascript
+ var cube1 = function(x) {...}
+ ```
+ 另一种是：
+ ```javascript
+ function cube2 = function(x) {...}
+ ```
+ 两种方式的最大区别是，如果在cube1定以前使用它会报错。但在cube2作用域范围内可以在定义前调用它。
+ CoffeeScript只会生成cube1这样的风格（由于IE的问题）。因此在使用前一定要先定义。
+
+隐式括号的问题。函数调用时省略括号。知道表达式结尾，隐式括号才会闭合。如，一个错误的写法：
+```javascript
+console.log(Math.round 3.1, Math.round 5.2)
+```
+会被解释为：
+```javascript
+console.log(Math.round(3.1, Math.round(5.2)))
+```
+
+为避免混乱，只在最外层函数调用时省略括号：
+```javascript
+console.log Math.round(3.1), Math.round(5.2)# 3,5
+```
+
+### 函数作用域
+
+考虑下面两段代码的区别：
+```javascript
+age = 99
+fun1 = -> age = 0
+fun1()
+console.log age
+```
+
+```javascript
+fun1 = -> age = 0
+age = 99
+fun1()
+console.log age
+```
+
+第一个输出0，但第二个输出99。通过`coffee -p`看产生的js发现完全不同。第二种写法，在函数内，`age`被重新定义成局部变量。
+```javascript
+(function() {
+  var age, fun1;
+  age = 99;
+  fun1 = function() {
+    return age = 0;
+  };
+  fun1();
+  console.log("age is " + age);
+}).call(this);
+```
+```javascript
+(function() {
+  var age, fun1;
+  fun1 = function() {
+    var age;
+    return age = 0;
+  };
+  age = 99;
+  fun1();
+  console.log("age is " + age);
+}).call(this);
+```
+
+应该尽力避免同名覆盖。
+
+
+### 函数绑定
+
+JavaScript中`this`的指向是动态的。If you're not familiar with this behavior, this [Digital Web article](http://www.digital-web.com/articles/scope_in_javascript/) gives a good overview of the quirks.
+
+利用`=>`定义函数，会绑定`this`的当前值。
+
+```javascript
+Account = (customer, cart) ->
+  @customer = customer
+  @cart = cart
+
+  $('.shopping_cart').bind 'click', (event) =>
+    @customer.purchase @cart
+```
+```javascript
+var Account;
+
+Account = function(customer, cart) {
+  this.customer = customer;
+  this.cart = cart;
+  return $('.shopping_cart').bind('click', (function(_this) {
+    return function(event) {
+      return _this.customer.purchase(_this.cart);
+    };
+  })(this));
+};
+```
+
+If we had used `->` in the callback above, `@customer` would have referred to the undefined "customer" property of the DOM element, and trying to call `purchase()` on it would have raised an exception.
+
+When used in a class definition, methods declared with the fat arrow will be automatically bound to each instance of the class when the instance is constructed.
+
+### 属性参数（`@arg`）
+
+下面两个写法是等价的：
+```javascript
+setName = (name)->@name = name
+setName = (@name)-># no code required!
+```
+
+### 默认参数
+
 函数参数可以有默认值，若传入`null`或`undefined`，使用默认值。
 ```javascript
 fill = (container, liquid = "coffee") ->
@@ -398,3 +567,93 @@ fill = function(container, liquid) {
   return "Filling the " + container + " with " + liquid + "...";
 };
 ```
+
+Coffee在幕后使用存在运算符，于是，传入`null`或`undefined`等同于省略参数。
+
+### Splats...
+
+JavaScript中通过`arguments`对象实现可变数量参数。CoffeeScript provides splats `...`, both for function definition as well as invocation, making variable numbers of arguments a little bit more palatable.
+
+```javascript
+gold = silver = rest = "unknown"
+
+awardMedals = (first, second, others...) ->
+  gold   = first
+  silver = second
+  rest   = others
+
+contenders = [
+  "Michael Phelps"
+  "Liu Xiang"
+  "Yao Ming"
+  "Allyson Felix"
+  "Shawn Johnson"
+  "Roman Sebrle"
+  "Guo Jingjing"
+  "Tyson Gay"
+  "Asafa Powell"
+  "Usain Bolt"
+]
+
+awardMedals contenders...
+
+alert "Gold: " + gold
+alert "Silver: " + silver
+alert "The Field: " + rest
+
+// --->
+
+var awardMedals, contenders, gold, rest, silver,
+  __slice = [].slice;
+
+gold = silver = rest = "unknown";
+
+awardMedals = function() {
+  var first, others, second;
+  first = arguments[0], second = arguments[1], others = 3 <= arguments.length ? __slice.call(arguments, 2) : [];
+  gold = first;
+  silver = second;
+  return rest = others;
+};
+
+contenders = ["Michael Phelps", "Liu Xiang", "Yao Ming", "Allyson Felix", "Shawn Johnson", "Roman Sebrle", "Guo Jingjing", "Tyson Gay", "Asafa Powell", "Usain Bolt"];
+
+awardMedals.apply(null, contenders);
+
+alert("Gold: " + gold);
+
+alert("Silver: " + silver);
+
+alert("The Field: " + rest);
+```
+
+Splats不一定非要呆在参数列表的最后：
+```javascript
+sandwich = (beginning, middle..., end)->
+```
+
+非Splats参数具有更高优先权。因此，如果实参只有2个，则`beginning`和`end`获得。
+
+一个函数只有一个Splats参数才有意义。
+
+Splat还可以用于分割数组：
+```shell
+coffee> birds = ['duck', 'duck', 'duck', 'duck', 'goose!']
+coffee> [ducks..., goose] = birds
+coffee> ducks
+```
+
+在函数调用（不是声明！）中，Splats可以将一个数组**展开**为一个参数列表：
+```javascript
+coffee> console.log 1, 2, 3, 4
+1 2 3 4
+coffee> arr = [1, 2, 3]
+coffee> console.log arr, 4
+[ 1, 2, 3] 4
+coffee> console.log arr..., 4
+1 2 3 4
+```
+
+
+
+
