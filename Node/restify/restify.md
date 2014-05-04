@@ -1,21 +1,21 @@
 [toc]
 
-> **为什么使用restify而不是express?**  
-Express目标是浏览器，支持模板和渲染，但Restify不支持。
+> **为什么使用restify而不是express?**
+ Express目标是浏览器，支持模板和渲染，但Restify不支持。
 Restify exists to let you build "strict" API services that are maintanable and observable. Restify comes with automatic DTrace support for all your handlers, if you're running on a platform that supports DTrace.
 
 ## 安装
 
-```shell
+```sh
 npm install restify
 ```
 
-> ME  在Windows下安装会报错，应该是依赖dtrace是一个*C++*插件，需要*C++*编译环境。还好这个依赖是可选的。报错仍可以完成安装！
+> **ME** 在Windows下安装会报错，应该是依赖dtrace是一个*C++*插件，需要*C++*编译环境。还好这个依赖是可选的。报错仍可以完成安装！
 
 ## 2 服务器端API
 
 骨架：
-```javascript
+```js
 var restify = require('restify');
 
 function respond(req, res, next) {
@@ -35,7 +35,7 @@ server.listen(8080, function() {
 ### 2.1 创建服务器
 
 调用`createServer`。（`listen()`的参数与[http.Server.listen](http://nodejs.org/docs/latest/api/http.html#http_server_listen_port_hostname_backlog_callback)相同）：
-```javascript
+```js
 var restify = require('restify');
 
 var server = restify.createServer({
@@ -67,7 +67,7 @@ restify服务器有一个`use()`方法，可以接受处理器方法`function (r
 
 restify的路由，在'basic'模式下，与express/sinatra的非常像。利用HTTP动词决定调用哪个处理器。利用`req.params`可以读取到命名的占位符，这些值已经被URL解码。
 
-```javascript
+```js
 function send(req, res, next) {
     res.send('hello ' + req.params.name);
     return next();
@@ -92,7 +92,7 @@ server.del('hello/:name', function rm(req, res, next) {
 ----
 
 也可以传入一个`RegExp`对象，在`req.params`中访问捕获组（不会被interpreted）：
-```javascript
+```js
 server.get(/^\/([a-zA-Z0-9_\.~-]+)\/(.*)/, function(req, res, next) {
     console.log(req.params[0]);
     console.log(req.params[1]);
@@ -103,7 +103,7 @@ server.get(/^\/([a-zA-Z0-9_\.~-]+)\/(.*)/, function(req, res, next) {
 
 Here any request like:
 
-```shell
+```sh
 curl localhost:8080/foo/my/cats/name/is/gandalf
 ```
 
@@ -115,7 +115,7 @@ curl localhost:8080/foo/my/cats/name/is/gandalf
 
 可以向`next()`传入一个名字（字符串），restify将据此找路由，and assuming it exists will run the chain from where you left off. 例如：
 
-```javascript
+```js
 var count = 0;
 
 server.use(function foo(req, res, next) {
@@ -138,6 +138,7 @@ server.get({
 ```
 
 Note that `foo` only gets run once in that example. A few caveats:
+
 - 如果指定的路由名不存在，restify响应500。
 - 不要产生循环调用。restify不会检查 won't check that.
 - Lastly, you cannot "chain" next('route') calls; you can only delegate the routing chain once (this is a limitation of the way routes are stored internally, and may be revisited someday).
@@ -146,7 +147,7 @@ Note that `foo` only gets run once in that example. A few caveats:
 
 多数 REST APIs 需要版本化，restify 支持 [semver](http://semver.org/) 版本化：利用`Accept-Version`头，格式与 NPM 依赖版本相同。
 
-```javascript
+```js
 var restify = require('restify');
 
 var server = restify.createServer();
@@ -170,7 +171,7 @@ server.listen(8080);
 
 测试：
 
-```shell
+```
 curl -s localhost:8080/hello/mark
 "hello: mark"
 $ curl -s -H 'accept-version: ~1' localhost:8080/hello/mark
@@ -189,7 +190,7 @@ $ curl -s -H 'accept-version: ~3' localhost:8080/hello/mark | json
 在创建服务器时，可以指定路由的默认版本。
 
 路由可以支持多个版本：
-```javascript
+```js
 server.get({path: PATH, version: ['2.0.0', '2.1.0']}, sendV2);
 ```
 
@@ -203,7 +204,7 @@ Once `res.claimUpgrade()` is called, res itself is marked *unusable* for further
 
 Using the Upgrade mechanism, you can use a library like [watershed](https://github.com/jclulow/node-watershed) to negotiate WebSockets connections. For example:
 
-```javascript
+```js
 var ws = new Watershed();
 server.get('/websocket/attach', function upgradeRoute(req, res, next) {
     if (!res.claimUpgrade) {
@@ -216,56 +217,64 @@ server.get('/websocket/attach', function upgradeRoute(req, res, next) {
 
 If you're using` res.send()` restify will automatically select the content-type to respond with, by finding the first registered formatter defined. Note in the examples above we've not defined any formatters, so we've been leveraging the fact that restify ships with `application/json`,  `text/plain` and` application/octet-stream` formatters. You can add additional formatters to restify by passing in a hash of content-type -> parser at server creation time:
 
-	var server = restify.createServer({
-	  formatters: {
-	    'application/foo': function formatFoo(req, res, body) {
-	      if (body instanceof Error)
-	        return body.stack;
-	
-	      if (Buffer.isBuffer(body))
-	        return body.toString('base64');
-	
-	      return util.inspect(body);
-	    }
-	  }
-	});
+```js
+var server = restify.createServer({
+  formatters: {
+	'application/foo': function formatFoo(req, res, body) {
+	  if (body instanceof Error)
+		return body.stack;
+
+	  if (Buffer.isBuffer(body))
+		return body.toString('base64');
+
+	  return util.inspect(body);
+	}
+  }
+});
+```
 
 You can do whatever you want, but you probably want to check the type of body to figure out what type it is, notably for Error/Buffer/everything else. You can always add more formatters later by just setting the formatter on server.formatters, but it's probably sane to just do it at construct time. Also, note that if a content-type can't be negotiated, the default is `application/octet-stream`. Of course, you can always explicitly set the content-type:
 
-	res.setHeader('content-type', 'application/foo');
-	res.send({hello: 'world'});
+```js
+res.setHeader('content-type', 'application/foo');
+res.send({hello: 'world'});
+```
 
 Note that there are typically at least three content-types supported by restify: json, text and binary. When you override or append to this, the "priority" might change; to ensure that the priority is set to what you want, you should set a q-value on your formatter definitions, which will ensure sorting happens the way you want:
 
-	restify.createServer({
-	  formatters: {
-	    'application/foo; q=0.9': function formatFoo(req, res, body) {
-	      if (body instanceof Error)
-	        return body.stack;
-	
-	      if (Buffer.isBuffer(body))
-	        return body.toString('base64');
-	
-	      return util.inspect(body);
-	    }
-	  }
-	});
+```js
+restify.createServer({
+  formatters: {
+	'application/foo; q=0.9': function formatFoo(req, res, body) {
+	  if (body instanceof Error)
+		return body.stack;
+
+	  if (Buffer.isBuffer(body))
+		return body.toString('base64');
+
+	  return util.inspect(body);
+	}
+  }
+});
+```
 
 Lastly, you don't have to use any of this magic, as a restify response object has all the "raw" methods of a node [ServerResponse](http://nodejs.org/docs/latest/api/http.html#http.ServerResponse) on it as well.
 
-	var body = 'hello world';
-	res.writeHead(200, {
-	  'Content-Length': Buffer.byteLength(body),
-	  'Content-Type': 'text/plain'
-	});
-	res.write(body);
-	res.end();
+```js
+var body = 'hello world';
+res.writeHead(200, {
+  'Content-Length': Buffer.byteLength(body),
+  'Content-Type': 'text/plain'
+});
+res.write(body);
+res.end();
+```
 
 ### 2.6 错误处理
 
 错误处理有几种方式。第一种是调用`res.send(err)`。*在路由中*，可以将这种方式简化为：
 
-```javascript
+```js
 server.get('/hello/:name', function(req, res, next) {
     return database.get(req.params.name, function(err, user) {
         if (err) return next(err);
@@ -280,7 +289,7 @@ server.get('/hello/:name', function(req, res, next) {
 
 或者，restify 2.1 支持 `next.ifError` API：
 
-```javascript
+```js
 server.get('/hello/:name', function(req, res, next) {
     return database.get(req.params.name, function(err, user) {
     	next.ifError(err);
@@ -294,13 +303,13 @@ server.get('/hello/:name', function(req, res, next) {
 
 restify为所有的 HTTP 状态码定义了一个`HttpError`的子类。例如
 
-```javascript
+```js
 server.get('/hello/:name', function(req, res, next) {
 	return next(new restify.ConflictError("I just don't like you"));
 });
 ```
 
-```shell
+```
 $ curl -is -H 'accept: text/*' localhost:8080/hello/mark
 HTTP/1.1 409 Conflict
 Content-Type: text/plain
@@ -325,16 +334,16 @@ I just don't like you
 
 #### 2.6.2 RestError
 
-REST APIs 的一个常见问题是，需要覆盖 400 和 409，表示另外的含义。并且，期望机器能够识别这些消息。restify 定义了 `RestError`。`RestError` 是 `HttpError` 的子类，additionally sets the body attribute to be a `JS object` with the attributes code and message. For example, here's a built-in `RestError`:
+REST APIs 的一个常见问题是，需要覆盖 400 和 409，表示另外的含义。并且，期望机器能够识别这些消息。restify 定义了 `RestError`。`RestError` 是 `HttpError` 的子类，在父类的基础上，设置响应体是一个JSON对象，包含`code`和`message`两个属性。例如：
 
-```javascript
+```js
 var server = restify.createServer();
 server.get('/hello/:name', function(req, res, next) {
   return next(new restify.InvalidArgumentError("I just don't like you"));
 });
 ```
 
-```shell
+```
 $ curl -is localhost:8080/hello/mark | json
 HTTP/1.1 409 Conflict
 Content-Type: application/json
@@ -374,7 +383,8 @@ Response-Time: 3
 - WrongAcceptError
 
 可以创建`restify.RestError`的子类：
-```javascript
+
+```js
 var restify = require('restify');
 var util = require('util');
 
@@ -394,7 +404,7 @@ Basically, a `RestError` takes a statusCode, a restCode, a message, and a "const
 
 ### 2.7（未）Socket.IO
 
-### 2.8Server API
+### 2.8 Server API
 
 ### 事件
 
