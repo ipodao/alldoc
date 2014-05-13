@@ -18,6 +18,7 @@
 ### 创建服务类
 
 要定义一个服务，创建`Service`的子类，并实现关键回调方法：
+
 - `onStartCommand()`。
 当调用者调用`startService()`请求活动启动时，系统调用此方法。此方法执行后，服务被启动，将在后台无限运行。在这种模式下，需要显式停止服务，可以通过`stopSelf()`或`stopService()`方法。如果服务只用于绑定，不需要实现此方法。
 - `onBind()`。
@@ -79,8 +80,7 @@ startForeground(ONGOING_NOTIFICATION_ID, notification);
 
 ## Started 服务
 
-应用组件调用 `startService()` 时传入 Intent 指定要启动的服务。这个 Intent 会传给`onStartCommand()`。记住，`onStartCommand()` 在**主应用线程**调用，因此动作要快。复杂东西放在后台线程做。
-
+应用组件调用`startService()` 时传入 Intent 指定要启动的服务。这个 Intent 会传给`onStartCommand()`。记住，`onStartCommand()` 在**主应用线程**调用，因此动作要快。复杂东西放在后台线程做。
 
 要创建一个 started 服务，可以继承两个类：
 * `Service`：所有服务的基类。使用该类时，记得开新线程处理费时操作。
@@ -196,6 +196,7 @@ public class HelloService extends Service {
 ### `onStartCommand()` 的返回值
 
 `onStartCommand()` 的返回值表示，服务被杀死后，系统该如何继续服务。返回值取值：
+
 * `START_NOT_STICKY`
 如果系统在 `onStartCommand()` 返回后杀死了服务，不要重启服务，unless there are pending intents to deliver. This is the safest option to avoid running your service when not necessary and when your application can simply restart any unfinished jobs.
 * `START_STICKY`
@@ -206,6 +207,7 @@ public class HelloService extends Service {
 ### 启动服务
 
 例子：
+
 ```java
 Intent intent = new Intent(this, HelloService.class);
 startService(intent);
@@ -219,7 +221,7 @@ startService(intent);
 
 ### 停止服务
 
-Started 服务必须管理科自己的生命周期。因此服务必须调用 `stopSelf()` 停止自己。或者，让其他组件通过 `stopService()`停止服务。
+Started 服务必须管理自己的生命周期。因此服务必须调用 `stopSelf()` 停止自己。或者，让其他组件通过 `stopService()`停止服务。
 
 一旦收到 `stopSelf()` 或 `stopService()`，系统会尽可能快的销毁服务。
 
@@ -236,6 +238,7 @@ Started 服务必须管理科自己的生命周期。因此服务必须调用 `s
 ### 创建Bound服务
 
 服务提供`IBinder`供客户端与服务交互。定义`IBinder`接口有几种方式。
+
 * 继承`Binder`类
 如果服务是你的应用私有的，与调用者运行在同一进程，应该扩展`Binder`类，在`onBind()`中返回该类的实例。收到`Binder`实例的客户端可以直接访问其公有方法。
 推荐使用该方法。除非服务可能被其他应用使用，或被其他进程访问。
@@ -253,6 +256,7 @@ To use AIDL directly, you must create an .aidl file that defines the programming
 如果你的服务只在应用内使用，且不需要跨进程，则可以实现一个`Binder`类并让客户端直接访问该类的公有方法。
 
 Here's how to set it up:
+
 * 创建`Binder`类的一个实例，
   * 可以包含公有方法供客户端调用
   * 返回当前的`Service`实例，让客户端调用`Service`的公有方法
@@ -294,6 +298,7 @@ public class LocalService extends Service {
 ```
 
 服务使用者代码：
+
 ```java
 public class BindingActivity extends Activity {
     LocalService mService;
@@ -417,6 +422,7 @@ public class MessengerService extends Service {
 Notice that the handleMessage() method in the Handler is where the service receives the incoming Message and decides what to do, based on the `what` member.
 
 All that a client needs to do is create a Messenger based on the IBinder returned by the service and send a message using send(). For example, here's a simple activity that binds to the service and delivers the `MSG_SAY_HELLO` message to the service:
+
 ```java
 public class ActivityMessenger extends Activity {
     /** Messenger for communicating with the service. */
@@ -483,6 +489,7 @@ public class ActivityMessenger extends Activity {
     }
 }
 ```
+
 Notice that this example does not show how the service can respond to the client. If you want the service to respond, then you need to also create a Messenger in the client. Then when the client receives the onServiceConnected() callback, it sends a Message to the service that includes the client's Messenger in the replyTo parameter of the send() method.
 
 You can see an example of how to provide two-way messaging in the MessengerService.java (service) and MessengerServiceActivities.java (client) samples.
@@ -494,6 +501,7 @@ You can see an example of how to provide two-way messaging in the MessengerServi
 > Note: Only activities, services, and content providers can bind to a service—you cannot bind to a service from a broadcast receiver.
 
 绑定步骤：
+
 - 实现`ServiceConnection`。实现需实现以下方法：
   - `onServiceConnected()`：利用此方法获得`IBinder`。
   - `onServiceDisconnected()`：Android调用此方法，表示服务意外丢失，如服务崩溃或被杀死。客户端解除绑定时不调用该方法。
@@ -521,7 +529,8 @@ private ServiceConnection mConnection = new ServiceConnection() {
 };
 ```
 
-With this ServiceConnection, the client can bind to a service by passing it to bindService(). For example:
+With this `ServiceConnection`, the client can bind to a service by passing it to bindService(). For example:
+
 ```java
 Intent intent = new Intent(this, LocalService.class);
 bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
@@ -529,15 +538,17 @@ bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
 
 `bindService`的第三个参数是绑定选项。It should usually be `BIND_AUTO_CREATE` in order to create the service if its not already alive. Other possible values are `BIND_DEBUG_UNBIND` and `BIND_NOT_FOREGROUND`, or 0 for none.
 
-Android 4.0还可以向bindService()传一个参数，BIND_ALLOW_OOM_MANAGEMENT。Those familiar with OOM know it as the abbreviation for out of memory, and many operating systems employ an "OOM killer" to select processes for destruction in order to avert total memory exhaustion. BIND_ALLOW_OOM_MANAGEMENT 表示你的应用和绑定的服务不是重要的，allowing more aggressive consideration for it to be killed and the related service to be stopped inthe event of low memory issues.
+Android 4.0还可以向`bindService()`传一个参数，`BIND_ALLOW_OOM_MANAGEMENT`。Those familiar with OOM know it as the abbreviation for out of memory, and many operating systems employ an "OOM killer" to select processes for destruction in order to avert total memory exhaustion. `BIND_ALLOW_OOM_MANAGEMENT` 表示你的应用和绑定的服务不是重要的，allowing more aggressive consideration for it to be killed and the related service to be stopped inthe event of low memory issues.
 
 如果客户端是活动，要想活动能挺过配置改变（如屏幕旋转），需要：
+
 * 不要调用 Activity 的`bindService()`方法，调用Application Context（`getApplicationContext()`）的`bindService()`方法。
 * 更新从原来活动获取到的`ServiceConnection`，一般通过`onRetainNonConfigurationInstance()`。
 
 #### Additional notes
 
 Here are some important notes about binding to a service:
+
 - You should always trap `DeadObjectException` exceptions, which are thrown when the connection has broken. This is the only exception thrown by *remote methods*.
 - Objects are reference counted across processes.
 - You should usually pair the binding and unbinding during matching bring-up and tear-down moments of the client's lifecycle. For example:
@@ -596,16 +607,17 @@ public class ExampleService extends Service {
 > Note: 与 Activity 不同的是，你不必调用父类的生命周期回调。
 
 通过实现这些方法，你可以监控服务生命周期中的两个嵌套的循环：
-- 服务的整个生命周期从 `onCreate()` 到 `onDestroy()` 方法返回。初始在 `onCreate()` 中做，在 `onDestroy()` 中释放所有资源。例如在 `onCreate()` 创建线程，在 `onDestroy()` 中停止。
+
+- 服务的整个生命周期从`onCreate()` 到 `onDestroy()` 方法返回。初始在 `onCreate()` 中做，在 `onDestroy()` 中释放所有资源。例如在 `onCreate()` 创建线程，在 `onDestroy()` 中停止。
 - 服务的活跃（active）生命周期从 `onStartCommand() `或 `onBind()` 开始。如果服务是被启动的（started），the active lifetime ends the same time that the entire lifetime ends (the service is still active even after `onStartCommand()` returns). If the service is bound, the active lifetime ends when onUnbind() returns.
 
 > Note: Although a started service is stopped by a call to either stopSelf() or stopService(), there is not a respective callback for the service (there's no `onStop()` callback). So, unless the service is bound to a client, the system destroys it when the service is stopped — `onDestroy()` is the only callback received.
 
 When a service is unbound from all clients, the Android system destroys it (unless it was also started with `onStartCommand()`). As such, you don't have to manage the lifecycle of your service if it's purely a bound service—the Android system manages it for you based on whether it is bound to any clients.
 
-However, if you choose to implement the onStartCommand() callback method, then you must explicitly stop the service, because the service is now considered to be started. In this case, the service runs until the service stops itself with stopSelf() or another component calls stopService(), regardless of whether it is bound to any clients.
+However, if you choose to implement the `onStartCommand()` callback method, then you must explicitly stop the service, because the service is now considered to be started. In this case, the service runs until the service stops itself with `stopSelf()` or another component calls `stopService()`, regardless of whether it is bound to any clients.
 
-Additionally, if your service is started and accepts binding, then when the system calls your onUnbind() method, you can optionally return true if you would like to receive a call to onRebind() the next time a client binds to the service (instead of receiving a call to onBind()). onRebind() returns void, but the client still receives the IBinder in its onServiceConnected() callback. Below, figure 1 illustrates the logic for this kind of lifecycle.
+Additionally, if your service is started and accepts binding, then when the system calls your `onUnbind()` method, you can optionally return true if you would like to receive a call to `onRebind()` the next time a client binds to the service (instead of receiving a call to `onBind()`). `onRebind()` returns void, but the client still receives the IBinder in its `onServiceConnected()` callback. Below, figure 1 illustrates the logic for this kind of lifecycle.
 
 ![](service_binding_tree_lifecycle.png)
 
