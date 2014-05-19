@@ -136,6 +136,16 @@ button.setOnClickListener(new View.OnClickListener() {
 });
 ```
 
+## 其他
+
+### android.widget.TextClock
+
+显示文字时钟。
+参见API DEMO：`com.example.android.apis.view.TextClockDemo`。
+
+### android.widget.TextSwitcher
+
+
 
 
 
