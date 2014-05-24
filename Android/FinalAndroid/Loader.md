@@ -1,4 +1,5 @@
 在Android 3.0引入。加载器帮助异步加载 Activity 或 Fragment 的数据。加载器功能特性：
+
 - 在每个 Activity 和 Fragment 中都可以使用。
 - 异步加载数据。
 - 监控数据源，当数据源发生变化时递送新数据。
@@ -7,6 +8,7 @@
 ## Loader API 总结
 
 涉及的类和接口：
+
 - `LoaderManager`。抽象类，与 Activity 或 Fragment 关联。负责关联一个或多个 `Loader` 实例。This helps an application manage longer-running operations in conjunction with the Activity or Fragment lifecycle; 一般与 `CursorLoader` 连用。应用可以编写自己的loaders，加载其他类型的数据。一个 Activity 或 Fragment 只有一个`LoaderManager`。但一个 `LoaderManager`可以管理多个加载器。
 - `LoaderManager.LoaderCallbacks`。客户端利用此回调接口。与 `LoaderManager` 交互。例如，在 `onCreateLoader()` 回调中创建一个新的加载器。
 - `Loader`。抽象类。进行异步数据加载。加载器的基类。常用的子类是`CursorLoader`。可以自己编写子类。当加载器活动时（active），它们需要负责监控数据源，并在数据改变时递送新结果。
@@ -28,11 +30,13 @@ getLoaderManager().initLoader(0, null, this);
 ```
 
 `initLoader()`方法的参数：
+
 - 一个唯一标识，标识加载器。在本例是中是`0`。
 - 在构造期提供给加载器的参数。可选。
 - `LoaderManager.LoaderCallbacks`实现。
 
 The `initLoader()` call ensures that a loader is initialized and active. It has two possible outcomes:
+
 - 如果标识指定的加载器已存在，重用之前的。
 - 如果标识指定的加载器不存在，`initLoader()`触发`LoaderManager.LoaderCallbacks.onCreateLoader()`。在该方法中实例化并返回一个新的加载器。
 

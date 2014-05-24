@@ -368,7 +368,7 @@ public void confirmFireMissiles() {
 
 ## 全屏显示对话框；将对话框显示成嵌入的Fragment
 
-此时，不能使用`AlertDialog.Builder`或其他`Dialog`对象构造对话框。如果想让`DialogFragment`被签入，必须在布局中定义对话框UI，在`onCreateView()`中加载布局。
+此时，不能使用`AlertDialog.Builder`或其他`Dialog`对象构造对话框。如果想让`DialogFragment`被嵌入，必须在布局中定义对话框UI，在`onCreateView()`中加载布局。
 
 Here's an example DialogFragment that can appear as either a dialog or an embeddable fragment (using a layout named `purchase_items.xml`):
 
