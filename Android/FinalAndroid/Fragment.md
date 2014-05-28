@@ -1,3 +1,5 @@
+[toc]
+
 可以将一个Fragment看做活动的一个模块化的部分。为了重用Fragment UI，你需要将每个Fragment定义为完全自包含的组件，拥有自己的布局和行为。Fragment有自己的生命周期，接受自己的输入事件。可以在活动运行过程中添加或删除fragment。
 
 Fragment可以不带UI；向活动提供后台功能。
@@ -6,11 +8,11 @@ Fragment不需要向装箱文件注册。
 
 Fragment是Android 3.0 Honeycomb (API level 11)才引入的。支持库可以支持到Android 1.6 (API level 4)。如果最低支持的API版本高于11，可以不用Support Library，直接使用系统的Fragment类。
 
-# 创建Fragment
+## 创建Fragment
 
 注意：Fragment必须有一个默认无参构造器。当宿主Activity被重建后，系统利用该默认构造器实例化Fragment。忘记提供默认构造器不会不抱错，但会导致不确定行为。如果想在构造期传递方法，可以使用`setArguments`方法。
 
-## 继承Fragment类（3.0+）
+### 继承Fragment类（3.0+）
 
 若Fragment需要UI，覆盖onCreateView方法，充气并返回View。
 
@@ -29,7 +31,7 @@ Fragment是Android 3.0 Honeycomb (API level 11)才引入的。支持库可以支
 		}
 	}
 
-## 使用支持库
+### 使用支持库
 
 本节介绍使用支持库中的Fragment类。兼容Android 1.6以上。
 
@@ -47,7 +49,7 @@ Fragment是Android 3.0 Honeycomb (API level 11)才引入的。支持库可以支
 	    }
 	}
 
-# 生命周期
+## 生命周期
 
 Fragment部分生命周期回调与父Activity对应。还有部分自身特有的生命周期回调。例如，当活动的onPause()被调用，则活动内的所有Fragment都将收到onPause()。
 
@@ -85,19 +87,19 @@ onCreateView返回的View与Fragment解除关联后。清理所有与View相关�
 
 由于Fragment可能被动态的添加、删除。因此在父活动活跃的情况下，Fragment自身可能多次经历完整的生命周期。
 
-## Fragment特有的生命周期回调
+### Fragment特有的生命周期回调
 
-### 与父Activity关联/解除
+#### 与父Activity关联/解除
 
 Fragment生命周期从绑定到父活动开始，结束于与父活动解除绑定。分别由`onAttach`和`onDetach`表示。若Fragment/Activity已被暂停（退出Active状态），且父Activity的进程被直接终止，则`onDetach`可能不会被调用。`onAttach`事件发生在创建Fragment的UI前，设置发生在Fragment自己和父Activity**完成**初始化前。onAttach一般用于获取对父活动的引用。
 
-### 创建和销毁Fragments
+#### 创建和销毁Fragments
 
 活动的`onDestroy`不保证一定会被调用，同样也不保证Fragment的`onDestroy`被调用。用``方法初始化Fragment。应该在此创建class scoped对象，以确保在Fragment生命周期内它们只被创建一次。
 
 但与活动不同的是，UI不在onCreate方法中创建。
 
-### 创建和销毁UI
+#### 创建和销毁UI
 
 Fragment的UI在`onCreateView`和`onDestroyView`中创建和销毁。
 
@@ -107,14 +109,14 @@ Fragment的UI在`onCreateView`和`onDestroyView`中创建和销毁。
 
 如果Fragment需要与父Activity的UI交互，等到`onActivityCreated`触发再做。此时活动的UI已构建好。
 
-# 添加到父活动
+## 添加到父活动
 
 每个Fragment的实例都必须与父活动关联。这种关联，可以通过在活动的布局文件中定义Fragment实现。但注意，通过布局XML文件向活动添加的Fragment不能在运行时被移除。
 
 > Note: 在API level API 11前，要使用FragmentActivity做父Activity，但在之后可以直接使用常规Activity。  
 如果使用v7 appcompat library，活动应该继承ActionBarActivity类（FragmentActivity的子类）。
 
-## 用XML向活动添加Fragment（静态）
+### 用XML向活动添加Fragment（静态）
 
 下面这个布局文件，当屏幕large时使用，在活动中并排放置两个Fragment。
 
@@ -162,7 +164,7 @@ Fragment的实现类可以用`android:name`特性指定，也可以用`class`特
 
 Fragment被充气后，会变成一个View Group。
 
-# Fragment Manager
+## Fragment Manager
 
 每个Activity都包含一个Fragment Manager用于管理所包含的Fragments。获取FragmentManager：
 
@@ -186,7 +188,7 @@ Fragment Transaction从beginTransaction开始，最后提交。
 
 > 注意：只有当活动处于resumed状态时，Fragment才可以被添加或移除。
 
-##添加
+### 添加
 
 除了指定Fragment，还需要指定在哪里放置Fragment，即Fragment的父View。还可以指定一个标签，此后，可以利用这个标签和`findFragmentByTag`方法查询到这个Fragment：
 
@@ -194,7 +196,7 @@ Fragment Transaction从beginTransaction开始，最后提交。
 	fragmentTransaction.add(R.id.ui_container, new MyListFragment());
 	fragmentTransaction.commit();
 
-## 移除
+### 移除
 
 先利用Manager的`findFragmentById`或`findFragmentByTag`方法获取到Fragment。然后将这个实例传入remove()方法：
 
@@ -203,7 +205,7 @@ Fragment Transaction从beginTransaction开始，最后提交。
 	fragmentTransaction.remove(fragment);
 	fragmentTransaction.commit();
 
-## 替换
+### 替换
 
 指定要被替换的Fragment所在的容器ID，指定替换后的Fragment实例。一个可选的标签识别新插入的Fragment。
 
@@ -211,7 +213,7 @@ Fragment Transaction从beginTransaction开始，最后提交。
 	fragmentTransaction.replace(R.id.details_fragment, new DetailFragment(selected_index));
 	fragmentTransaction.commit();
 
-## 查找
+### 查找
 
 利用Fragment Manager的`findFragmentById`方法。
 
@@ -223,7 +225,7 @@ Fragment Transaction从beginTransaction开始，最后提交。
 
 没有UI的Fragment只能通过`findFragmentByTag`找到。Because they’re not part of the Activity’s View hierarchy, 它们没有资源标识符，或container resource identifier，因此不能用`findFragmentById`。
 
-# 用Fragment动态布局Activity
+## 用Fragment动态布局Activity
 
 对于运行时添加的Fragment，布局中必须有一个Fragment的父View，以容纳Fragment。
 例如，下面的布局，一次显示一个Fragment。为了能替换一次显示一个Fragment。活动的布局包含一个空FrameLayout，｛｛注意是Frame不是Fragment！只是一种普通的布局容器！｝｝作为fragment容器。
@@ -269,7 +271,7 @@ res/layout/news_articles.xml:
 
 For the same reason, when creating alternative layouts for run time configuration changes, it’s considered good practice to include any view containers involved in any transactions in all the layout variations. Failing to do so may result in the Fragment Manager attempting to restore Fragments to containers that don’t exist in the new layout.
 
-# Fragment、后退栈与生命周期
+## Fragment、后退栈与生命周期
 Fragment替换对UI的改变是巨大的，可以看成是另一个屏幕。因此要允许用户后退。
 
 To allow the user to navigate backward through the fragment transactions, you must call addToBackStack() before you commit the FragmentTransaction.
@@ -288,7 +290,7 @@ The `addToBackStack()` method takes an optional string parameter that specifies 
 
 可以通过程序要求事务退栈，调用`FragmentManager.popBackStack()`，上一个事务会被退栈。
 
-# Fragment Transactions动画
+## Fragment Transactions动画
 
 要使用预设的转场动画，调用setTransition方法，传入某个`FragmentTransaction.TRANSIT_FRAGMENT_*` 常量。
 
@@ -303,7 +305,7 @@ The `addToBackStack()` method takes an optional string parameter that specifies 
 
 The Android animation libraries were significantly improved in Android 3.0 (API level 11) with the inclusion of the Animator class. 于是，传入setCustomAnimations方法的动画资源，不同于使用support library的应用。API level 11之后应该使用Animator，之前使用View动画。
 
-# 与其他Fragments通信
+## 与其他Fragments通信
 
 所有的Fragment-to-Fragment通讯都通过关联的Activity。两个Fragments永远不要相互直接通信。
 
@@ -398,7 +400,7 @@ The Android animation libraries were significantly improved in Android 3.0 (API 
 	    }
 	}
 
-# 没有UI的Fragment
+## 没有UI的Fragment
 
 没有UI的Fragment可以提供后台功能，且能在Activity重启后保持住。This is particularly well suited to background tasks that regularly touch the UI，或者，配置改变导致Activity重启，维持某些状态。
 
@@ -439,7 +441,7 @@ Use the findFragmentByTag from the Fragment Manager to find a reference to it la
 
 	MyFragment myFragment = (MyFragment)fragmentManager.findFragmentByTag(MY_FRAGMENT_TAG);
 
-# Android Fragment子类
+## Android Fragment子类
 
 Android SDK包含几个Fragment子类：
 
@@ -450,7 +452,7 @@ A wrapper class for Fragments that feature a ListView bound to a data source as 
 * WebViewFragment  
 A wrapper class that encapsulates a WebView within a Fragment. The child WebView will be paused and resumed when the Fragment is paused and resumed. ｛｛WebView也需要被暂停、恢复？？？｝｝
 
-# 例子
+## 例子
 
 * 官方Tutorials：[FragmentBasics.zip](http://developer.android.com/shareables/training/FragmentBasics.zip)
 

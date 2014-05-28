@@ -1,23 +1,27 @@
-# Launcher Activity
+[toc]
+
+## Launcher Activity
 
 When the user selects your app icon from the Home screen, the system calls the onCreate() method for the Activity in your app that you've declared to be the "launcher" (or "main") activity. This is the activity that serves as the main entry point to your app's user interface.
 
 可以在AndroidManifest.xml中定义哪个活动是主活动。The main activity for your app must be declared in the manifest with an `<intent-filter>` that includes the MAIN action and LAUNCHER category. For example:
+
 ```xml
-<activity android:name=".MainActivity" android:label="@string/app_name">
-	<intent-filter>
-		<action android:name="android.intent.action.MAIN" />
-		<category android:name="android.intent.category.LAUNCHER" />
-	</intent-filter>
-</activity>
+	<activity android:name=".MainActivity" android:label="@string/app_name">
+		<intent-filter>
+			<action android:name="android.intent.action.MAIN" />
+			<category android:name="android.intent.category.LAUNCHER" />
+		</intent-filter>
+	</activity>
 ```
+
 If either the MAIN action or LAUNCHER category are not declared for one of your activities, then your app icon will not appear in the Home screen's list of apps.
 
-# 生命周期
+## 生命周期
 
 > 理解活动生命周期的前提是理解**Android对进程策略**，及在资源不足的情况下，Android对进程和Android应用**强杀的策略**。理解在资源不足去情况下，强杀活动和进程的策略。例如`onPause`分隔的Activity两个状态是：活跃和可视，`onStop`分隔的Activity两个状态是：可视和后台。在资源不足的情况下，Android先杀后台Activity，一般不会杀死可视的，更不会杀活跃的（杀死别的活动目的就是让活跃的Activity拥有资源）。既然如此，在`onStop`中释放资源几乎是完全安全的，因为`onStop`几乎一定会被调用，因为不调用它，活动就不会进入后台状态，就不会被强杀。
 
-## 目标与考量
+### 目标与考量
 
 合理的实现生命周期回调方法，以期实现：
 
@@ -28,7 +32,7 @@ If either the MAIN action or LAUNCHER category are not declared for one of your 
 
 例子：流媒体播放。当用户去到另一个app时，你需要暂停视频，中止网络连接。当用户回来时，重新连接网络，让用户从相同的地方继续播放。
 
-## 概述
+### 概述
 
 ![](Activity_life_callback.png)
 
@@ -43,7 +47,7 @@ If either the MAIN action or LAUNCHER category are not declared for one of your 
 
 其他状态是瞬态。
 
-## 创建与销毁
+### 创建与销毁
 
 在onCreate()方法中做一些基本的启动逻辑，这些逻辑在活动的整个生命周期中只应该执行一次。例如在onCreate()中的定义UI，实例化类级别的变量。
 
@@ -64,7 +68,7 @@ public void onDestroy() {
 
 > 注意：系统会在onDestroy()前先调用onPause()和onStop()。*但如果在onCreate()中直接调用了finish()，系统将直接调用onDestroy()，不再调用其他生命周期方法*。
 
-### 例子
+#### 例子
 
 下面的onCreate()定义了UI（布局）、成员变量和UI的一些配置：
 
@@ -90,7 +94,7 @@ public void onCreate(Bundle savedInstanceState) {
 
 > Caution: Using the SDK_INT to prevent older systems from executing new APIs works in this way on Android 2.0 (API level 5) and higher only. Older versions will encounter a runtime exception.
 
-## 暂停和恢复
+### 暂停和恢复
 
 前台活动被其他可视组件阻塞造成活动暂停。例如当一个半透明活动（对话框风格）启动，之前的活动被暂停。只要活动仍部分可见但没有焦点，活动保持暂停。
 
@@ -105,6 +109,7 @@ public void onCreate(Bundle savedInstanceState) {
 * 提交未保存的修改，但只有当用户期望这些改变被永久保存时（如邮件草稿）。
 * 释放系统资源，如`broadcast receivers`，引用的传感器（如GPS），或其他会影响电池寿命的。例如，如果应用使用了Camera，在onPause()方法中释放比较合适。
 
+```java
 	@Override
 	public void onPause() {
 	    super.onPause();  // 必须先调用父类
@@ -114,6 +119,7 @@ public void onCreate(Bundle savedInstanceState) {
 	        mCamera = null;
 	    }
 	}
+```
 
 注意不要在onPause()中做太多耗费CPU的事，如写数据库，因为这会减慢到下一个活动的转场（费事操作放到`onStop()`中做）。
 
@@ -123,6 +129,7 @@ public void onCreate(Bundle savedInstanceState) {
 
 每次应用进入前台时都会调用该方法，包括首次创建。在onResume()中应该初始化在onPause()中释放的组件，或其他需要每次进入Resumed状态时要初始化的工作。（如开始动画，或初始化只在有焦点时才使用的组件。）
 
+```java
 	@Override
 	public void onResume() {
 	    super.onResume();  // Always call the superclass method first
@@ -132,8 +139,9 @@ public void onCreate(Bundle savedInstanceState) {
 	        initializeCamera(); // Local method to handle camera init
 	    }
 	}
+```
 
-## 启动、停止和重启
+### 启动、停止和重启
 
 onStop()和onRestart()，处理Activity的停止和重启。停止态时，UI一定是不可见的，活动的焦点在另一个活动中。
 
@@ -151,6 +159,7 @@ onStop()和onRestart()，处理Activity的停止和重启。停止态时，UI一
 
 下面的onStop()在存草稿，为的是不丢失用户进度：
 
+```java
 	@Override
 	protected void onStop() {
 	    super.onStop(); //  一定要先调用父类
@@ -166,7 +175,7 @@ onStop()和onRestart()，处理Activity的停止和重启。停止态时，UI一
 	            null     // No WHERE columns are used.
 	            );
 	}
-
+```
 
 {{在到达Resumed状态之前创建的组件都不需要重新初始化。}} 系统会负责跟踪布局中每个View的当前状态，例如，若用户向EditText输入，内容会被保留，因此不需要保存和恢复。
 
@@ -178,6 +187,7 @@ onStop()和onRestart()，处理Activity的停止和重启。停止态时，UI一
 
 例如，因为用户可能离开你的应用很长时间后才返回，因此在onStart()中检查某些系统功能比较靠谱：
 
+```java
 	@Override
 	protected void onStart() {
 	    super.onStart();  // Always call the superclass method first
@@ -198,10 +208,11 @@ onStop()和onRestart()，处理Activity的停止和重启。停止态时，UI一
 	    
 	    // Activity being restarted from stopped state    
 	}
+```
 
 When the system destroys your activity, it calls the onDestroy() method for your Activity. Because you should generally have released most of your resources with onStop(), by the time you receive a call to onDestroy(), there's not much that most apps need to do. This method is your last chance to clean out resources that could lead to a memory leak, so you should be sure that additional threads are destroyed and other long-running actions like method tracing are also stopped.
 
-## 重新创建一个活动
+### 重新创建一个活动
 
 有一些正常操作会导致活动被销毁，如用户按下Back｛｛当前的Activity会被销毁｝｝，或活动自己调用finish()。如果活动**停止**且长时间未用，系统也可能销毁活动。当前台活动需要额外资源时，系统会关闭后台进程，以回收内存。
 
@@ -219,6 +230,7 @@ When the system destroys your activity, it calls the onDestroy() method for your
 
 保存附加状态：
 
+```java
 	static final String STATE_SCORE = "playerScore";
 	static final String STATE_LEVEL = "playerLevel";
 	...
@@ -232,9 +244,11 @@ When the system destroys your activity, it calls the onDestroy() method for your
 	    // 一定要调用父类
 	    super.onSaveInstanceState(savedInstanceState);
 	}
+```
 
 当之前销毁的活动被重新创建，可以从Bundle中恢复状态。onCreate()和onRestoreInstanceState()两个方法都能收到一个Bundle，它们收到的是同一个Bundle。注意检查Bundle是否为null。首次创建时，onCreate()收到null。
 
+```
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 	    super.onCreate(savedInstanceState);
@@ -249,9 +263,11 @@ When the system destroys your activity, it calls the onDestroy() method for your
 	    }
 	    ...
 	}
+```
 
 若不想在`onCreate()`中恢复状态，可以在`onRestoreInstanceState()`中，该方法在`onStart()`之后调用。｛｛在onStart()之后调用，于是可以恢复在onStart()中才初始化的对象。这些对象在onCreate()时尚未被初始化｝｝系统只有在有状态需要恢复时才调用`onRestoreInstanceState()`，因此不必检查`Bundle`是否为`null`：
 
+```java
 	public void onRestoreInstanceState(Bundle savedInstanceState) {
 	    // Always call the superclass so it can restore the view hierarchy
 	    super.onRestoreInstanceState(savedInstanceState);
@@ -260,12 +276,13 @@ When the system destroys your activity, it calls the onDestroy() method for your
 	    mCurrentScore = savedInstanceState.getInt(STATE_SCORE);
 	    mCurrentLevel = savedInstanceState.getInt(STATE_LEVEL);
 	}
+```
 
 > Caution: Always call the superclass implementation of onRestoreInstanceState() so the default implementation can restore the state of the view hierarchy.
 
 To learn more about recreating your activity due to a restart event at runtime (such as when the screen rotates), read [Handling Runtime Changes](http://developer.android.com/guide/topics/resources/runtime-changes.html).
 
-## 其他
+### 其他
 
 > 任何时候都可以调用`Activity.isFinishing()`检查活动是否将要被杀死。在活动被杀死前`onPause()`方法是肯定会被调用的，因此可以在`onPause()`中用`isFinishing()`检查活动是否将要被杀死。如果是，**可能需要将状态保存到磁盘**。  
 —— *Beginning.Android.Games*
