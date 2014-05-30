@@ -1,5 +1,76 @@
 [toc]
 
+## 1. Libgdx介绍与工程搭建
+
+例子可以运行在以下平台：
+* Windows
+* Linux
+* Mac OS X
+* Android (Version 1.5 and above)
+* HTML5 (Using JavaScript and WebGL)
+
+Libgdx是一游戏框架而不是一个游戏引擎。
+
+### （未整理）1.2 Libgdx 0.97特性
+
+### 1.3 社区
+
+- 官方论坛：http://badlogicgames.com/forum/。
+- Blog: http://www.badlogicgames.com/
+- Wiki: http://code.google.com/p/libgdx/wiki/TableOfContents
+- API overview: http://libgdx.badlogicgames.com/nightlies/docs/api/
+
+### 1.5 创建新应用
+
+常常需要在Eclipse中创建几个工程：一个用于公共代码，一个用于桌面启动，一个用于Android，一个用于HTML5/GWT等。
+
+幸运的是，*Libgdx Project Setup*可以产生这些工程，你只需要导入Eclipse。
+
+运行`gdx-setup-ui`。
+
+![](gdx-setup-ui.png)
+
+工程名输入`demo`。包名`com.packtpub.libgdx.demo`。
+
+在中间*LIBRARY SELECTION*，*LibGDX* 为红色表示需要指定该库位置。点击文件夹。选择文件。如 *libgdx-0.9.7.zip*。此时 *LibGDX* 应该变绿。
+![](create-project.png)
+
+产生后，在Eclipse里，选择导入存在的工程。
+
+The second issue requires you to click on the Problems tab in Eclipse. Open the Errors list and right-click on the reported problem, which should say The GWT SDK JAR *gwt-servlet.jar* is missing in the *WEB-INF/lib* directory. Choose Quick Fixfrom the context menu as shown in the following screenshot:
+
+In the Quick Fix dialog, select Synchronize *[WAR]/WEB-INF/lib* with SDK librariesas the desired fix and click on the Finishbutton, as shown in the following screenshot:
+![](fix_gwt.png)
+
+### 1.6 Kicking your game to life
+
+讨论一下游戏需要什么。总的来说，需要两方面：资源和逻辑。
+
+### 1.8 Game project – Canyon Bunny
+
+开发计划：
+Name or Working Title: Canyon Bunny
+Genre: 2D Side-Scrolling Jump and Run
+List of actors:
+•  Player character (can jump and move forward; controlled by player)
+•  Rocks, serving as platforms for the player character and items
+•  Canyons in the background (level decoration)
+•  Clouds in the sky (level decoration)
+•  Water at the bottom of the level (deadly for player character)
+•  Collectible items for the player: gold coins, feather power-up
+
+当角色向前时，视图向右水平滚动。背景显示远处的山和云。The bottom of the level is filled with water and will instantly kill the player character if both get into contact with each other.
+
+The player characterwill move on and jump over to random rocks, sticking out of the water. The width and height will be different to make the game more challenging. The player is only in control of a jump button, which will keep the automatically forward-moving player character from falling down into the deadly water.
+
+The level will be randomly populated with collectible items consisting of gold coins and feather power-ups. Collecting the gold coins will increase the player's high score. The feather power-up grants the player character the ability to fly for a limited time and can be used by repeatedly pressing the jump button. The player's goal is to beat the last high score.
+
+![](game_demo.png)
+
+The previous sketch has been created entirely by using vector graphics. Using vector graphics in favor of raster graphics for your sketches can be an advantage as they are infinitely scalable to any size without losing image quality. 但最终在游戏中使用的一般都是位图（rasterized），主要是由于矢量图实时渲染开销更大。So, the common approach is to create vector graphics and later on export them choosing an appropriate rasterized graphics file format, such as .png(Portable Network Graphics) for lossless compression with alpha channel support, or .jpg(JPEG) for lossy but high compression without alpha channel support.
+
+创建矢量图的开源工具：[Inkscape](http://inkscape.org/)。
+
 ## 2 跨平台开发：构建一次，四处部署
 
 接下来将学习 Libgdx 框架的以下组件：
@@ -62,10 +133,10 @@ Gdx.app.setLogLevel(Application.LOG_DEBUG);
 
 可以级别：
 
-* LOG_NONE: This prints nologs. The logging is completely disabled.
-* LOG_ERROR: Thisprints error logs only.
-* LOG_INFO: This prints error and info logs.
-* LOG_DEBUG: This prints error, info, and debug logs.
+* `LOG_NONE`: This prints nologs. The logging is completely disabled.
+* `LOG_ERROR`: Thisprints error logs only.
+* `LOG_INFO`: This prints error and info logs.
+* `LOG_DEBUG`: This prints error, info, and debug logs.
 
 写日志：
 ```java
@@ -165,7 +236,7 @@ Query a built-in frame counter provided by Libgdx to find the average number of 
 
 加载声音：`Gdx.audio.newSound()`。支持格式：WAV, MP3, OGG。
 
-解码后的音频数据大小上限是1 MB。
+解码后的音频数据大小上限是1MB。
 
 ##### 音乐流
 
@@ -236,6 +307,7 @@ To open a Uniform Resource Identifier(URI) in the default web browser, call `Gdx
 系统状态：create, resize, render, pause, resume, and dispose.
 
 `ApplicationListener`接口有6个方法，对应每种系统状态。
+
 ```java
 public interface ApplicationListener {
 	public void create();
@@ -250,7 +322,7 @@ public interface ApplicationListener {
 ![](app_life.png)
 
 
-在`create()`中初始化。如加载资源，初始化游戏状态。接下来是`resize()`. This is the first opportunity for an application to adjust itself to the available display size (width and height) given in pixels.
+在`create()`中初始化。如加载资源，初始化游戏状态。接下来是`resize()`。This is the first opportunity for an application to adjust itself to the available display size (width and height) given in pixels.
 
 Next, Libgdx will handle system events. If no event has occurred in the meanwhile, it is assumed that the application is (still) running. The next state would be `render()`. 在此方法中主要做两件事情：
 
@@ -531,6 +603,7 @@ public void render() {
 ### 3.1 建立 Canyon Bunny 工程
 
 Run the **gdx-setup-ui** tool from Libgdx and use the followingsettings:
+
 * Name: CanyonBunny
 * Package: com.packtpub.libgdx.canyonbunny
 * Game class: CanyonBunnyMain
@@ -567,6 +640,7 @@ The `WorldController` class contains all the game logic to initialize and modify
 The rendering takes place in `WorldRenderer` that apparently also requires it to have access to the list of `AbstractGameObject` instances. Since the game objects need to be created before the process of modification and rendering, `Level` needs access to the list of `AbstractGameObject` instances as well when a level is loaded from a level file at the beginning of the game.
 
 最下面一行都是`AbstractGameObject`的子类，它们都可以被渲染到游戏中。这些类按照它们的目的被分组：
+
 - 玩家角色
   - BunnyHead：表示玩家控制的角色
 - Level Objects
@@ -587,7 +661,6 @@ The rendering takes place in `WorldRenderer` that apparently also requires it to
 
 用`Constants`存储常量。
 
-Here is a listing of the code for Constants:
 ```java
 package com.packtpub.libgdx.canyonbunny.util;
 public class Constants {
@@ -622,7 +695,7 @@ public class CanyonBunnyMain implements ApplicationListener {
 }
 ```
 
-A reference each to `WorldController` and `WorldRenderer` enables this class to update and control the game's flow and also to render the game's current state to the screen.
+`WorldController`和`WorldRenderer`用于更新和控制游戏流，渲染游戏当前状态。
 
 #### 实现 `WorldController`
 
@@ -638,7 +711,7 @@ public class WorldController {
 
 `update()`方法每秒会被调用几百次。It requires a delta time so that it can apply updates to the game world according to the fraction of time that has passed since the last rendered frame.
 
-> The configurations of our starter classes use **vertical synchronization (vsync)**, which is enabled by default. Using vsync will cap your frame rate and likewise the calls to `update()` at a maximum of 60 frames per second.
+> The configurations of our starter classes use **vertical synchronization (vsync)**, which is enabled by default. 设置`vsync`将设置帧率上限，调用`update()`的频率最大每秒60次。
 
 #### 实现 `WorldRenderer`
 
@@ -660,13 +733,13 @@ public class WorldRenderer implements Disposable {
 }
 ```
 
-Furthermore, it contains a `render()` method that will contain the logic to define in which order game objects are drawn over others. Whenever the screen size is changed, including the event at the start of the program, `resize()` will spring into action and initiate the required steps to accommodate the new situation.
+`render()`方法中定义游戏对象绘制的上下顺序。当屏幕大小改变及程序启动时，`resize()`将执行。
 
-The rendering is accomplished by using an orthographic camera that is suitable for two-dimensional projections. Fortunately, Libgdx comes with a ready-to-use `OrthographicCamera` class to simplify our 2D rendering tasks. The `SpriteBatch` class is the actual workhorse that draws all our objects with respect to the camera's current settings (for example, position, zoom, and so on) to the screen. Since `SpriteBatch` implements Libgdx's `Disposable` interface, it is advisable to always call its `dispose()` method to free the allocated memory when it is no longer needed. We will do this in `WorldRenderer` by also implementing the `Disposable` interface. This allows us to easily cascade the disposal process when `dispose()` in `CanyonBunnyMain` is called by Libgdx. In this case, we will simply call the `WorldRenderer`'s class' `dispose()` method which in turn will call the `SpriteBatch` class' `dispose()` method.
+渲染通过一个正交摄像机完成，它适于二维投影。The `SpriteBatch` class is the actual workhorse that draws all our objects with respect to the camera's current settings (for example, position, zoom, and so on) to the screen. 因为`SpriteBatch`实现了Libgdx的`Disposable`接口，因此建议在不使用时调用它的`dispose()`方法释放内存。我们让`WorldRenderer`也实现`Disposable`接口，于是可以在`dispose()`中级联调用`dispose()`。
 
 ### 3.4 放到一起
 
-本节实现上一节介绍的几个主类。首先是游戏循环。接着引入一些精灵，验证更新和渲染机制。为了能操控游戏，引入控制器接收和响应用户输入。最后，实现`CameraHelper`类，让用户在游戏中自有移动，and to select a game object of our choice that the camera is supposed to follow.
+本节实现上一节介绍的几个主类。首先是游戏循环。接着引入一些精灵，验证更新和渲染机制。为了能操控游戏，引入控制器接收和响应用户输入。最后，实现`CameraHelper`类，让用户在游戏中自由移动，and to select a game object of our choice that the camera is supposed to follow.
 
 #### 3.4.1 建立游戏循环
 
@@ -710,7 +783,7 @@ The rendering is accomplished by using an orthographic camera that is suitable f
 			// Update game world by the time that has passed
 			// since last rendered frame.
 			worldController.update(Gdx.graphics.getDeltaTime());
-		}	
+		}
 		// 设置清屏颜色：Cornflower Blue
 		Gdx.gl.glClearColor(0x64/255.0f, 0x95/255.0f, 0xed/255.0f, 	0xff/255.0f);
 		// 清屏
@@ -722,13 +795,13 @@ The rendering is accomplished by using an orthographic camera that is suitable f
 
 注意一定要安装上面的顺序执行：先更新、清屏，最后渲染。
 
-The game world is incrementally updated using delta times. Luckily, Libgdx already does the math and housekeeping behind this for us, so all we need to do is to query the value by calling `getDeltaTime()` from the `Gdx.graphics` module and pass it to `update()` of `WorldController`. 
+The game world is incrementally updated using **delta times**. 可以直接通过`Gdx.graphics.getDeltaTime()`获取到这个值。
 
-`glClearColor()`取值`(red, green, blue, and alpha)`（RGBA）。每个颜色值是从0到1的浮点数。这里通过将十六进制数除以`255.0f`求得这个浮点数。
+`glClearColor()`取值`(red, green, blue, alpha)`（RGBA）。每个颜色值是从0到1的浮点数。这里通过将十六进制数除以`255.0f`求得这个浮点数。
 
 `glClear()`清楚屏幕所有内容，并用清屏色填充。
 
-Next, add the following code to resize():
+接下来实现`resize()`。因为调整大小事件与渲染有关，因此交给`WorldRenderer`处理。
 
 ```java
 	@Override
@@ -737,10 +810,7 @@ Next, add the following code to resize():
 	}
 ```
 
-因为调整大小事件与渲染有关，因此交给`WorldRenderer`处理。
-
-
-The same is almost true for the code to be added in dispose():
+`dispose()`也是：
 
 ```java
 	@Override
@@ -869,6 +939,7 @@ The camera's viewport defines the size of the captured game world it is looking 
 #### 3.4.3 调试辅助
 
 The debug controls we are going to implement will allow us to do the following:
+
 - 移动选中的精灵（上下左右）
 - 将游戏世界重置为初始状态
 - Cycle through the list of sprites to select the other ones
@@ -1035,7 +1106,7 @@ public boolean keyUp (int keycode) {
 }
 ```
 
-Remember to continuously call `update()` of CameraHelperon every update cycle to ensure that its internal calculations are also performed.
+Remember to continuously call `update()` of `CameraHelper` on every update cycle to ensure that its internal calculations are also performed.
 
 Additionally, add the following code to `WorldRenderer`:
 ```java
@@ -1108,32 +1179,28 @@ The `applyTo()` method should be called on each frame right at the beginning in 
 
 ### 4.2 创建 texture atlases
 
-A 纹理贴图(*texture atlas*) (also known as a *sprite sheet*) is just an ordinary image file that can be rendered to the screen like any other image. 那么它有何特殊之处？It is used as a container image that holds several smaller subimages arranged in such a way that they do not overlap each other and still fit into the size of the texture atlas. This way, we can greatly reduce the amount of textures that are sent to the graphics processor, which will significantly improve the overall render performance. The texture atlases are especially useful for games where a lot of small and different images are rendered at once. The reason for this is that switching between different textures is a very costly process. Each time you change textures while rendering, new data needs to be sent into video memory. If you use the same texture for everything, this can be avoided.
+纹理贴图(*texture atlas*) (also known as a *sprite sheet*) 只是一个普通的图像文件。它由一些小图像拼成{{纹理贴图，及纹理们的贴图，这些小图是纹理，组成的大图即贴图atlas}}，小图像不会重叠。利用纹理贴图可以显著减少向图像处理器发送的纹理数量。切换不同贴图是很耗资源的。当游戏有许多小图需要被同时渲染时，纹理贴图很有帮助。渲染过程中，每次需要改变纹理时，需要向显存发送新数据。如果总是使用相同贴图，就可以避免。
 
-纹理贴图不仅能显著提高游戏的帧率，but will also allow us to use subimages as **Non-Power-Of-Two(NPOT)** textures. 但纹理贴图的长和宽应该总是2的整数倍，避免在不支持 NPOT 纹理的硬件上出现问题。子图象的大小可以任意的原因是，2的整数倍的规则只作用于加载到图像内存纹理。Therefore, when we actually render a subimage, we are still using the texture atlas, which is a power-of-two texture as our pixel source; however, we will only use a certain part of it as our final texture to draw something.
+纹理贴图不仅能显著提高游戏的帧率，还能让小图是**Non-Power-Of-Two(NPOT)**纹理。只要纹理贴图的长和宽应该总是2的整数倍，避免在不支持 NPOT 纹理的硬件上出现问题。子图象的大小可以任意的原因是，2的整数倍的规则只作用于加载到图像内存纹理。Therefore, when we actually render a subimage, we are **still using** the texture atlas, which is a power-of-two texture as our pixel **source**; however, we will only use a certain part of it as our final texture to draw something.
 
 Libgdx 有一个内建的纹理打包器（packer），用于自动化创建和刷新纹理贴图的过程。下面是将所有游戏对象的图标放入一个贴图（atlas）的效果：
 
 ![](atlas_for_game.png)
 
-The 
-purple border around each image is a debugging feature of Libgdx's texture packer that can be toggled on and off. It can be used to visualize the true size of your subimages which otherwise can be difficult to see if the subimages use transparency. Also when padding is enabled, which is the default by using two pixels for each direction, you would barely see the difference without the enabled debugging lines.
+子图的粉色边框是Libgdx's texture packer的一项调试功能，可以打开或关闭。默认还将使用2像素的padding。
 
-> Padding your images inside a texture atlas helps you avoid an issue that is known as *texture bleeding* (also known as *pixel bleeding*) while texture filtering and/or mip-mapping is enabled.
-The texture filter mode can be set to smooth pixels of a texture. This is basically done by looking for the pixel information which is next to the current pixel that is to be smoothened. The problem here is that if there is a pixel of a neighboring subimage, its pixels may also be taken into account, which results in the unwanted effect of pixels bleeding from one subimage into another.
+> 在纹理内使用Padding能够避免*texture bleeding* (also known as *pixel bleeding*) while texture filtering and/or mip-mapping is enabled。The texture filter mode can be set to smooth pixels of a texture. This is basically done by looking for the pixel information which is next to the current pixel that is to be smoothened. 问题是相邻图像的像素也会参加运算，于是pixels bleeding from one subimage into another。
 
-For the texture packer, some preparations need to be done beforehand since it is a so-called extension to Libgdx that is not a part of the core functionality. Go to `C:\libgdx\` and extract `extensions/gdx-tools.jar` from the `libgdx-0.9.7.zip` file. Put the `gdx-tools.jar` file in the `CanyonBunny-desktop/libs` subfolder. Next, the extension has to be added to Build Pathin Eclipse.
+texture packer是Libgdx的一项扩展。因此需要将`extensions/gdx-tools.jar`拷贝到`CanyonBunny-desktop/libs`，并添加到Eclipse的Build Path中。
 
-We will now add the code to automate the generation process of the texture atlas. Create a new folder called `assets-raw` under *CanyonBunny-desktop*. Also, add a subfolder named `assets-raw/images`. This is where we put our image files to be included in the texture atlas.
+We will now add the code to automate the generation process of the texture atlas. Create a new folder called `assets-raw` under *CanyonBunny-desktop*. Also, add a subfolder named `assets-raw/images`. 这个文件夹下的图片将被包含进纹理贴图。
 
-Next, add the following two lines of code:
+Then, apply the following changes to `Main` in `CanyonBunny-desktop`:
+
 ```java
 import com.badlogic.gdx.tools.imagepacker.TexturePacker2;
 import com.badlogic.gdx.tools.imagepacker.TexturePacker2.Settings;
-```
 
-Then, apply the following changes to `Main` in CanyonBunny-desktop:
-```java
 public class Main {
 	private static boolean rebuildAtlas = true;
 	private static boolean drawDebugOutline = true;
@@ -1158,22 +1225,1512 @@ public class Main {
 }
 ```
 
-`TexturePacker2.process()`第一个参数是`Settings`对象，可选。接下来两个参数是源文件夹和目标文件夹。最后一个参数是，name of the description file that is needed to load and use the texture atlas. The description file (in our example, `canyonbunny.pack`) will be created by `TexturePacker2` and will contain all the information about all the subimages, 例如它们在纹理贴图中的位置、大小和偏移。
+`TexturePacker2.process()`第一个参数是`Settings`对象，可选。接下来两个参数是源文件夹和目标文件夹。最后一个参数是描述文件的名字（`canyonbunny.pack`）。描述文件将由`TexturePacker2`创建，包含子图象的所有信息，例如它们在纹理贴图中的位置、大小和偏移。
 
-The `maxWidth` and `maxHeight` variables of the `Settings` instance define the maximum dimensions (in pixels) for the texture atlas. 确保单个子图像的高度和宽度不要超过设置的最大大小。*Padding* the subimages in the atlas will reduce the available size a little bit more, so make sure to take this factor into account also. The `debug` variable controls whether the debug lines should be added to the atlas or not.
+`Settings`的`maxWidth`和`maxHeight`定义了纹理贴图的最大大小（像素）。单个子图像的高度和宽度不要超过设置的最大大小。同时考虑*Padding*也会占用一定大小。
 
-> If the texture packer cannot fit all subimages into a single texture, it will automatically split them up into several texture atlases. However, there is a chance that subimages are distributed in an unfavorable way between those atlases, which in turn could have an impact on render performance.
-Libgdx's texture packer has a very smart feature to tackle this type of problem. All you need to do is group the subimages in their own subfolder in `assets-raw`. This way the texture packer will create one image file per subfolder that belongs to the texture atlas. You have to use the full path to the subimage if you want to use this functionality; for example, a subimage `assets-raw/items/gold_coin.png` would be referenced as `items/gold_coin`.
+> 如果子图像无法放入一个贴图，将产生多个纹理贴图。子图在贴图中的分布可能不够优化，于是会影响渲染性能。
+Libgdx's texture packer has a very smart feature to tackle this type of problem. 只需要将相关在子图放入`assets-raw`下一个单独的文件夹内。这样每个子文件夹都会产生一张贴图。You have to use the full path to the subimage if you want to use this functionality; for example, a subimage `assets-raw/items/gold_coin.png` would be referenced as `items/gold_coin`.
 
 上面是通过代码创建纹理贴图的方式。但更直观的方式是使用*TexturePacker-GUI*。官网：https://code.google.com/p/libgdx-texturepacker-gui/。
 
 ![](TexturePackerGUI.png)
 
-There is also a popular commercial tool called **TexturePacker** for creating texture atlases. This tool has been developed by Andreas Löw and is available for all three major platforms. Formore information, check out the official website at http://www.codeandweb.com/texturepacker.
+还有一个商业工具可以创建纹理贴图：**TexturePacker**。This tool has been developed by Andreas Löw and is available for all three major platforms. Formore information, check out the official website at http://www.codeandweb.com/texturepacker.
 
 ### 4.3 加载和追踪 assets
 
+加载纹理：
 
+```java
+Texture texture = new Texture(Gdx.files.internal("texture.png"));
+```
+
+内部文件放在`assets`文件夹下。
+
+`Texture`实例可以被直接渲染到屏幕上：
+```java
+batch.draw(texture, x, y);
+```
+
+Android中，暂停/恢复可能导致上下文丢失（context loss）。丢失，意味着assets占用的内存可能被清除。丢失后再访问assets将导致应用挂掉。要避免挂掉，需要在访问assets前重新加载。不再使用时，一定要调用`dispose()`。
+```java
+texture.dispose();
+```
+
+Libgdx提供一个管理类`AssetManager`，负责追踪一组加载的assets。它能够异步的加载新assets，及加载发生在后台，不会停止更新和渲染屏幕。This is a very useful functionality; for example, it allows for rendering and updating a progress bar showing the current loading status. 但实际的加载仍需要我们自己做。因此，我们将创建我们自己的`Assets`类。通过此类，还能结构化加载的assets，将它们放入逻辑单元，并能够在代码的任意地方访问。
+
+### 4.4 组织 assets
+
+先定义一个常量指向纹理贴图描述文件的位置：
+
+```java
+public class Constants {
+	// Visible game world is 5 meters wide
+	public static final float VIEWPORT_WIDTH = 5.0f;
+	// Visible game world is 5 meters tall
+	public static final float VIEWPORT_HEIGHT = 5.0f;
+	// Location of description file for texture atlas
+	public static final String TEXTURE_ATLAS_OBJECTS = "images/canyonbunny.pack";
+}
+```
+
+创建`Assets`类：
+```java
+package com.packtpub.libgdx.canyonbunny.game;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.assets.AssetErrorListener;
+import com.badlogic.gdx.assets.AssetManager;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas;
+import com.badlogic.gdx.utils.Disposable;
+import com.packtpub.libgdx.canyonbunny.util.Constants;
+public class Assets implements Disposable, AssetErrorListener {
+	public static final String TAG = Assets.class.getName();
+	public static final Assets instance = new Assets();
+	private AssetManager assetManager;
+	// singleton: prevent instantiation from other classes
+	private Assets () {}
+	public void init (AssetManager assetManager) {
+		this.assetManager = assetManager;
+		// set asset manager error handler
+		assetManager.setErrorListener(this);
+		// load texture atlas
+		assetManager.load(Constants.TEXTURE_ATLAS_OBJECTS, TextureAtlas.class);
+		// start loading assets and wait until finished
+		assetManager.finishLoading();
+		Gdx.app.debug(TAG, "# of assets loaded: "
+			+ assetManager.getAssetNames().size);
+		for (String a : assetManager.getAssetNames())
+			Gdx.app.debug(TAG, "asset: " + a);
+	}
+	@Override
+	public void dispose () {
+		assetManager.dispose();
+	}
+	@Override
+	public void error (String filename, Class type, Throwable throwable) {
+		Gdx.app.error(TAG, "Couldn't load asset '"
+			+ filename + "'", (Exception)throwable);
+	}
+}
+```
+
+加载过程从调用`finishLoading()`开始。该方法是阻塞的，会阻塞直到加载完成。`Assets`类实现了`Disposable`，在`dispose()`中清理加载。
+
+接下来是从纹理贴图中获取子图像。一般要调用方法`findRegion()`。方法返回`AtlasRegion`。例如如果想获取`assets/my_image.png`：
+```java
+atlas.findRegion("my_image");
+```
+
+路径中`assets/`和扩展名是省略的。但子目录名要保留。如果查找失败该方法会返回`null`。查找子图像的过程是昂贵的。因此建议找到后缓存。
+
+下面是`Assets`的一些内部类。把子图像分组成逻辑单元（一个内部类），缓存找到的引用。
+
+游戏角色建模为类`AssetBunny`。其成员变量`head`指向纹理贴图的子区域（`bunny_head.png`）。查找过程在构造器中完成。
+
+![](player_head.png)
+
+向`Assets`添加内部类：
+```java
+public class AssetBunny {
+	public final AtlasRegion head;
+	public AssetBunny (TextureAtlas atlas) {
+		head = atlas.findRegion("bunny_head");
+	}
+}
+```
+
+接下来包含岩石，包含两个图片`rock_edge.png`、`rock_middle.png`。
+
+![](rocks.png)
+
+`Assets`的内部类：
+```java
+public class AssetRock {
+	public final AtlasRegion edge;
+	public final AtlasRegion middle;
+	public AssetRock (TextureAtlas atlas) {
+		edge = atlas.findRegion("rock_edge");
+		middle = atlas.findRegion("rock_middle");
+	}
+}
+```
+
+金币。`item_gold_coin.png`。
+
+![](gold_coin.png)
+
+```java
+public class AssetGoldCoin {
+	public final AtlasRegion goldCoin;
+	public AssetGoldCoin (TextureAtlas atlas) {
+		goldCoin = atlas.findRegion("item_gold_coin");
+	}
+}
+```
+
+羽毛`item_feather.png`：
+
+![](feather.png)
+
+```java
+public class AssetFeather {
+	public final AtlasRegion feather;
+	public AssetFeather (TextureAtlas atlas) {
+		feather = atlas.findRegion("item_feather");
+	}
+}
+```
+
+Next is the last inner class called `AssetLevelDecoration`. It contains all the decorative images that only add to the look and feel of the level. This collection of assets consists of three differently shaped clouds (cloud01.png, cloud02.png, and cloud03.png), a very wide mountain that spans across two image halves (mountain_left.png and mountain_right.png), and an overlay (water_overlay.png) that will be stretched along the x axis to give the illusion of water existing everywhere in the game world.
+
+```java
+public class AssetLevelDecoration {
+	public final AtlasRegion cloud01;
+	public final AtlasRegion cloud02;
+	public final AtlasRegion cloud03;
+	public final AtlasRegion mountainLeft;
+	public final AtlasRegion mountainRight;
+	public final AtlasRegion waterOverlay;
+	public AssetLevelDecoration (TextureAtlas atlas) {
+		cloud01 = atlas.findRegion("cloud01");
+		cloud02 = atlas.findRegion("cloud02");
+		cloud03 = atlas.findRegion("cloud03");
+		mountainLeft = atlas.findRegion("mountain_left");
+		mountainRight = atlas.findRegion("mountain_right");
+		waterOverlay = atlas.findRegion("water_overlay");
+	}
+}
+```
+
+修改`Assets`：
+
+```java
+public AssetBunny bunny;
+public AssetRock rock;
+public AssetGoldCoin goldCoin;
+public AssetFeather feather;
+public AssetLevelDecoration levelDecoration;
+
+public void init (AssetManager assetManager) {
+	this.assetManager = assetManager;
+	// set asset manager error handler
+	assetManager.setErrorListener(this);
+	// load texture atlas
+	assetManager.load(Constants.TEXTURE_ATLAS_OBJECTS, TextureAtlas.class);
+	// start loading assets and wait until finished
+	assetManager.finishLoading();
+	Gdx.app.debug(TAG, "# of assets loaded: "
+		+ assetManager.getAssetNames().size);
+	for (String a : assetManager.getAssetNames())
+		Gdx.app.debug(TAG, "asset: " + a);
+	TextureAtlas atlas = assetManager.get(Constants.TEXTURE_ATLAS_OBJECTS);
+	// enable texture filtering for pixel smoothing
+	for (Texture t : atlas.getTextures())
+		t.setFilter(TextureFilter.Linear, TextureFilter.Linear);
+	// create game resource objects
+	bunny = new AssetBunny(atlas);
+	rock = new AssetRock(atlas);
+	goldCoin = new AssetGoldCoin(atlas);
+	feather = new AssetFeather(atlas);
+	levelDecoration = new AssetLevelDecoration(atlas);
+}
+```
+
+遍历贴图的所有纹理（这里只有一个）将贴图过滤模式设为`TextureFilter.Linear`。This will enable smoothing of the pixels when the texture is rendered. The reason why we pass this constant value twice to the method is because the mode has to be set for both cases, minification and magnification, where a rendered texture is either scaled down or up from its original size. The default texture filter mode is set to `TextureFilter.Nearest` for both cases.
+
+![](texturefilters.png)
+
+### 4.5 测试 assets
+
+修改`CanyonBunnyMain`：
+
+```java
+	@Override
+	public void create () {
+		// Set Libgdx log level to DEBUG
+		Gdx.app.setLogLevel(Application.LOG_DEBUG);
+		// Load assets
+		Assets.instance.init(new AssetManager());
+		// Initialize controller and renderer
+		worldController = new WorldController();
+		worldRenderer = new WorldRenderer(worldController);
+	}
+	@Override
+	public void resume () {
+		Assets.instance.init(new AssetManager());
+		paused = false;
+	}
+	@Override
+	public void dispose () {
+		worldRenderer.dispose();
+		Assets.instance.dispose();
+	}
+```
+
+在`create()`中初始化`AssetManager`。初始化在`Assets`在`WorldController`之前。
+
+修改`WorldController`：
+
+```java
+	private void initTestObjects () {
+		// Create new array for 5 sprites
+		testSprites = new Sprite[5];
+		// Create a list of texture regions
+		Array<TextureRegion> regions = new Array<TextureRegion>();
+		regions.add(Assets.instance.bunny.head);
+		regions.add(Assets.instance.feather.feather);
+		regions.add(Assets.instance.goldCoin.goldCoin);
+		// Create new sprites using a random texture region
+		for (int i = 0; i < testSprites.length; i++) {
+			Sprite spr = new Sprite(regions.random());
+			// Define sprite size to be 1m x 1m in game world
+			spr.setSize(1, 1);
+			// Set origin to sprite's center
+			spr.setOrigin(spr.getWidth() / 2.0f, spr.getHeight() / 2.0f);
+			// Calculate random position for sprite
+			float randomX = MathUtils.random(-2.0f, 2.0f);
+			float randomY = MathUtils.random(-2.0f, 2.0f);
+			spr.setPosition(randomX, randomY);
+			// Put new sprite into array
+			testSprites[i] = spr;
+		}
+		// Set first sprite as selected one
+		selectedSprite = 0;
+	}
+```
+
+![](test4-5.png)
+
+注意到上图带粉色的调试线。You can easily disable them by just flipping the `drawDebugOutlines` variable from true to `false` in the `Main` class of the desktop project. Do not forget to set `rebuildAtlas` to `true` for at least one run of the desktopproject to refresh the texture atlas.
+
+### 4.6 处理关卡（Level）数据
+
+It is now time to think about how we can handle level data to lay out our levels, put objects into them at certain positions, define a starting position, and so on. This usually implies a lot of work before visible results will appear because creating levels requires some kind of a tool to create, modify, save, and load their level data. Furthermore, before we can even load or save levels, we will have to define an appropriate file format to describe the data of a level.
+
+We will not have to build our own level editor. Instead, we will use a drawing program to draw an image where each pixel's color represents some object that is still to be defined. t像素在图像中的位置表示在游戏世界中的位置。The following is a level diagram to give you a better idea of how this works:
+
+![](leveldata.png)
+
+这个图像不会渲染到屏幕上，因此不需要做成纹理贴图。于是它要遵守2的N次方规则。上图大小是128*32像素。The following is a list that defines the mapping between pixel colors and game objects:
+
+- W: This stands for white and is the starting position of the player (Spawn Point)
+- P: This stands for purple and representsthe feather
+- Y: This stands for yellowand represents the gold coin
+- G: This stands for greenand represents the rock
+
+The black background represents empty spaces in the game world.
+
+Create a subfolder in the `assets` folder named `levels` and copy the `level-01.png` level file into it. After that, add a new constant to the `Constants` class:
+```java
+public class Constants {
+	// Visible game world is 5 meters wide
+	public static final float VIEWPORT_WIDTH = 5.0f;
+	// Visible game world is 5 meters tall
+	public static final float VIEWPORT_HEIGHT = 5.0f;
+	// Location of description file for texture atlas
+	public static final String TEXTURE_ATLAS_OBJECTS = "images/canyonbunny.pack";
+	// Location of image file for level 01
+	public static final String LEVEL_01 = "levels/level-01.png";
+}
+```
+
+The loading of the level data will be covered in the next chapter.
+
+## 5. Making a Scene
+
+![](game_world.png)
+
+As a last addition, we will add a Graphical User Interface(GUI)to the scene that overlays the game world. Sometimes this is also called a Head-Up Display(HUD), but we will use the term GUI here. The GUI will show the player's score, the number of extra lives left, and an FPS counter to measure the performance of the game.
+
+### 5.1 创建游戏对象
+
+Before we start implementing each individual game object, we will create an abstract class called `AbstractGameObject`. It will hold all the common attributes and function alities that each of our game objects will inherit from.
+
+```java
+package com.packtpub.libgdx.canyonbunny.game.objects;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.Vector2;
+public abstract class AbstractGameObject {
+    public Vector2 position;
+    public Vector2 dimension;
+    public Vector2 origin;
+    public Vector2 scale;
+    public float rotation;
+	public AbstractGameObject () {
+        position = new Vector2();
+        dimension = new Vector2(1, 1);
+        origin = new Vector2();
+        scale = new Vector2(1, 1);
+        rotation = 0;
+    }
+    public void update (float deltaTime) {}
+    public abstract void render (SpriteBatch batch);
+}
+```
+
+这个类能够存放位置、尺寸、原点、缩放因子、旋转角度。`update()`和`render()`分别会被controller和renderer调用。这两个方法由`AbstractGameObject`的子类实现。
+
+#### 5.1.1 岩石
+
+![](rocks_assembly.png)
+
+岩石对象由三部分构成：左边、中间、右边。重复中间可以形成任意长度的石右边其实是左边的镜像。即最终只需要两个贴图。
+
+```java
+package com.packtpub.libgdx.canyonbunny.game.objects;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.packtpub.libgdx.canyonbunny.game.Assets;
+public class Rock extends AbstractGameObject {
+    private TextureRegion regEdge;
+    private TextureRegion regMiddle;
+    private int length;
+    public Rock () {
+    	init();
+    }
+    private void init () {
+        dimension.set(1, 1.5f);
+        regEdge = Assets.instance.rock.edge;
+        regMiddle = Assets.instance.rock.middle;
+        // Start length of this rock
+        setLength(1);
+    }
+    public void setLength (int length) {
+    	this.length = length;
+    }
+    public void increaseLength (int amount) {
+    	setLength(length + amount);
+    }
+}
+```
+
+
+`length`描述此岩石需要多少个中间部分。`init()`中设置了岩石的大小，注意单位是米（游戏世界中的）。这里岩石宽1米，高1.5米。
+
+`Rock`继承`AbstractGameObject`，因此需要实现`render()`方法：
+```java
+@Override
+public void render (SpriteBatch batch) {
+    TextureRegion reg = null;
+    float relX = 0;
+    float relY = 0;
+    // Draw left edge
+    reg = regEdge;
+    relX -= dimension.x / 4;
+    batch.draw(reg.getTexture(),
+    	position.x + relX, position.y + relY,
+        origin.x, origin.y, dimension.x / 4, dimension.y,
+        scale.x, scale.y, rotation,
+        reg.getRegionX(), reg.getRegionY(),
+        reg.getRegionWidth(), reg.getRegionHeight(),
+        false, false);
+    // Draw middle
+    relX = 0;
+    reg = regMiddle;
+    for (int i = 0; i < length; i++) {
+    	batch.draw(reg.getTexture(),
+    		position.x + relX, position.y + relY,
+    		origin.x, origin.y,
+    		dimension.x, dimension.y,
+    		scale.x, scale.y, rotation,
+    		reg.getRegionX(), reg.getRegionY(),
+    		reg.getRegionWidth(), reg.getRegionHeight(),
+    		false, false);
+    	relX += dimension.x;
+    }
+    // Draw right edge
+    reg = regEdge;
+    batch.draw(reg.getTexture(),
+    	position.x + relX, position.y + relY,
+    	origin.x + dimension.x / 8, origin.y,
+    	dimension.x / 4, dimension.y,
+    	scale.x, scale.y, rotation,
+    	reg.getRegionX(), reg.getRegionY(),
+    	reg.getRegionWidth(), reg.getRegionHeight(),
+    	true, false);
+}
+```
+
+下面是`SpriteBatch.draw()`的API：
+
+```java
+public void draw (Texture texture,
+    float x, float y,
+    float originX, float originY,
+    float width, float height,
+    float scaleX, float scaleY,
+    float rotation,
+    int srcX, int srcY,
+    int srcWidth, int srcHeight,
+    boolean flipX, boolean flipY);
+```
+
+该方法从纹理（这里是我们的纹理贴图）中切出一块区域（srcX, srcY, srcWidth, and srcHeight），绘制在指定位置(x, y)。原点(originX, originY)定义矩形被变换时的相对位置。(0, 0)表示左下角。`width`和`height`定义图片显示的大小。The scaling factor (scaleX, scaleY) defines the scale of the rectangle around the origin. The angle of rotation defines the rotation of the rectangle around the origin. The flipping of one or both the axes (flipX, flipY) means to mirror the corresponding axis of that image.
+
+岩石的绘制分三部分：
+
+1. Draw the left edge at current position of the rock. A relative x- and y-value, relX and relY, is also added to the position. This is used to align the left edge to the left side of the object's local y axis. 结果是，接下来的中间部分将从x轴0点开始。这样做使得定位岩石位置变得很简单，level图像中一个像素表示一个中间部分，而边只是美化部分。
+2. Draw all middle parts according to the set length of the rock. The drawing starts at 0, which is directly next to where the left edge ends. Each subsequent middle part is drawn next to the last middle part. This is achieved by adding the middle part's width to the relative position relXfor each iteration inside the loop.
+3. Finally, the mirrored left edge is drawn next to where the last middle part ends. The mirroring is achieved by setting the flipX parameter to true. The variable regis used to store the currently selected texture region for each step.
+
+#### 5.1.2 山
+
+山有三座，颜色不同。A tinting color and positional offset can be specified for each layer. 一组删由左右两个图像构成。图像两端可以接起来，于是山可以无限拼接。
+
+![](mountain_object.png)
+
+山的颜色选白色是为后面着色。
+
+```java
+package com.packtpub.libgdx.canyonbunny.game.objects;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.MathUtils;
+import com.packtpub.libgdx.canyonbunny.game.Assets;
+public class Mountains extends AbstractGameObject {
+    private TextureRegion regMountainLeft;
+    private TextureRegion regMountainRight;
+    private int length;
+    public Mountains (int length) {
+        this.length = length;
+        init();
+    }
+    private void init () {
+    	dimension.set(10, 2);
+    	regMountainLeft = Assets.instance.levelDecoration.mountainLeft;
+    	regMountainRight = Assets.instance.levelDecoration.mountainRight;
+        // shift mountain and extend length
+        origin.x = -dimension.x * 2;
+        length += dimension.x * 2;
+    }
+    private void drawMountain (SpriteBatch batch, float offsetX,
+    	float offsetY, float tintColor) {
+        TextureRegion reg = null;
+        batch.setColor(tintColor, tintColor, tintColor, 1);
+        float xRel = dimension.x * offsetX;
+        float yRel = dimension.y * offsetY;
+        // mountains span the whole level
+        int mountainLength = 0;
+        mountainLength += MathUtils.ceil(length / (2 * dimension.x));
+    	mountainLength += MathUtils.ceil(0.5f + offsetX);
+    	for (int i = 0; i < mountainLength; i++) {
+            // mountain left
+            reg = regMountainLeft;
+            batch.draw(reg.getTexture(),
+                origin.x + xRel, position.y + origin.y + yRel,
+                origin.x, origin.y,
+                dimension.x, dimension.y,
+                scale.x, scale.y,
+                rotation,
+                reg.getRegionX(), reg.getRegionY(),
+                reg.getRegionWidth(), reg.getRegionHeight(),
+                false, false);
+    		xRel += dimension.x;
+    		// mountain right
+            reg = regMountainRight;
+            batch.draw(reg.getTexture(),
+                origin.x + xRel, position.y + origin.y + yRel,
+                origin.x, origin.y,
+                dimension.x, dimension.y,
+                scale.x, scale.y,
+                rotation,
+                reg.getRegionX(), reg.getRegionY(),
+                reg.getRegionWidth(), reg.getRegionHeight(),
+                false, false);
+                xRel += dimension.x;
+        }
+        // reset color to white
+        batch.setColor(1, 1, 1, 1);
+    }
+    @Override
+    public void render (SpriteBatch batch) {
+        // distant mountains (dark gray)
+        drawMountain(batch, 0.5f, 0.5f, 0.5f);
+        // distant mountains (gray)
+        drawMountain(batch, 0.25f, 0.25f, 0.7f);
+        // distant mountains (light gray)
+        drawMountain(batch, 0.0f, 0.0f, 0.9f);
+    }
+}
+```
+
+`length` variable to store the number of times the image needs to be repeated.
+
+#### 5.1.3 The water overlay object
+
+水面只有一个图像。This image needs to overlay the ground of the whole level. 有几种实现方法。One would be to span the image from side to side of the camera's viewport and move the overlay together with the camera whenever the camera is moved. This is a good way to create an illusion of water being everywhere in the level. Unfortunately, special care needs to be taken if the camera is also moved in a vertical direction. 另一种方式是，绘制单个、水平拉伸的水面。下面采用第二种方式：
+
+```java
+package com.packtpub.libgdx.canyonbunny.game.objects;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.packtpub.libgdx.canyonbunny.game.Assets;
+public class WaterOverlay extends AbstractGameObject {
+    private TextureRegion regWaterOverlay;
+    private float length;
+    public WaterOverlay (float length) {
+        this.length = length;
+        init();
+    }
+    private void init () {
+        dimension.set(length * 10, 3);
+        regWaterOverlay = Assets.instance.levelDecoration.waterOverlay;
+        origin.x = -dimension.x / 2;
+    }
+    @Override
+    public void render (SpriteBatch batch) {
+        TextureRegion reg = null;
+        reg = regWaterOverlay;
+        batch.draw(reg.getTexture(),
+            position.x + origin.x, position.y + origin.y,
+            origin.x, origin.y,
+            dimension.x, dimension.y,
+            scale.x, scale.y,
+            rotation,
+            reg.getRegionX(), reg.getRegionY(),
+            reg.getRegionWidth(), reg.getRegionHeight(),
+            false, false);
+    }
+}
+```
+
+#### 5.1.4 云
+
+The clouds game object consists of a number of clouds. A cloud will use one of the three available cloud images from the texture atlas. The number of clouds depends on the given `length` which is divided by a constant factor to determine the final distribution of the clouds. The following screenshot illustrates this:
+
+![](cloud_object.png)
+
+```java
+package com.packtpub.libgdx.canyonbunny.game.objects;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.Array;
+import com.packtpub.libgdx.canyonbunny.game.Assets;
+public class Clouds extends AbstractGameObject {
+    private float length;
+    private Array<TextureRegion> regClouds;
+    private Array<Cloud> clouds;
+
+    private class Cloud extends AbstractGameObject {
+    	private TextureRegion regCloud;
+    	public Cloud () {}
+    	public void setRegion (TextureRegion region) {
+    		regCloud = region;
+    	}
+        @Override
+        public void render (SpriteBatch batch) {
+        	TextureRegion reg = regCloud;
+        	batch.draw(reg.getTexture(),
+                position.x + origin.x, position.y + origin.y,
+                origin.x, origin.y,
+                dimension.x, dimension.y,
+                scale.x, scale.y,
+                rotation,
+                reg.getRegionX(), reg.getRegionY(),
+                reg.getRegionWidth(), reg.getRegionHeight(),
+                false, false);
+        }
+    }
+
+    public Clouds (float length) {
+        this.length = length;
+        init();
+    }
+    private void init () {
+        dimension.set(3.0f, 1.5f);
+        regClouds = new Array<TextureRegion>();
+        regClouds.add(Assets.instance.levelDecoration.cloud01);
+        regClouds.add(Assets.instance.levelDecoration.cloud02);
+        regClouds.add(Assets.instance.levelDecoration.cloud03);
+        int distFac = 5;
+        int numClouds = (int)(length / distFac);
+        clouds = new Array<Cloud>(2 * numClouds);
+        for (int i = 0; i < numClouds; i++) {
+            Cloud cloud = spawnCloud();
+            cloud.position.x = i * distFac;
+            clouds.add(cloud);
+        }
+    }
+    private Cloud spawnCloud () {
+        Cloud cloud = new Cloud();
+        cloud.dimension.set(dimension);
+        // select random cloud image
+        cloud.setRegion(regClouds.random());
+        // position
+        Vector2 pos = new Vector2();
+        pos.x = length + 10; // position after end of level
+        pos.y += 1.75; // base position
+        // random additional position
+        pos.y += MathUtils.random(0.0f, 0.2f)
+        	* (MathUtils.randomBoolean() ? 1 : -1);
+        cloud.position.set(pos);
+        return cloud;
+    }
+    @Override
+    public void render (SpriteBatch batch) {
+    	for (Cloud cloud : clouds)
+    		cloud.render(batch);
+    }
+}
+```
+
+The `Clouds` class is also constructed like the previous game objects. The distribution of the clouds over the level is determined by the given `length` value and the constant factor `distFact`, which is 5 in this code, meaning that there will be a cloud **every five meters**.
+
+A single cloud is defined by the `Clouds` inner class `Cloud` which also inherits from `AbstractGameObject`. So a `Cloud` object is the actual cloud object while `Clouds` is the container that maintains a list of all the currently created clouds. A new cloud can be created by simply calling the `spawnCloud()` methodof `Clouds`. This will create a new `Cloud` object, assign a random cloud image to it, move it to the end of the level, and randomly shift it up or down a bit. The newly created cloud is also added to the list and returned to the calling method.
+
+### 5.2 Implementing the level loader
+
+```java
+package com.packtpub.libgdx.canyonbunny.game;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.utils.Array;
+import com.packtpub.libgdx.canyonbunny.game.objects.AbstractGameObject;
+import com.packtpub.libgdx.canyonbunny.game.objects.Clouds;
+import com.packtpub.libgdx.canyonbunny.game.objects.Mountains;
+import com.packtpub.libgdx.canyonbunny.game.objects.Rock;
+import com.packtpub.libgdx.canyonbunny.game.objects.WaterOverlay;
+public class Level {
+    public static final String TAG = Level.class.getName();
+    public enum BLOCK_TYPE {
+        EMPTY(0, 0, 0), // black
+        ROCK(0, 255, 0), // green
+        PLAYER_SPAWNPOINT(255, 255, 255), // white
+        ITEM_FEATHER(255, 0, 255), // purple
+        ITEM_GOLD_COIN(255, 255, 0); // yellow
+        private int color;
+        private BLOCK_TYPE (int r, int g, int b) {
+            color = r << 24 | g << 16 | b << 8 | 0xff;
+        }
+        public boolean sameColor (int color) {
+            return this.color == color;
+        }
+        public int getColor () {
+            return color;
+        }
+    }
+    // objects
+    public Array<Rock> rocks;
+    // decoration
+    public Clouds clouds;
+    public Mountains mountains;
+    public WaterOverlay waterOverlay;
+    public Level (String filename) {
+    	init(filename);
+    }
+    private void init (String filename) {}
+    public void render (SpriteBatch batch) {}
+}
+```
+
+Since each color component is represented as an 8-bit value, the sum of an RGBA color is 32 bits or 4 bytes. The intdata type of Java is also defined as a 32 bit value which makes it the appropriate place to store RGBA color codes in a compact way.
+
+```java
+	private void init (String filename) {
+		rocks = new Array<Rock>();
+		// 加载level图像
+		Pixmap pixmap = new Pixmap(Gdx.files.internal(filename));
+		// scan pixels from top-left to bottom-right
+		int lastPixel = -1;
+		for (int pixelY = 0; pixelY < pixmap.getHeight(); pixelY++) {
+			for (int pixelX = 0; pixelX < pixmap.getWidth(); pixelX++) {
+                AbstractGameObject obj = null;
+                float offsetHeight = 0;
+                // height grows from bottom to top
+                float baseHeight = pixmap.getHeight() - pixelY;
+                // get color of current pixel as 32-bit RGBA value
+                int currentPixel = pixmap.getPixel(pixelX, pixelY);
+                // find matching color value to identify block type at (x,y)
+                // point and create the corresponding game object if there is
+                // a match
+                // empty space
+                if (BLOCK_TYPE.EMPTY.sameColor(currentPixel)) {
+                	// do nothing
+				}
+				// rock
+				else if (BLOCK_TYPE.ROCK.sameColor(currentPixel)) {
+                    if (lastPixel != currentPixel) {
+                        obj = new Rock();
+                        float heightIncreaseFactor = 0.25f;
+                        offsetHeight = -2.5f;
+                        obj.position.set(pixelX, baseHeight * obj.dimension.y
+                            * heightIncreaseFactor + offsetHeight);
+                        rocks.add((Rock)obj);
+                    } else {
+                    	rocks.get(rocks.size - 1).increaseLength(1);
+                    }
+                }
+				// player spawn point
+				else if (BLOCK_TYPE.PLAYER_SPAWNPOINT.sameColor(currentPixel)) {
+}
+                // feather
+                else if (BLOCK_TYPE.ITEM_FEATHER.sameColor(currentPixel)) {
+                }
+                // gold coin
+                else if (BLOCK_TYPE.ITEM_GOLD_COIN.sameColor(currentPixel)) {
+                }
+                // unknown object/pixel color
+                else {
+                    int r = 0xff & (currentPixel >>> 24); //red color channel
+                    int g = 0xff & (currentPixel >>> 16); //green color channel
+                    int b = 0xff & (currentPixel >>> 8); //blue color channel
+                    int a = 0xff & currentPixel; //alpha channel
+                    Gdx.app.error(TAG, "Unknown object at x<" + pixelX
+                        + "> y<" + pixelY
+                        + ">: r<" + r
+                        + "> g<" + g
+                        + "> b<" + b
+                        + "> a<" + a + ">");
+                }
+				lastPixel = currentPixel;
+            }
+		}
+		// decoration
+        clouds = new Clouds(pixmap.getWidth());
+        clouds.position.set(0, 2);
+        mountains = new Mountains(pixmap.getWidth());
+        mountains.position.set(-1, -1);
+        waterOverlay = new WaterOverlay(pixmap.getWidth());
+        waterOverlay.position.set(0, -3.75f);
+        // free memory
+        pixmap.dispose();
+        Gdx.app.debug(TAG, "level '" + filename + "' loaded");
+	}
+```
+
+The scanning is done by looping through each pixel starting from the top-left corner of the image to the bottom-right. The `baseHeight` variable is set to the maximum level height minus the current height of the currently scanned pixel resulting in a flipped vertical pixel position. What this basically means is that the game objects will appear at their correct height in the game world, although scanning is done from top to bottom and the game objects grow from the bottom up. The `offsetHeight` variable is used to individually offset an object to correctly fit into the game world. The `currentPixel` variable stores the color value of the currently scanned pixel.
+
+Next, this value is compared to each defined color code of a game object until a match has been found. If no color code matches, there will be an error message logged to the console to indicate an implementation error in our game. The error can either mean a use of an undefined color code or that the identification method does not handle this color code. The error message will contain the decoded RGBA values to make troubleshooting a bit less painful.
+
+After the scanning process, there are still some game objects left that need to be initialized. These are the decoration game objects Clouds, Mountains, and WaterOverlay. They are passed over the width of the Pixmap, which is the actual length of the level they need to know to work correctly.
+
+The code part we left out up until now is to look at what happens if there is a matching color code. The current implementation already handles the color code of every game object we want to use, but except for rock game objects, there is no defined action for them yet. A new rock will be created and added to the list of rocks if the corresponding color code is matching. There is also a `lastPixel` variable that stores the last value of `currentPixel` after each iteration inside the loop. This value is used to detect adjacent rock pixels that will increase the length of the last created rock by one in this case instead of creating a new one.
+
+
+Add the following code to the still empty `render()` method:
+```java
+public void render (SpriteBatch batch) {
+    // Draw Mountains
+    mountains.render(batch);
+    // Draw Rocks
+    for (Rock rock : rocks)
+    	rock.render(batch);
+    // Draw Water Overlay
+    waterOverlay.render(batch);
+    // Draw Clouds
+    clouds.render(batch);
+}
+```
+
+绘制顺序很重要。因为后面的绘制在之前的绘制上面绘制。
+
+![](draw-order.png)
+
+### 5.3 组装游戏世界
+
+解析来，移除绘制测试精灵的代码。Additionally, we will add three new constants to define the amount of start, extra lives, and the viewport dimension of the GUI camera.
+
+```java
+public class Constants {
+    // 可见游戏世界5米宽
+    public static final float VIEWPORT_WIDTH = 5.0f;
+    // 可见游戏世界5米高
+    public static final float VIEWPORT_HEIGHT = 5.0f;
+    // GUI宽度
+    public static final float VIEWPORT_GUI_WIDTH = 800.0f;
+    // GUI高度
+    public static final float VIEWPORT_GUI_HEIGHT = 480.0f;
+    // Location of description file for texture atlas
+    public static final String TEXTURE_ATLAS_OBJECTS = "images/canyonbunny.pack";
+	// Location of image file for level 01
+	public static final String LEVEL_01 = "levels/level-01.png";
+	// 关卡开始时的生命数
+	public static final int LIVES_START = 3;
+}
+```
+
+移除`WorldController`中的代码：
+```java
+public Sprite[] testSprites;
+public int selectedSprite;
+````
+
+移除`WorldController`以下代码：
+
+- initTestObjects()
+- updateTestObjects()
+- moveSelectedSprite()
+
+移除`WorldController.handleDebugInput()`以下代码：
+
+```java
+// Selected Sprite Controls
+float sprMoveSpeed = 5 * deltaTime;
+if (Gdx.input.isKeyPressed(Keys.A))
+	moveSelectedSprite(-sprMoveSpeed, 0);
+if (Gdx.input.isKeyPressed(Keys.D))
+	moveSelectedSprite(sprMoveSpeed, 0);
+if (Gdx.input.isKeyPressed(Keys.W))
+	moveSelectedSprite(0, sprMoveSpeed);
+if (Gdx.input.isKeyPressed(Keys.S))
+	moveSelectedSprite(0, -sprMoveSpeed);
+````
+
+Next, remove the code below the two comments "Select next sprite" and "Toggle camera follow" in the keyUp() method of `WorldController` so that the resulting method looks like this:
+```java
+@Override
+public boolean keyUp (int keycode) {
+    // Reset game world
+    if (keycode == Keys.R) {
+        init();
+        Gdx.app.debug(TAG, "Game world resetted");
+    }
+    return false;
+}
+```
+
+Next, add the following code to `WorldController`:
+
+```java
+    public Level level;
+    public int lives;
+    public int score;
+    private void initLevel () {
+        score = 0;
+        level = new Level(Constants.LEVEL_01);
+    }
+```
+
+Change the code in the `init()` method of `WorldController` as follows:
+```java
+private void init () {
+    Gdx.input.setInputProcessor(this);
+    cameraHelper = new CameraHelper();
+    lives = Constants.LIVES_START;
+    initLevel();
+}
+```
+
+Finally, remove the call to the deleted `updateTestObjects()` method in `update()`.
+
+We have to make some minor changes to the `CameraHelper` classto make the switch from using `Sprite` objects to `AbstractGameObject` objects.
+
+Now, change the code in `CameraHelper` as follows:
+```java
+    private AbstractGameObject target;
+    public void update (float deltaTime) {
+        if (!hasTarget()) return;
+        position.x = target.position.x + target.origin.x;
+        position.y = target.position.y + target.origin.y;
+    }
+    public void setTarget (AbstractGameObject target) {
+        this.target = target;
+    }
+    public AbstractGameObject getTarget () {
+        return target;
+    }
+
+    public boolean hasTarget (AbstractGameObject target) {
+        return hasTarget() && this.target.equals(target);
+    }
+```
+
+Next, add the following code in `WorldRenderer`:
+
+```java
+private void renderWorld (SpriteBatch batch) {
+    worldController.cameraHelper.applyTo(camera);
+    batch.setProjectionMatrix(camera.combined);
+    batch.begin();
+    worldController.level.render(batch);
+    batch.end();
+}
+```
+
+Then remove the `renderTestObjects()` method in `WorldRenderer`. Lastly, replace the call to the deleted `renderTestObjects()` method with the newly added `renderWorld()` method in `render()`:
+```java
+public void render () {
+	renderWorld(batch);
+}
+```
+
+Now, the world renderer will call the `renderWorld()` method, which in turn calls the `render()` method of Level to draw all the game objects of the loaded level.
+
+
+### 5.4 实现游戏 GUI
+
+The GUI will display the achieved score, extra lives, and an FPS counter.
+
+在显示文字前，需要先加载一个bitmap字体。Libgdx provides a default font (Arial 15pt) that we can use. Copy the two files arial-15.fnt and arial-15.png to CanyonBunny-android/assets/images/.
+
+> The Libgdx font files can be downloaded on Packt's website at: http://
+www.packtpub.com/learning-libgdx-game-development/book
+
+![](default-font.png)
+
+Add the following lines of code to `Assets` as follows:
+```java
+    public AssetFonts fonts;
+    public class AssetFonts {
+        public final BitmapFont defaultSmall;
+        public final BitmapFont defaultNormal;
+        public final BitmapFont defaultBig;
+        public AssetFonts () {
+            // create three fonts using Libgdx's 15px bitmap font
+            defaultSmall = new BitmapFont(
+            	Gdx.files.internal("images/arial-15.fnt"), true);
+            defaultNormal = new BitmapFont(
+            	Gdx.files.internal("images/arial-15.fnt"), true);
+            defaultBig = new BitmapFont(
+           	 Gdx.files.internal("images/arial-15.fnt"), true);
+            // set font sizes
+            defaultSmall.setScale(0.75f);
+            defaultNormal.setScale(1.0f);
+            defaultBig.setScale(2.0f);
+            // enable linear texture filtering for smooth fonts
+            defaultSmall.getRegion().getTexture().setFilter(
+            	TextureFilter.Linear, TextureFilter.Linear);
+            defaultNormal.getRegion().getTexture().setFilter(
+            	TextureFilter.Linear, TextureFilter.Linear);
+            defaultBig.getRegion().getTexture().setFilter(
+                TextureFilter.Linear, TextureFilter.Linear);
+            }
+    }
+    public void init (AssetManager assetManager) {
+        this.assetManager = assetManager;
+        // set asset manager error handler
+        assetManager.setErrorListener(this);
+        // load texture atlas
+        assetManager.load(Constants.TEXTURE_ATLAS_OBJECTS,
+        	TextureAtlas.class);
+        // start loading assets and wait until finished
+        assetManager.finishLoading();
+        Gdx.app.debug(TAG, "# of assets loaded: "
+        	+ assetManager.getAssetNames().size);
+        for (String a : assetManager.getAssetNames())
+        	Gdx.app.debug(TAG, "asset: " + a);
+        TextureAtlas atlas =
+        	assetManager.get(Constants.TEXTURE_ATLAS_OBJECTS);
+        // enable texture filtering for pixel smoothing
+        for (Texture t : atlas.getTextures())
+        	t.setFilter(TextureFilter.Linear, TextureFilter.Linear);
+        // create game resource objects
+        fonts = new AssetFonts();
+        bunny = new AssetBunny(atlas);
+        rock = new AssetRock(atlas);
+        goldCoin = new AssetGoldCoin(atlas);
+        feather = new AssetFeather(atlas);
+        levelDecoration = new AssetLevelDecoration(atlas);
+    }
+    @Override
+    public void dispose () {
+        assetManager.dispose();
+        fonts.defaultSmall.dispose();
+        fonts.defaultNormal.dispose();
+        fonts.defaultBig.dispose();
+    }
+```
+
+Next, add the following code in `WorldRenderer`:
+```java
+    private OrthographicCamera cameraGUI;
+    private void init () {
+        batch = new SpriteBatch();
+        camera = new OrthographicCamera(Constants.VIEWPORT_WIDTH,
+        	Constants.VIEWPORT_HEIGHT);
+        camera.position.set(0, 0, 0);
+        camera.update();
+        cameraGUI = new OrthographicCamera(Constants.VIEWPORT_GUI_WIDTH,
+        	Constants.VIEWPORT_GUI_HEIGHT);
+        cameraGUI.position.set(0, 0, 0);
+        cameraGUI.setToOrtho(true); // flip y-axis
+        cameraGUI.update();
+    }
+    public void resize (int width, int height) {
+        camera.viewportWidth = (Constants.VIEWPORT_HEIGHT
+        	/ (float)height) * (float)width;
+        camera.update();
+        cameraGUI.viewportHeight = Constants.VIEWPORT_GUI_HEIGHT;
+        cameraGUI.viewportWidth = (Constants.VIEWPORT_GUI_HEIGHT
+        	/ (float)height) * (float)width;
+        cameraGUI.position.set(cameraGUI.viewportWidth / 2,
+        	cameraGUI.viewportHeight / 2, 0);
+        cameraGUI.update();
+    }
+```
+
+上面的代码创建了第二个摄像机，专门用于渲染GUI。GUI摄像机的视口大小要大很多（见常量类）。We have to do this to correctly render the bitmap font that is 15 pixels high. If we would use the 5 meters times 5 meters viewport, only one third of the font's glyph would be visible at any time. The rest of the added code does the same as the game camera. Also, this allows us to move the world camera (camera) independently from the GUI (cameraGUI).
+
+#### GUI 分数
+
+![](gui-score.png)
+
+Add the following code in `WorldRenderer`:
+```java
+private void renderGuiScore (SpriteBatch batch) {
+    float x = -15;
+    float y = -15;
+    batch.draw(Assets.instance.goldCoin.goldCoin,
+    	x, y, 50, 50, 100, 100, 0.35f, -0.35f, 0);
+    Assets.instance.fonts.defaultBig.draw(batch,
+    	"" + worldController.score,
+    	x + 75, y + 37);
+}
+```
+
+#### GUI 额外生命
+
+![](gui-lives.png)
+
+Add the following code in `WorldRenderer`:
+```java
+private void renderGuiExtraLive (SpriteBatch batch) {
+    float x = cameraGUI.viewportWidth – 50
+    Constants.LIVES_START * 50;
+    float y = -15;
+    for (int i = 0; i < Constants.LIVES_START; i++) {
+        if (worldController.lives <= i)
+            batch.setColor(0.5f, 0.5f, 0.5f, 0.5f);
+            batch.draw(Assets.instance.bunny.head,
+                x + i * 50, y, 50, 50, 120, 100, 0.35f, -0.35f, 0);
+            batch.setColor(1, 1, 1, 1);
+    }
+}
+```
+
+#### GUI FPS 计数
+
+![](gui-fps.png)
+
+Add the following code in `WorldRenderer`:
+```java
+private void renderGuiFpsCounter (SpriteBatch batch) {
+    float x = cameraGUI.viewportWidth - 55;
+    float y = cameraGUI.viewportHeight - 15;
+    int fps = Gdx.graphics.getFramesPerSecond();
+    BitmapFont fpsFont = Assets.instance.fonts.defaultNormal;
+    if (fps >= 45) {
+    	// 45 or more FPS show up in green
+    	fpsFont.setColor(0, 1, 0, 1);
+    } else if (fps >= 30) {
+        // 30 or more FPS show up in yellow
+        fpsFont.setColor(1, 1, 0, 1);
+    } else {
+        // less than 30 FPS show up in red
+        fpsFont.setColor(1, 0, 0, 1);
+    }
+    fpsFont.draw(batch, "FPS: " + fps, x, y);
+    fpsFont.setColor(1, 1, 1, 1); // white
+}
+```
+
+#### 渲染GUI
+
+Add the following code in `WorldRenderer`:
+
+```java
+private void renderGui (SpriteBatch batch) {
+    batch.setProjectionMatrix(cameraGUI.combined);
+    batch.begin();
+    // draw collected gold coins icon + text
+    // (anchored to top left edge)
+    renderGuiScore(batch);
+    // draw extra lives icon + text (anchored to top right edge)
+    renderGuiExtraLive(batch);
+    // draw FPS text (anchored to bottom right edge)
+    renderGuiFpsCounter(batch);
+    batch.end();
+}
+```
+
+修改`WorldRenderer.render()`：
+
+```java
+public void render () {
+    renderWorld(batch);
+    renderGui(batch);
+}
+```
+
+## 6. 添加角色
+
+简单的物理模拟，游戏对象移动有速度、加速度、摩擦力。还需要做碰撞检测。For example, we want the player character to be able to jump, stand, and walk on a rock (platform), collect items by walking over them, and lose a life when it falls into the water.
+
+### 6.1 实现角色
+
+向`AbstractGameObject`扩充物理和碰撞检测所需的功能。
+
+向`AbstractGameObject`添加：
+```
+    public Vector2 velocity;
+    public Vector2 terminalVelocity;
+    public Vector2 friction;
+    public Vector2 acceleration;
+    public Rectangle bounds;
+    public AbstractGameObject () {
+        position = new Vector2();
+        dimension = new Vector2(1, 1);
+        origin = new Vector2();
+        scale = new Vector2(1, 1);
+        rotation = 0;
+        velocity = new Vector2();
+        terminalVelocity = new Vector2(1, 1);
+        friction = new Vector2();
+        acceleration = new Vector2();
+        bounds = new Rectangle();
+    }
+```
+
+- `velocity`：对象当前速度
+- `terminalVelocity`：对象正负最大速度。
+-  `friction`：反向力，让对象减慢知道速度为0。0表示没有摩擦。
+- `acceleration`：This is the object's constant acceleration in m/s².
+- `bounds`：对象外围和，用于碰撞检测。对象的外围和可以任意大小，与对象的图像大小无关。
+
+继续添加：
+```java
+protected void updateMotionX (float deltaTime) {
+    if (velocity.x != 0) {
+    	// Apply friction
+    	if (velocity.x > 0) {
+    		velocity.x = Math.max(velocity.x - friction.x * deltaTime, 0);
+    	} else {
+    		velocity.x = Math.min(velocity.x + friction.x * deltaTime, 0);
+    	}
+	}
+    // Apply acceleration
+    velocity.x += acceleration.x * deltaTime;
+    // Make sure the object's velocity does not exceed the
+    // positive or negative terminal velocity
+    velocity.x = MathUtils.clamp(velocity.x, -terminalVelocity.x, terminalVelocity.x);
+}
+
+protected void updateMotionY (float deltaTime) {
+    if (velocity.y != 0) {
+   		// Apply friction
+    	if (velocity.y > 0) {
+    		velocity.y = Math.max(velocity.y - friction.y * deltaTime, 0);
+    	} else {
+    		velocity.y = Math.min(velocity.y + friction.y * deltaTime, 0);
+		}
+	}
+	// Apply acceleration
+    velocity.y += acceleration.y * deltaTime;
+    // Make sure the object's velocity does not exceed the
+    // positive or negative terminal velocity
+    velocity.y = MathUtils.clamp(velocity.y, -terminalVelocity.y, terminalVelocity.y);
+}
+```
+
+修改`update()`方法：
+```java
+public void update (float deltaTime) {
+    updateMotionX(deltaTime);
+    updateMotionY(deltaTime);
+    // Move to new position
+    position.x += velocity.x * deltaTime;
+    position.y += velocity.y * deltaTime;
+}
+```
+
+#### 创建金币对象
+
+金币对象只有一个图片。它是可收集的。
+
+```java
+package com.packtpub.libgdx.canyonbunny.game.objects;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.packtpub.libgdx.canyonbunny.game.Assets;
+public class GoldCoin extends AbstractGameObject {
+    private TextureRegion regGoldCoin;
+    public boolean collected;
+    public GoldCoin () {
+    	init();
+    }
+    private void init () {
+        dimension.set(0.5f, 0.5f);
+        regGoldCoin = Assets.instance.goldCoin.goldCoin;
+        // Set bounding box for collision detection
+        bounds.set(0, 0, dimension.x, dimension.y);
+        collected = false;
+    }
+    public void render (SpriteBatch batch) {
+        if (collected) return;
+        TextureRegion reg = null;
+        reg = regGoldCoin;
+        batch.draw(reg.getTexture(),
+            position.x, position.y,
+            origin.x, origin.y,
+            dimension.x, dimension.y,
+            scale.x, scale.y,
+            rotation,
+            reg.getRegionX(), reg.getRegionY(),
+            reg.getRegionWidth(), reg.getRegionHeight(),
+            false, false);
+    }
+    public int getScore() {
+    	return 100;
+    }
+}
+```
+
+`collected`控制金币的可见性。
+
+#### 羽毛对象
+
+羽毛也是可收集的。
+
+```java
+package com.packtpub.libgdx.canyonbunny.game.objects;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.packtpub.libgdx.canyonbunny.game.Assets;
+public class Feather extends AbstractGameObject {
+    private TextureRegion regFeather;
+    public boolean collected;
+    public Feather () {
+    	init();
+    }
+    private void init () {
+        dimension.set(0.5f, 0.5f);
+        regFeather = Assets.instance.feather.feather;
+        // Set bounding box for collision detection
+        bounds.set(0, 0, dimension.x, dimension.y);
+        collected = false;
+    }
+    public void render (SpriteBatch batch) {
+        if (collected) return;
+        TextureRegion reg = null;
+        reg = regFeather;
+        batch.draw(reg.getTexture(),
+            position.x, position.y,
+            origin.x, origin.y,
+            dimension.x, dimension.y,
+            scale.x, scale.y,
+            rotation,
+            reg.getRegionX(), reg.getRegionY(),
+            reg.getRegionWidth(), reg.getRegionHeight(),
+            false, false);
+    }
+    public int getScore() {
+    	return 250;
+    }
+}
+```
+
+#### bunny的头
+
+bunny的头是游戏角色。能够跳起和落下。能够乘羽毛。
+
+基本结构：
+```java
+package com.packtpub.libgdx.canyonbunny.game.objects;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.packtpub.libgdx.canyonbunny.game.Assets;
+import com.packtpub.libgdx.canyonbunny.util.Constants;
+public class BunnyHead extends AbstractGameObject {
+    public static final String TAG = BunnyHead.class.getName();
+    private final float JUMP_TIME_MAX = 0.3f;
+    private final float JUMP_TIME_MIN = 0.1f;
+    private final float JUMP_TIME_OFFSET_FLYING = JUMP_TIME_MAX - 0.018f;
+    public enum VIEW_DIRECTION { LEFT, RIGHT }
+    public enum JUMP_STATE {
+    	GROUNDED, FALLING, JUMP_RISING, JUMP_FALLING
+    }
+    private TextureRegion regHead;
+    public VIEW_DIRECTION viewDirection;
+    public float timeJumping;
+    public JUMP_STATE jumpState;
+    public boolean hasFeatherPowerup;
+    public float timeLeftFeatherPowerup;
+    public BunnyHead () {
+   		init();
+    }
+    public void init () {};
+    public void setJumping (boolean jumpKeyPressed) {};
+    public void setFeatherPowerup (boolean pickedUp) {};
+    public boolean hasFeatherPowerup () {};
+}
+```
+
+```java
+public void init () {
+    dimension.set(1, 1);
+    regHead = Assets.instance.bunny.head;
+    // Center image on game object
+    origin.set(dimension.x / 2, dimension.y / 2);
+    // Bounding box for collision detection
+    bounds.set(0, 0, dimension.x, dimension.y);
+    // Set physics values
+    terminalVelocity.set(3.0f, 4.0f);
+    friction.set(12.0f, 0.0f);
+    acceleration.set(0.0f, -25.0f);
+    // View direction
+    viewDirection = VIEW_DIRECTION.RIGHT;
+    // Jump state
+    jumpState = JUMP_STATE.FALLING;
+    timeJumping = 0;
+    // Power-ups
+    hasFeatherPowerup = false;
+    timeLeftFeatherPowerup = 0;
+}
+
+public void setJumping (boolean jumpKeyPressed) {
+    switch (jumpState) {
+    case GROUNDED: // 角色在地上
+        if (jumpKeyPressed) {
+            // 从头计算跳起时间
+            timeJumping = 0;
+            jumpState = JUMP_STATE.JUMP_RISING;
+        }
+    	break;
+    case JUMP_RISING: // 正在空中上升
+        if (!jumpKeyPressed)
+        	jumpState = JUMP_STATE.JUMP_FALLING;
+        break;
+    case FALLING:// 下降中
+    case JUMP_FALLING: // 跳后下降中
+        if (jumpKeyPressed && hasFeatherPowerup) {
+            timeJumping = JUMP_TIME_OFFSET_FLYING;
+            jumpState = JUMP_STATE.JUMP_RISING;
+        }
+        break;
+    }
+}
+
+public void setFeatherPowerup (boolean pickedUp) {
+    hasFeatherPowerup = pickedUp;
+    if (pickedUp) {
+        timeLeftFeatherPowerup = Constants.ITEM_FEATHER_POWERUP_DURATION;
+    }
+}
+public boolean hasFeatherPowerup () {
+	return hasFeatherPowerup && timeLeftFeatherPowerup > 0;
+}
+
+@Override
+public void update (float deltaTime) {
+    super.update(deltaTime);
+    if (velocity.x != 0) {
+        viewDirection = velocity.x < 0 ? VIEW_DIRECTION.LEFT : VIEW_DIRECTION.RIGHT;
+    }
+    if (timeLeftFeatherPowerup > 0) {
+    	timeLeftFeatherPowerup -= deltaTime;
+        if (timeLeftFeatherPowerup < 0) {
+            // disable power-up
+            timeLeftFeatherPowerup = 0;
+            setFeatherPowerup(false);
+        }
+    }
+}
+
+@Override
+protected void updateMotionY (float deltaTime) {
+    switch (jumpState) {
+    case GROUNDED:
+        jumpState = JUMP_STATE.FALLING;
+        break;
+    case JUMP_RISING:
+        // Keep track of jump time
+        timeJumping += deltaTime;
+        // Jump time left?
+        if (timeJumping <= JUMP_TIME_MAX) {
+            // Still jumping
+            velocity.y = terminalVelocity.y;
+        }
+        break;
+    case FALLING:
+        break;
+    case JUMP_FALLING:
+        // Add delta times to track jump time
+        timeJumping += deltaTime;
+        // Jump to minimal height if jump key was pressed too short
+        if (timeJumping > 0 && timeJumping <= JUMP_TIME_MIN) {
+            // Still jumping
+            velocity.y = terminalVelocity.y;
+        }
+    }
+    if (jumpState != JUMP_STATE.GROUNDED)
+        super.updateMotionY(deltaTime);
+}
+
+@Override
+public void render (SpriteBatch batch) {
+    TextureRegion reg = null;
+    // Set special color when game object has a feather power-up
+    if (hasFeatherPowerup)
+    	batch.setColor(1.0f, 0.8f, 0.0f, 1.0f);
+    // Draw image
+    reg = regHead;
+    batch.draw(reg.getTexture(),
+        position.x, position.y,
+        origin.x, origin.y,
+        dimension.x, dimension.y,
+        scale.x, scale.y,
+        rotation,
+        reg.getRegionX(), reg.getRegionY(),
+        reg.getRegionWidth(), reg.getRegionHeight(),
+        viewDirection == VIEW_DIRECTION.LEFT, false);
+    // Reset color to white
+    batch.setColor(1, 1, 1, 1);
+}
+```
+
+Furthermore, add the following code to `Constants`:
+```java
+// Duration of feather power-up in seconds
+public static final float ITEM_FEATHER_POWERUP_DURATION = 9;
+```
+
+There are four different states for jumping:
+•  GROUNDED: In this state, the player is standing on a platform.
+•  FALLING: In this state, the player is falling down.
+•  JUMP_RISING: In this state, the player has initiated a jump and is still rising. The maximum jump height has not been reached.
+•  JUMP_FALLING: In this state, the player is falling down after a previously initiated jump. This state is reached either by jumping as long as possible or by releasing the jump key earlier than that.
+
+The state for jumping is stored in jumpState. There is a minimum and maximum jump time defined by the constants `JUMP_TIME_MIN` and `JUMP_TIME_MAX`. These time limits and the jump power affect the resulting possible minimum and maximum jump heights. A minimum jump is enforced on the player whenever the jump key is released before the time defined in `JUMP_TIME_MIN`.
+
+The currently elapsed jump time is accumulated in `timeJumping` and is reset on every new jump. There is a third constant `JUMP_TIME_OFFSET_FLYING` that is used to let the elapsed jump time start at a certain time, which effectively shortens the overall height of such jumps. This is used for the multi jump power-up effect of the feather item. It allows the bunny head to fly by rapidly jumping repeatedly. A multi jump can only be executed while the bunny head is in midair. A shorter jump time for multi jumps makes it more difficult for the player to handle them, which adds a neat detail to the gameplay feeling.
+
+This is all done inside the overridden updateMotionY() method. Notice that the original method of updateMotionY() from `AbstractGameObject` is also called whenever an actual motion needs to happen, which is always the case when the player is not in the GROUNDED jump state.
+
+![](jump_flow.png)
+
+As you can see, the jumpstate will always change to FALLINGwhenever it is set 
+to GROUNDED. The reason for this is that we want grounded objects like the player 
+character to be able to fall down from platforms where they end. There must be a 
+trigger that tests this event so that the jump state will be in fact permanently changed 
+from GROUNDED to FALLING，只要碰撞检测代码可以将跳跃状态改回`GROUNDED`。
+
+A new jump is triggered by calling the setJumping()method. A value of truecan 
+be passed as the argument to denote a press of the jump key. So this method checks 
+the current jump state of the bunny and also tests whether the jump key is currently 
+pressed by the player to perform the appropriate actions. Those actions can be to 
+start a new jump, cancel an ongoing jump, or allow multi jumps with the help of 
+the feather power-up.
+
+The variables `hasFeatherPowerup` and `timeLeftFeatherPowerup` describe whether the player has collected the feather power-up or not and how much time the effect will last. The power-up effect can be enabled and disabled by calling `setFeatherPowerup()`. The method `hasFeatherPowerup()` is used as a combined test to find out if the power-up has been collected and if the effect is still lasting. The render() method will tint the image of the player character orange if the feather power-up has been collected. The viewing direction viewDirection is used to decide whether the image needs to be flipped on the x axis.
+
+#### 更新岩石对象
+
+修改`Rock.setLength()`方法：
+
+```java
+public void setLength (int length) {
+    this.length = length;
+    // Update bounding box for collision detection
+    bounds.set(0, 0, dimension.x * length, dimension.y);
+}
+```
+
+### 6.2 完成 level loader
 
 
 
