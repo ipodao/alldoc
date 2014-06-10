@@ -1229,7 +1229,7 @@ Libgdx 有一个内建的纹理打包器（packer），用于自动化创建和�
 
 > 在纹理内使用Padding能够避免*texture bleeding* (also known as *pixel bleeding*) while texture filtering and/or mip-mapping is enabled。The texture filter mode can be set to smooth pixels of a texture. This is basically done by looking for the pixel information which is next to the current pixel that is to be smoothened. 问题是相邻图像的像素也会参加运算，于是pixels bleeding from one subimage into another。
 
-texture packer是Libgdx的一项扩展。因此需要将`extensions/gdx-tools.jar`拷贝到`CanyonBunny-desktop/libs`，并添加到Eclipse的Build Path中。
+texture packer是Libgdx的一项扩展。因此需要将`extensions/gdx-tools.jar`拷贝到`CanyonBunny-desktop/libs`，并添加到Eclipse的Build Path中。注意，是桌面项目！不要拷贝到Android项目下的libs文件夹下，会导致Android不能运行。
 
 We will now add the code to automate the generation process of the texture atlas. Create a new folder called `assets-raw` under *CanyonBunny-desktop*. Also, add a subfolder named `assets-raw/images`. 这个文件夹下的图片将被包含进纹理贴图。
 
@@ -3134,7 +3134,7 @@ We also add an auto-forward moving behavior if the game is run on a non-desktop 
 
 #### 命，游戏结束，修复摄像机
 
-## 7 菜单和选项
+## 7. 菜单和选项
 
 两个按钮。**Play**按钮启动新游戏。另一个按钮显示选项菜单。设置保存在`Preferences`文件夹中。Libgdx通过`Game`类管理多个屏。You will also learn how to use Libgdx's scene graph called `Scene2D` to create and organize complex menu structures as well as how to handle events such as pressed buttons.
 
@@ -3346,13 +3346,13 @@ Libgdx comes with a great feature set to easily create **scene graphs**. A scene
 
 Until now, we have not used any of Scene2D's functionality in our game. Naturally, we could have implemented the game world including its game objects with Scene2D. However, always keep in mind that using a scene graph comes with a certain amount of overhead. Libgdx tries its best to keep the overhead at a bare minimum, such as skipping complex calculations of transformation matrices if objects do not need to be rotated or scaled. So, it really depends on what your requirements are.
 
-因为菜单的UI非常复杂，因此我们使用Libgdx的scene graph，准确说是**Scene2D UI**。Scene2D UI 构建在 Scene2D 的基础之上，提供了一组创建的UI控件（widgets）。下面是可用的Scene2D UI控件：Button, CheckBox, Dialog, Image, ImageButton, Label, List, ScrollPane, SelectBox, Slider, SplitPane, Stack, Window, TextButton, TextField, Touchpad, and Tree。完整的控件参见https://code.google.com/p/libgdx/wiki/scene2dui/。
+因为菜单的UI非常复杂，因此我们使用Libgdx的scene graph，准确说是**Scene2D UI**。Scene2D UI 构建在 Scene2D 基础之上，提供了一组创建的UI控件（widgets）。下面是可用的**Scene2D UI**控件：Button, CheckBox, Dialog, Image, ImageButton, Label, List, ScrollPane, SelectBox, Slider, SplitPane, Stack, Window, TextButton, TextField, Touchpad, and Tree。完整的控件参见https://code.google.com/p/libgdx/wiki/scene2dui/。
 
-Scene2D UI也支持自定义控件。
+**Scene2D UI** 也支持自定义控件。
 
 除了Scene2D UI，Libgdx还提供一个独立的工程`TableLayout`。TableLayout简化了动态（resolution-independent）布局的创建和维护。A class called `Table` provides access to the functionality of `TableLayout`, which is also implemented as a widget, and therefore integrates seamlessly into the concept of Scene2D UI. It is highly recommended to check out the official documentation at https://code.google.com/p/table-layout/.
 
-Scene2D UI的一项重要功能是支持皮肤。A skin is a collection of resources which are used to style and display UI widgets. 资源包括texture regions、字体和颜色。皮肤使用的texture regions一般来自一个纹理贴图。The style definition of **each** widget is stored in a separate file using the **JSON** file format.
+**Scene2D UI** 的一项重要功能是支持皮肤。皮肤是一组资源集合，给UI控件提供样式。资源包括texture regions、字体和颜色。皮肤使用的texture regions一般来自一个纹理贴图。The style definition of **each** widget is stored in a separate file using the **JSON** file format.
 
 For moreinformation, check out the official documentation at https://code.google.com/p/libgdx/wiki/Skin.
 
@@ -3399,6 +3399,7 @@ The resulting texture atlas for our UI should look like the following screenshot
 ![](atlas_menu.png)
 
 创建皮肤文件`CanyonBunny-android/assets/images/canyonbunnyui.json`：
+
 ```json
 {
     com.badlogic.gdx.scenes.scene2d.ui.Button$ButtonStyle: {
@@ -3415,9 +3416,10 @@ The resulting texture atlas for our UI should look like the following screenshot
 }
 ```
 
-This definition file describes the type of widget to be used by specifying its completely qualified name. Inside the block of a widget definition, you can freely choose a name. Here we use `play`, `options`, `background`, and so on for our names. These names are then followed by a colon, followed by a comma-separated list of `attributes` enclosed in curly brackets that correspond exactly to the field names of the widget's class. 例如`Image`控件有一个字段叫做`drawable`。
+控件类型有控件的全限名表示。控件定义内部的名字可以随便选，可以使用`play`, `options`, `background`等。这些名字后面的JSON对象属性对应控件类的字段。例如`Image`控件有一个字段叫做`drawable`。
 
 最后向`Constants`添加常量：
+
 ```java
 public static final String TEXTURE_ATLAS_UI = "images/canyonbunny-ui.pack";
 public static final String TEXTURE_ATLAS_LIBGDX_UI = "images/uiskin.atlas";
@@ -3432,36 +3434,9 @@ First, take a look at the following diagram that shows the hierarchy of the UI s
 
 ![](menu_graph.png)
 
-The scene graph starts with an empty Stage. Then, the first child actor added to the 
-stage is a Stackwidget. A Stackwidget allows you to add actors that can overlay 
-other actors. We will make use of this ability to create several layers. Each layer uses 
-a Tablewidget as its parent actor. Using stacked tables enables us to layout actors 
-in an easy and logical way.
+The scene graph starts with an empty Stage. 向Stage添加的第一个子控件是`Stack`。`Stack`控件的子控件（actors）可以覆盖，利用该特性创建多个层。每一层使用一个`Table`控件做容器。
 
-In the first step we will add the basic structure of our stacked layers and some 
-skeleton methods which we are going to fill in the subsequent steps.
-Add the following import lines to MenuScreen:
-```java
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.g2d.TextureAtlas;
-import com.badlogic.gdx.scenes.scene2d.Stage;
-import com.badlogic.gdx.scenes.scene2d.ui.Button;
-import com.badlogic.gdx.scenes.scene2d.ui.CheckBox;
-import com.badlogic.gdx.scenes.scene2d.ui.Image;
-import com.badlogic.gdx.scenes.scene2d.ui.Label;
-import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle;
-import com.badlogic.gdx.scenes.scene2d.ui.SelectBox;
-import com.badlogic.gdx.scenes.scene2d.ui.Skin;
-import com.badlogic.gdx.scenes.scene2d.ui.Slider;
-import com.badlogic.gdx.scenes.scene2d.ui.Stack;
-import com.badlogic.gdx.scenes.scene2d.ui.Table;
-import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
-import com.badlogic.gdx.scenes.scene2d.ui.Window;
-import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
-import com.packtpub.libgdx.canyonbunny.game.Assets;
-import com.packtpub.libgdx.canyonbunny.util.Constants;
-```
-After that, add the following lines of code to the same class:
+向`MenuScreen`添加：
 
 ```java
     private Stage stage;
@@ -3490,17 +3465,554 @@ After that, add the following lines of code to the same class:
     private final float DEBUG_REBUILD_INTERVAL = 5.0f;
     private boolean debugEnabled = false;
     private float debugRebuildStage;
+
+    private void rebuildStage () {
+        skinCanyonBunny = new Skin(
+            Gdx.files.internal(Constants.SKIN_CANYONBUNNY_UI),
+            new TextureAtlas(Constants.TEXTURE_ATLAS_UI));
+        // 构建各个层
+        Table layerBackground = buildBackgroundLayer();
+        Table layerObjects = buildObjectsLayer();
+        Table layerLogos = buildLogosLayer();
+        Table layerControls = buildControlsLayer();
+        Table layerOptionsWindow = buildOptionsWindowLayer();
+        // assemble stage for menu screen
+        stage.clear();
+        Stack stack = new Stack();
+        stage.addActor(stack);
+        stack.setSize(Constants.VIEWPORT_GUI_WIDTH, Constants.VIEWPORT_GUI_HEIGHT);
+        stack.add(layerBackground);
+        stack.add(layerObjects);
+        stack.add(layerLogos);
+        stack.add(layerControls);
+        stage.addActor(layerOptionsWindow);
+    }
+
+    private Table buildBackgroundLayer () {
+        Table layer = new Table();
+        return layer;
+    }
+    private Table buildObjectsLayer () {
+        Table layer = new Table();
+        return layer;
+    }
+    private Table buildLogosLayer () {
+        Table layer = new Table();
+        return layer;
+    }
+    private Table buildControlsLayer () {
+        Table layer = new Table();
+        return layer;
+    }
+    private Table buildOptionsWindowLayer () {
+        Table layer = new Table();
+        return layer;
+    }
+
+    @Override
+    public void resize (int width, int height) {
+        stage.setViewport(Constants.VIEWPORT_GUI_WIDTH, Constants.VIEWPORT_GUI_HEIGHT, false);
+    }
+
+    @Override
+    public void hide () {
+        stage.dispose();
+        skinCanyonBunny.dispose();
+    }
+
+    @Override
+    public void show () {
+        stage = new Stage();
+        Gdx.input.setInputProcessor(stage);
+        rebuildStage();
+    }
+
+    @Override
+    public void render (float deltaTime) {
+        Gdx.gl.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        Gdx.gl.glClear(GL10.GL_COLOR_BUFFER_BIT);
+        if (debugEnabled) {
+            debugRebuildStage -= deltaTime;
+            if (debugRebuildStage <= 0) {
+                debugRebuildStage = DEBUG_REBUILD_INTERVAL;
+                rebuildStage();
+            }
+        }
+        stage.act(deltaTime);
+        stage.draw();
+        Table.drawDebug(stage);
+    } 
 ```
 
+`Table.drawDebug()` is a debugging feature of `TableLayout` which enables you to draw debug visuals in a scene. Additionally, you need to specify which `Table` widgets should draw debug lines by calling their `debug()` method.
+
+在桌面运行时，可以设置`debugEnabled`为true，这样就能利用JVM代码hot swapping能力，运行时更新代码。
+
+#### 背景层
+
+修改`MenuScreen`，添加背景层：
+
+```java
+private Table buildBackgroundLayer () {
+    Table layer = new Table();
+    // + Background
+    imgBackground = new Image(skinCanyonBunny, "background");
+    layer.add(imgBackground);
+    return layer;
+}
+```
+
+`background`在`canyonbunny-ui.json`中对应一个属性。If you change the size of the screen, the stage 
+will adjust accordingly, along with the background layer and its Image widget.
+
+#### 对象层
+
+```java
+private Table buildObjectsLayer () {
+    Table layer = new Table();
+    // + Coins
+    imgCoins = new Image(skinCanyonBunny, "coins");
+    layer.addActor(imgCoins);
+    imgCoins.setPosition(135, 80);
+    // + Bunny
+    imgBunny = new Image(skinCanyonBunny, "bunny");
+    layer.addActor(imgBunny);
+    imgBunny.setPosition(355, 40);
+    return layer;
+}
+```
+
+#### logos层
+
+```java
+private Table buildLogosLayer () {
+    Table layer = new Table();
+    layer.left().top();
+    // + Game Logo
+    imgLogo = new Image(skinCanyonBunny, "logo");
+    layer.add(imgLogo);
+    layer.row().expandY();
+    // + Info Logos
+    imgInfo = new Image(skinCanyonBunny, "info");
+    layer.add(imgInfo).bottom();
+    if (debugEnabled) layer.debug();
+    return layer;
+}
+```
+
+Logo层对齐屏幕左上角。After that, an image logo is added to the table followed by a call of the `row()` and `expandY()` methods. 每次调用`Table.add()`都会添加一个新的列。如果想新起一行，调用`row()`。The expandY() method expands the empty space in a vertical direction. The expansion is done by 
+shifting the widgets to the bounds of the cell. After that, another image information is added to the table, which is literally pushed down to the bottom edge due to the call of expandY().
+
+Lastly, there is a call to `layer.debug()`, which is the way to tell TableLayout the object it should draw debug visuals for.
+
+#### 控件层
+
+```java
+private Table buildControlsLayer () {
+    Table layer = new Table();
+    layer.right().bottom();
+    // + Play Button
+    btnMenuPlay = new Button(skinCanyonBunny, "play");
+    layer.add(btnMenuPlay);
+    btnMenuPlay.addListener(new ChangeListener() {
+        @Override
+        public void changed (ChangeEvent event, Actor actor) {
+            onPlayClicked();
+        }
+    });
+    layer.row();
+    // + Options Button
+    btnMenuOptions = new Button(skinCanyonBunny, "options");
+    layer.add(btnMenuOptions);
+    btnMenuOptions.addListener(new ChangeListener() {
+        @Override
+        public void changed (ChangeEvent event, Actor actor) {
+            onOptionsClicked();
+        }
+    });
+    if (debugEnabled) layer.debug();
+    return layer;
+}
+
+private void onPlayClicked () {
+    game.setScreen(new GameScreen(game));
+}
+private void onOptionsClicked () { }
+```
+
+空间层对齐屏幕右下角。
 
 
+> We are using `ChangeListener` to register new handlers for our button widgets. This is the recommended way of implementing handlers for widgets since most of them will fire `ChangeEvent` when changes occur. We could have also used `ClickListener` to accomplish the detection of clicks on button widgets, but doing so has a major drawback. The `ClickListener` method reactson input events received by a widget, but does not know anything about widgets and their properties. Therefore, if a widget is set to be disabled, clicking on events will still be detected and handled by the listener.
 
+#### 添加选项窗口层
 
+![](option-win.png)
 
+拖动标题可以移动窗口。显示选项窗口时，隐藏 Play 和 Options 按钮。选项窗口隐藏后，两个按钮再出现。
 
+为了省事，我们直接利用Libgdx测试工程中的纹理贴图、皮肤文件、字体定义等实现UI。将这些文件放入`CanyonBunny-android/assets/images/`：
 
+- uiskin.png
+- uiskin.atlas
+- uiskin.json
+- default.fnt
 
+A copy of these files can be downloaded from https://github.com/libgdx/libgdx/tree/master/tests/gdx-tests-android/assets/data/.
 
+`uiskin.png`形如：
+
+![](uiskin.png)
+
+首先，创建一个新类，封装加载和保存游戏设置的过程。
+
+```java
+package com.packtpub.libgdx.canyonbunny.util;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Preferences;
+import com.badlogic.gdx.math.MathUtils;
+public class GamePreferences {
+    public static final String TAG = GamePreferences.class.getName();
+    public static final GamePreferences instance = new GamePreferences();
+    public boolean sound;
+    public boolean music;
+    public float volSound;
+    public float volMusic;
+    public int charSkin;
+    public boolean showFpsCounter;
+    private Preferences prefs;
+    // singleton: prevent instantiation from other classes
+    private GamePreferences () {
+        prefs = Gdx.app.getPreferences(Constants.PREFERENCES);
+    }
+    public void load () {
+        sound = prefs.getBoolean("sound", true);
+        music = prefs.getBoolean("music", true);
+        volSound = MathUtils.clamp(prefs.getFloat("volSound", 0.5f), 0.0f, 1.0f);
+        volMusic = MathUtils.clamp(prefs.getFloat("volMusic", 0.5f), 0.0f, 1.0f);
+        charSkin = MathUtils.clamp(prefs.getInteger("charSkin", 0), 0, 2);
+        showFpsCounter = prefs.getBoolean("showFpsCounter", false);
+    }
+    public void save () {
+        prefs.putBoolean("sound", sound);
+        prefs.putBoolean("music", music);
+        prefs.putFloat("volSound", volSound);
+        prefs.putFloat("volMusic", volMusic);
+        prefs.putInteger("charSkin", charSkin);
+        prefs.putBoolean("showFpsCounter", showFpsCounter);
+        prefs.flush();
+    }
+}
+```
+
+The second action is to create another class that abstracts all selectable character skins.
+
+```java
+package com.packtpub.libgdx.canyonbunny.util;
+import com.badlogic.gdx.graphics.Color;
+public enum CharacterSkin {
+    WHITE("White", 1.0f, 1.0f, 1.0f),
+    GRAY("Gray", 0.7f, 0.7f, 0.7f),
+    BROWN("Brown", 0.7f, 0.5f, 0.3f);
+    private String name;
+    private Color color = new Color();
+    private CharacterSkin (String name, float r, float g, float b) {
+        this.name = name;
+        color.set(r, g, b, 1.0f);
+    }
+    @Override
+    public String toString () {
+        return name;
+    }
+    public Color getColor () {
+        return color;
+    }
+}
+```
+
+### 7.5 构建选项窗口
+
+修复`MenuScreen`：
+
+```
+private Skin skinLibgdx;
+
+private void loadSettings() {
+    GamePreferences prefs = GamePreferences.instance;
+    prefs.load();
+    chkSound.setChecked(prefs.sound);
+    sldSound.setValue(prefs.volSound);
+    chkMusic.setChecked(prefs.music);
+    sldMusic.setValue(prefs.volMusic);
+    selCharSkin.setSelection(prefs.charSkin);
+    onCharSkinSelected(prefs.charSkin);
+    chkShowFpsCounter.setChecked(prefs.showFpsCounter);
+}
+
+private void saveSettings() {
+    GamePreferences prefs = GamePreferences.instance;
+    prefs.sound = chkSound.isChecked();
+    prefs.volSound = sldSound.getValue();
+    prefs.music = chkMusic.isChecked();
+    prefs.volMusic = sldMusic.getValue();
+    prefs.charSkin = selCharSkin.getSelectionIndex();
+    prefs.showFpsCounter = chkShowFpsCounter.isChecked();
+    prefs.save();
+}
+
+private void onCharSkinSelected(int index) {
+    CharacterSkin skin = CharacterSkin.values()[index];
+    imgCharSkin.setColor(skin.getColor());
+}
+
+private void onSaveClicked() {
+    saveSettings();
+    onCancelClicked();
+}
+
+private void onCancelClicked() {
+    btnMenuPlay.setVisible(true);
+    btnMenuOptions.setVisible(true);
+    winOptions.setVisible(false);
+}
+
+private void rebuildStage() {
+    skinCanyonBunny = new Skin(
+        Gdx.files.internal(Constants.SKIN_CANYONBUNNY_UI),
+        new TextureAtlas(Constants.TEXTURE_ATLAS_UI));
+    skinLibgdx = new Skin(
+        Gdx.files.internal(Constants.SKIN_LIBGDX_UI),
+        new TextureAtlas(Constants.TEXTURE_ATLAS_LIBGDX_UI));
+    // build all layers
+    ...
+}
+
+@Override
+public void hide() {
+    stage.dispose();
+    skinCanyonBunny.dispose();
+    skinLibgdx.dispose();
+}
+```
+
+The `onCharSkinSelected()` method will update the preview image.
+
+创建选择菜单需要大量代码，因此将其分拆为四个方法：
+
+```java
+private Table buildOptWinAudioSettings () {
+    Table tbl = new Table();
+    // + Title: "Audio"
+    tbl.pad(10, 10, 0, 10);
+    tbl.add(new Label("Audio", skinLibgdx, "default-font", Color.ORANGE)).colspan(3);
+    tbl.row();
+    tbl.columnDefaults(0).padRight(10);
+    tbl.columnDefaults(1).padRight(10);
+    // + Checkbox, "Sound" label, sound volume slider
+    chkSound = new CheckBox("", skinLibgdx);
+    tbl.add(chkSound);
+    tbl.add(new Label("Sound", skinLibgdx));
+    sldSound = new Slider(0.0f, 1.0f, 0.1f, false, skinLibgdx);
+    tbl.add(sldSound);
+    tbl.row();
+    // + Checkbox, "Music" label, music volume slider
+    chkMusic = new CheckBox("", skinLibgdx);
+    tbl.add(chkMusic);
+    tbl.add(new Label("Music", skinLibgdx));
+    sldMusic = new Slider(0.0f, 1.0f, 0.1f, false, skinLibgdx);
+    tbl.add(sldMusic);
+    tbl.row();
+    return tbl;
+}
+
+private Table buildOptWinSkinSelection () {
+    Table tbl = new Table();
+    // + Title: "Character Skin"
+    tbl.pad(10, 10, 0, 10);
+    tbl.add(new Label("Character Skin", skinLibgdx,
+        "default-font", Color.ORANGE)).colspan(2);
+    tbl.row();
+    // + Drop down box filled with skin items
+    selCharSkin = new SelectBox(CharacterSkin.values(), skinLibgdx);
+    selCharSkin.addListener(new ChangeListener() {
+        @Override
+        public void changed (ChangeEvent event, Actor actor) {
+            onCharSkinSelected(((SelectBox)actor).getSelectionIndex());
+        }
+    });
+    tbl.add(selCharSkin).width(120).padRight(20);
+    // + Skin preview image
+    imgCharSkin = new Image(Assets.instance.bunny.head);
+    tbl.add(imgCharSkin).width(50).height(50);
+    return tbl;
+}
+
+private Table buildOptWinDebug () {
+    Table tbl = new Table();
+    // + Title: "Debug"
+    tbl.pad(10, 10, 0, 10);
+    tbl.add(new Label("Debug", skinLibgdx, "default-font", Color.RED)).colspan(3);
+    tbl.row();
+    tbl.columnDefaults(0).padRight(10);
+    tbl.columnDefaults(1).padRight(10);
+    // + Checkbox, "Show FPS Counter" label
+    chkShowFpsCounter = new CheckBox("", skinLibgdx);
+    tbl.add(new Label("Show FPS Counter", skinLibgdx));
+    tbl.add(chkShowFpsCounter);
+    tbl.row();
+    return tbl;
+}
+
+private Table buildOptWinButtons () {
+    Table tbl = new Table();
+    // + Separator
+    Label lbl = null;
+    lbl = new Label("", skinLibgdx);
+    lbl.setColor(0.75f, 0.75f, 0.75f, 1);
+    lbl.setStyle(new LabelStyle(lbl.getStyle()));
+    lbl.getStyle().background = skinLibgdx.newDrawable("white");
+    tbl.add(lbl).colspan(2).height(1).width(220).pad(0, 0, 0, 1);
+    tbl.row();
+    lbl = new Label("", skinLibgdx);
+    lbl.setColor(0.5f, 0.5f, 0.5f, 1);
+    lbl.setStyle(new LabelStyle(lbl.getStyle()));
+    lbl.getStyle().background = skinLibgdx.newDrawable("white");
+    tbl.add(lbl).colspan(2).height(1).width(220).pad(0, 1, 5, 0);
+    tbl.row();
+    // + Save Button with event handler
+    btnWinOptSave = new TextButton("Save", skinLibgdx);
+    tbl.add(btnWinOptSave).padRight(30);
+    btnWinOptSave.addListener(new ChangeListener() {
+        @Override
+        public void changed (ChangeEvent event, Actor actor) {
+            onSaveClicked();
+        }
+    });
+    // + Cancel Button with event handler
+    btnWinOptCancel = new TextButton("Cancel", skinLibgdx);
+    tbl.add(btnWinOptCancel);
+    btnWinOptCancel.addListener(new ChangeListener() {
+        @Override
+        public void changed (ChangeEvent event, Actor actor) {
+            onCancelClicked();
+        }
+    });
+    return tbl;
+}
+```
+
+```java
+private Table buildOptionsWindowLayer() {
+    winOptions = new Window("Options", skinLibgdx);
+    // + Audio Settings: Sound/Music CheckBox and Volume Slider
+    winOptions.add(buildOptWinAudioSettings()).row();
+    // + Character Skin: Selection Box (White, Gray, Brown)
+    winOptions.add(buildOptWinSkinSelection()).row();
+    // + Debug: Show FPS Counter
+    winOptions.add(buildOptWinDebug()).row();
+    // + Separator and Buttons (Save, Cancel)
+    winOptions.add(buildOptWinButtons()).pad(10, 0, 10, 0);
+    // Make options window slightly transparent
+    winOptions.setColor(1, 1, 1, 0.8f);
+    // Hide options window by default
+    winOptions.setVisible(false);
+    if (debugEnabled) winOptions.debug();
+    // Let TableLayout recalculate widget sizes and positions
+    winOptions.pack();
+    // Move options window to bottom right corner
+    winOptions.setPosition(Constants.VIEWPORT_GUI_WIDTH - winOptions.getWidth() - 50, 50);
+    return winOptions;
+}
+```
+
+The Options window is set to an opacity value of 80 percent. The call of the `pack()` method of the Window widget makes sure that TableLayout recalculates the widget sizes and positions so that all added widgets will correctly fit into the window. After that, the window is moved to the bottom-right corner of the screen.
+
+```java
+private void onOptionsClicked() {
+    loadSettings();
+    btnMenuPlay.setVisible(false);
+    btnMenuOptions.setVisible(false);
+    winOptions.setVisible(true);
+}
+```
+
+#### Using the game settings
+
+A lot of work went into the creation of our menu screen and also into the Options window to allow the change of certain game settings. What is still missing is the actual usage of the set values in our game. Luckily, this can be achieved very easily now with just a couple of additional lines of code.
+
+修改`GameScreen`：
+
+```java
+@Override
+public void show () {
+    GamePreferences.instance.load();
+    worldController = new WorldController(game);
+    worldRenderer = new WorldRenderer(worldController);
+    Gdx.input.setCatchBackKey(true);
+}
+```
+
+The added code ensures that the game screen will always work with the latest game settings.
+
+Next, add the following import lines to BunnyHead:
+import com.packtpub.libgdx.canyonbunny.util.CharacterSkin;
+import com.packtpub.libgdx.canyonbunny.util.GamePreferences;
+
+After that, make the following change to the same class:
+```java
+@Override
+public void render (SpriteBatch batch) {
+    TextureRegion reg = null;
+    // Apply Skin Color
+    batch.setColor(
+    CharacterSkin.values()[GamePreferences.instance.charSkin].getColor());
+    // Set special color when game object has a feather power-up
+    if (hasFeatherPowerup)
+        batch.setColor(1.0f, 0.8f, 0.0f, 1.0f);
+    // Draw image
+    reg = regHead;
+    batch.draw(reg.getTexture(),
+        position.x, position.y,
+        origin.x, origin.y,
+        dimension.x, dimension.y,
+        scale.x, scale.y,
+        rotation,
+        reg.getRegionX(), reg.getRegionY(),
+        reg.getRegionWidth(), reg.getRegionHeight(),
+        viewDirection == VIEW_DIRECTION.LEFT, false);
+    // Reset color to white
+    batch.setColor(1, 1, 1, 1);
+}
+```
+
+This will apply the correct skin color by tinting theimage of the bunny head.
+
+Next, add the following import line to WorldRenderer:
+import com.packtpub.libgdx.canyonbunny.util.GamePreferences;
+
+After that, make the following change to the same class:
+
+```java
+private void renderGui (SpriteBatch batch) {
+    batch.setProjectionMatrix(cameraGUI.combined);
+    batch.begin();
+    // draw collected gold coins icon + text
+    // (anchored to top left edge)
+    renderGuiScore(batch);
+    // draw collected feather icon (anchored to top left edge)
+    renderGuiFeatherPowerup(batch);
+    // draw extra lives icon + text (anchored to top right edge)
+    renderGuiExtraLive(batch);
+    // draw FPS text (anchored to bottom right edge)
+    if (GamePreferences.instance.showFpsCounter)
+        renderGuiFpsCounter(batch);
+    // draw game over text
+    renderGuiGameOverMessage(batch);
+    batch.end();
+}
+```
+
+This change will make theFPS counter appear only if the checkbox has been ticked in the Options window. Otherwise, the FPS counter will not be drawn to the scene.
 
 
 
