@@ -2091,24 +2091,255 @@ A type alias can make it easier to read, write, and understand pointers to multi
 
 #### 4.1.1. 基本概念
 
+理解涉及多个运算符的表达式，需要理解运算符的优先级、结合性，及运算数的求值顺序。
+
+##### 操作数转换
+
+经常需要将操作数从一种类型转换为另一种。尽管转换规则复杂，但多数时候转换并不反直觉。小整数类型（如bool, char, short等）一般会被提升为大整数类型，一般是int。We’ll look in detail at conversions in § 4.11.
+
+##### 运算符重载
+
+The IO library `>>` and `<<` operators and the operators we used with strings, vectors, and iterators are all overloaded operators.
+
+使用重载运算符时，运算符的语义，包括操作数类型及结果取决于运算符的定义。但，操作数数量、优先级、结合性是不能变的。
 
 
+##### 左值和右值
 
+C++的表达式要么是一个左值，要么是右值。这些概念继承自C。左值可以位于赋值（assignment）的左边，右值位于右边。
 
+Moreover, some expressions yield objects but return them as rvalues, not lvalues. 粗略的讲，当使用右值时，我们用的是它的值（内容）。用作左值时，我们用的是对象的标识（内存中的位置）。
 
+运算符的区别在于，它们需要左值还是右值，以及它们返回左值还是右值。在需要右值时可以使用左值（但有一个例外，见§ 13.6。当使用左值替代右值时，使用的是对象的内容（它的值）。We have already used several operators that involve lvalues.
 
+- 赋值需要一个左值（非常量）作为左操作数，且将左操作数按左值返回（yield）。
+- 取地址运算符需要一个左值，and returns a pointer to its operand as an rvalue.
+- 内建的解引用和下标运算符，iterator dereference，string and vector subscript operators都产生（yield）左值。
+- The built-in and iterator increment and decrement operators require lvalue operands and the prefix versions (which are the ones we have used so far) also yield lvalues.
 
+As we present the operators, we will note whether an operand must be an lvalue and whether the operator returns an lvalue.
 
+Lvalues and rvalues also differ when used with decltype. 当对一个表达式（而不是变量）施加decltype，如果表达式产生左值，结果是引用类型。例如，加入`p`是`int*`。则`decltype(*p)`是`int&`。On the other hand, because the address-of operator yields an rvalue, `decltype(&p)` is `int**`, that is, a pointer to a pointer to type int.
 
+#### 4.1.2. 优先级和结合性
 
+Associativity determines how to group operands with the same precedence.
 
+#### 4.1.3. 求值顺序
 
+Precedence specifies how the operands are grouped. 但它没规定操作数的求值顺序。多数情况下，顺序都是不定的。如：`int i= f1() * f2();`
 
+注意，下面的输出也是不定的！
 
+```cpp
+    int i= 0;
+    cout << i << " " << ++i << endl; // undefined
+```
 
+但有四个运算符的顺序是一定的。&&、||、三元?:、逗号,。
 
+优先级、结合性与求值顺序无关。如`f() + g() * h() + j()`。函数的调用顺序不定。
 
+### 4.2 算术运算符
 
+下面的运算符都是左结合（从左向右）的：一元+，一元-，*，/，%，+，-。
+
+这些运算符的操作数和结果都是右值。As described in § 4.11, operands of small integral types are promoted to a larger integral type, and all operands may be converted to a common type as part of evaluating these operators.
+
+When applied to a pointer or arithmetic value, unary plus returns a (possibly promoted) copy of the value of its operand.
+
+对于多数操作数，bool类型的操作数会被提升为int。
+
+整数的除法返回一个整数。如果商包含小数，截断。
+```cpp
+    int ival1= 21/6;  // ival1 is 3; result is truncated; remainder is discarded
+    int ival2 = 21/7;  // ival2 is 3; no remainder; result is an integral value
+```
+
+`%`的操作数必须是整数。
+
+语言的早期版本许诺负数商被向上或向下取整。但新标准要求商向零取整（即截断）。
+
+The modulus operator is defined so that if m and n are integers and n is nonzero, then `(m/n)*n + m%n` is equal to `m`. 隐式的，如果m%n非零，它与m的符号相同。Earlier versions of the language permitted `m%n` to have the same sign as `n` on implementations in which negative `m/n` was rounded away from zero, but such implementations are now prohibited. Moreover, except for the obscure case where `-m` overflows, `(-m)/n` and `m/(-n)` are always equal to `-(m/n)`, `m%(-n)` is equal to `m%n`, and `(-m)%n` is equal to `-(m%n)`. More concretely:
+
+```cpp
+21% 6;  /*  resultis 3  */  21/ 6;  /*  resultis 3  */
+21% 7;  /*  resultis 0  */  21/ 7;  /*  resultis 3  */
+-21 % -8;  /*  resultis -5*/  -21 / -8;  /*  resultis 2  */
+21% -5;  /*  resultis 1  */  21/ -5;  /*  resultis -4  */
+```
+
+### 4.3 逻辑与关系运算符
+
+关系运算符的操作数是算术或指针类型；逻辑运算符的操作数可以是任何能被够转换为bool类型的类型。这些运算符的返回值都是bool。Arithmetic and pointer operand(s) with a value of zero are false; all other values are true. 操作数和结果都是右值。
+
+![](logic_relation_operators.png)
+
+##### 相等性测试和bool字面量
+
+`if (val == true) { /* ...  */} // 只有当val等于1时才为true！`
+
+如果val不是bool，true会被转换为val的类型：`if (val== 1) { /* ... */ }`。
+
+所以还是直接写成`if(val)`。
+
+### 4.4. 赋值（Assignment）
+
+赋值的结果是左边的运算符，是一个**左值**。结果是左边运算符的类型。右边运算符的类型转换为左边的。
+
+新标准允许使用大括号初始化列表。
+
+```cpp
+	k = {3.14};  // error: narrowing conversion
+	vector<int> vi;  // initially empty
+	vi = {0,1,2,3,4,5,6,7,8,9};
+```
+
+If the left-hand operand is of a built-in type, the initializer list may contain at most one value, and that value must not require a narrowing conversion (§ 2.2.1).
+
+For class types, what happens depends on the details of the class. In the case of vector, the vector template defines its own version of an assignment operator that can take an initializer list. This operator replaces the elements of the left-hand side with the elements in the list on the right-hand side.
+
+#### 赋值是右结合的
+
+```cpp
+int ival, jval;
+ival = jval = 0; // ok: each assigned 0
+```
+
+Because assignment is right associative, the right-most assignment, `jval = 0`, is the right-hand operand of the left-most assignment operator. Because assignment returns its left-hand operand, the result of the right-most assignment (i.e., jval) is assigned to ival.
+
+Each object in a multiple assignment must have the same type as its right-hand neighbor or a type to which that neighbor can be converted (§ 4.11, p. 159).
+
+#### 赋值的优先级低
+
+```cpp
+    int i;
+    while ((i = get_value()) != 42) {
+    	// do something ...
+    }
+```
+
+#### 复合赋值运算符
+
+```cpp
+	+=  -=  *=  /=  %=  // arithmetic operators
+	<<=  >>=  &=  ^=  |=  // bitwise operators; see § 4.8 (p. 152)
+```
+
+### 4.5 增加减少运算符
+
+The increment (++) and decrement (--) operators provide a convenient notational shorthand for adding or subtracting 1 from an object.
+
+`*pbeg++`等价于`*(pbeg++)`。
+
+求值顺序不定
+
+```cpp
+// the behavior of the following loop is undefined!
+    while (beg != s.end() && !isspace(*beg))
+        *beg = toupper(*beg++);  // 错误：赋值不确定
+```
+
+The compiler might evaluate this expression as either
+```cpp
+    *beg = toupper(*beg); // 相当于左边先求值
+    *(beg + 1) = toupper(*beg); // 右边先求值
+```
+
+### 4.6 成员访问运算符
+
+`ptr->mem`是`(*ptr).mem`的缩写。省去了括号的烦扰。
+
+### 4.7 条件运算符
+
+```cpp
+	cond ? expr1 : expr2;
+```
+
+条件运算符的优先级非常低。把它们嵌入复杂表达式，记得加括号。
+
+### 4.8 二进制运算符
+
+二进制运算符的操作数是整数（一些位）。这些运算符允许我们读取或设置特定的位。As we’ll see in § 17.2, we can also use these operators on a library type named bitset that represents a flexibly sized collection of bits.
+
+如果操作数是小整数，会先被提升为大一些的整数（§ 4.11.1）。操作数可以是有符号的或无符号的。
+
+![](bitwise-operator.png)
+
+如果操作数有有符号的且为负，则器符号位的处理方式取决于机器。如果左移修改了符号位，结果是未定的。
+
+警告：因为符号位的处理是不定的，强烈建议二进制运算符只操作无符号数。
+
+#### 移位运算符
+
+The built-in meaning of these operators is that they perform a bitwise shift on their operands.
+
+左移运算符在右边填0。右移的行为取决于操作数的类型：如果操作数是无符号的，则在左边插0。如果是有符号的，结果取决于实现：可能拷贝符号位，或插入0。
+
+#### 位移（IO）运算符是左结合的
+
+记得，重载运算符不改变运算符的结合性和优先级。
+
+`cout <<"hi" << " there" << endl;`
+等价于：
+`((cout<< "hi") << " there" ) << endl;`
+
+### 4.9 sizeof运算符
+
+The sizeof operator returns the size, in bytes, of an expression or a type name. 运算符是右结合的。结果是常量表达式，类型是`size_t`。运算符有两种形式：`sizeof (type)`，`sizeof expr`。
+
+The `sizeof` operator is unusual in that it does not evaluate its operand:
+
+```cpp
+    Sales_data data, *p;
+    sizeof(Sales_data); // size required to hold an object of type Sales_data
+    sizeof data; // size of data's type, i.e., sizeof(Sales_data)
+    sizeof p;  // size of a pointer
+    sizeof *p;  // size of the type to which p points, i.e., sizeof(Sales_data)
+    sizeof data.revenue; // size of the type of Sales_data's revenue member
+```
+
+The most interesting of these examples is `sizeof *p`. First, because sizeof is right associative and has the same precedence as *, this expression groups right to left. That is, it is equivalent to `sizeof (*p)`. Second, because sizeof does not evaluate its operand, it doesn’t matter that p is an invalid (i.e., uninitialized) pointer (§ 2.3.2). Dereferencing an invalid pointer as the operand to `sizeof` is safe because the pointer is not actually used. `sizeof` doesn’t need dereference the pointer to know what type it will return.
+
+新标准，we can use the scope operator to ask for the size of a **member** of a class type. Ordinarily we can only access the members of a class through an object of that type. We don’t need to supply an object, because `sizeof` does not need to fetch the member to know its size.
+
+```cpp
+	sizeof Sales_data::revenue; // alternative way to get the size of revenue
+```
+
+The result of applying `sizeof` depends in part on the type involved:
+
+- sizeof char or an expression of type char is guaranteed to be 1.
+- sizeof a reference type returns the size of an object of the referenced type.
+- sizeof a pointer returns the size needed hold a pointer.
+- sizeof a dereferenced pointer returns the size of an object of the type to which the pointer points; the pointer need not be valid.
+- sizeof an array is the size of the entire array. It is equivalent to taking the sizeof the element type times the number of elements in the array. Note that sizeof does not convert the array to a pointer.
+- sizeof a string or a vector returns only the size of the fixed part of these types; it does not return the size used by the object’s elements.
+
+```cpp
+    // sizeof(ia)/sizeof(*ia) returns the number of elements in ia
+    constexpr size_t sz = sizeof(ia)/sizeof(*ia);
+    int arr2[sz]; // ok sizeof returns a constant expression § 2.4.4 (p. 65)
+```
+
+`sizeof`返回一个常量表达式，we can use the result of a sizeof expression to specify the dimension of an array.
+
+### 4.10. 逗号运算符
+
+The comma operator takes two operands, which it evaluates from left to right. The comma operator guarantees the order in which its operands are evaluated.
+
+The left-hand expression is evaluated and its result is discarded. The result of a comma expression is the value of its right-hand expression. The result is an lvalue if the right-hand operand is an lvalue.
+
+One common use for the comma operator is in a for loop:
+
+```cpp
+    vector<int>::size_type cnt= ivec.size();
+    // assign values from size... 1 to the elements in ivec
+    for(vector<int>::size_type ix = 0; ix!= ivec.size(); ++ix, --cnt)
+	    ivec[ix]= cnt;
+```
+
+### （未）4.11 类型转换
 
 
 
