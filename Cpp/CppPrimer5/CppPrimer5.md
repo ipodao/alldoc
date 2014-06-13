@@ -2341,11 +2341,385 @@ One common use for the comma operator is in a for loop:
 
 ### （未）4.11 类型转换
 
+## 5. 语句
+
+### 5.2. 语句作用域
+
+Variables defined in the control structure are visible only within that statement and are out of scope after the statement ends:
+
+```cpp
+    while (int i = get_num()) // 每次循环都要创建和初始化i
+        cout<< i << endl;
+```
+
+### 5.3 条件语句
+
+```
+    if (condition)
+        statement
+
+    if (condition)
+        statement
+    else
+        statement2
+
+    switch(ch) {
+    case'a':
+        ++aCnt;
+        break;
+    case'e':
+        ++eCnt;
+        break;
+    case'i':
+        ++iCnt;
+        break;
+    }
+```
+
+switch语句对表达式求值。That expression may be an initialized variable declaration (§ 5.2, p. 174). 表达式会被转换为整型。
+
+If the expression matches the value of a case label, execution begins with the first statement following that label. Execution continues normally from that statement through the end of the switchor until a `break` statement.
+
+`default`的用法：
+
+```cpp
+// if ch is a vowel, increment the appropriate counter
+switch(ch) {
+    case'a': case 'e': case 'i': case 'o': case 'u':
+        ++vowelCnt;
+        break;
+    default:
+        ++otherCnt;
+        break;
+}
+```
+
+### 5.4. 循环语句
+
+```
+	while (condition)
+		statement
+
+	for (init-statement condition; expression)
+		statement
+
+	// Range for。新标准引入。
+	for (declaration: expression)
+		statement
+	do
+		statement
+	while(condition);
+```
+
+### 5.5. Jump语句
+
+C++ offers four jumps: `break`, `continue`, and `goto`, which we cover in this chapter, and the `return` statement, which we’ll describe in § 6.3(p. 222).
+
+A goto statement provides an unconditional jump from the goto to a another statement in the same function.
+
+The syntactic form of a gotostatement is
+goto label;
+
+where label is an identifier that identifies a statement. A labeled statement is any statement that is preceded by an identifier followed by a colon:
+end: return;  // labeled statement; may be the target of a goto
+
+// . . .
+goto end;
+int ix = 10; // error: goto bypasses an initialized variable definition
+end:
+// error: code here could use ix but the goto bypassed its declaration
+ix= 42;
+
+### 5.6 try与异常处理
+
+C++中的异常处理包括：
+
+- `throw expressions`，抛出错误
+- `try blocks`，处理异常。
+- 一组异常类。
+
+#### 5.6.1. throw
+
+throw表达式一般以分号结尾，形成表达式语句。
+
+```cpp
+    // first check that the data are for the same item
+    if (item1.isbn() != item2.isbn())
+        throw runtime_error("Data must refer to same ISBN");
+    // if we're still here, the ISBNs are the same
+    cout << item1 + item2 << endl;
+```
+
+抛出`runtime_error`类型的异常。`runtime_error`是标准库类型，定义在`stdexcept`头。We’ll have more to say about these types in § 5.6.3(p. 197). 初始化`runtime_error`必须通过string或C风格字符串。
 
 
+#### 5.6.2. try
+
+```
+    try {
+    	program-statements
+    } catch (exception-declaration) {
+    	handler-statements
+    } catch (exception-declaration) {
+    	handler-statements
+    } // . . .
+```
 
 
+catch包括三部分：关键字catch，the declaration of a (possibly unnamed) object within parentheses (referred to as an exception declaration), and a block.
 
+```cpp
+while (cin >> item1 >> item2) {
+    try {
+        // execute code that will add the two Sales_items
+        // if the addition fails, the code throws a runtime_error exception
+    } catch (runtime_error err) {
+        cout<< err.what() << "\nTry Again?  Entery or n" << endl;
+        char c;
+        cin >> c;
+        if(!cin || c == 'n')
+        	break;  // break out of the while loop
+        }
+}
+```
+
+库异常类都定义了一个成员函数叫`what`。它的返回值是C风格字符串（`const char*`）。
+
+若没有相应catch，异常被传给一个库函数`terminate`。`terminate`的实现依赖于平台，一般是终止程序执行。若异常抛出，但没有try块，异常也是被`terminate`捕获。
+
+#### （未）5.6.3. 标准异常
+
+## 6. 函数
+
+### 6.1 函数基础
+
+为了与C兼容，当函数形参列表为空时，可以用`void`：
+
+```cpp
+    void f1(){/* ... */ }  // implicit void parameter list
+    void f2(void){ /* ... */ } // explicit void parameter list
+```
+
+返回类型可以是`void`。返回类型不可以是数组类型（§ 3.5）或函数类型。但可以返回到数组或函数的指针。
+
+#### 6.1.1. Local Objects
+
+In C++, names have scope (§ 2.2.4), and objects have **lifetimes**.
+
+- The scope of a name is the part of the program’s text in which that name is visible.
+- The lifetime of an object is the time during the program’s execution that the object exists.
+
+Parameters and variables defined inside a function body are referred to as local variables. They are “local” to that function and hide declarations of the same name made in an outer scope.
+
+##### Automatic Objects
+
+与普通局部变量相对应的对象，are created when the function’s control path passes through the variable’s definition. They are destroyed when control passes through the end of the block in which the variable is defined. Objects that exist only while a block is executing are known as automatic objects. After execution exits a block, the values of the automatic objects created in that block are undefined.
+
+Parameters are automatic objects. Storage for the parameters is allocated when the function begins. Parameters are defined in the scope of the function body.
+
+Automatic objects corresponding to local variables are initialized if their definition contains an initializer. Otherwise, they are default initialized (§ 2.2.1, p. 43), which means that uninitialized local variables of built-in type have undefined values.
+
+##### Local static Objects
+
+It can be useful to have a local variable whose lifetime continues across calls to the function. We obtain such objects by defining a local variable as static. Each local static object is initialized before the first time execution passes through the object’s definition. Local statics are not destroyed when a function ends; they are destroyed
+when the program terminates.
+
+As a trivial example, here is a function that counts how many times it is called:
+
+```cpp
+    size_t count_calls()
+    {
+        static size_t ctr = 0;  // value will persist across calls
+        return ++ctr;
+    }
+    int main()
+    {
+        for(size_t i = 0; i != 10; ++i)
+        	cout << count_calls() << endl;
+        return 0;
+    }
+```
+
+If a local static has no explicit initializer, it is **value initialized** (§ 3.3.1, p. 98), meaning that local statics of built-in type are initialized to zero.
+
+#### 6.1.2. 函数声明
+
+Like any other name, the name of a function must be declared before we can use it.
+As with variables (§ 2.2.2, p. 45), a function may be defined only once but may be
+declared multiple times. With one exception that we’ll cover in § 15.3(p. 603), we can declare a function that is not defined so long as we never use that function.
+
+函数声明类似于函数定义，只是没有Body。函数声明也称为函数原型。
+
+函数声明的参数可以没有参数名。但列出参数名有助于帮助理解语义：
+
+```cpp
+    void print(vector<int>::const_iterator beg,
+    	vector<int>::const_iteratorend);
+```
+
+之前提出变量应该在头中什么在源文件中定义。出于相同目的，函数应该在头中声明在源文件中定义。源文件应该include函数声明的头，这样编译器能检查声明与定义是否一致。
+
+#### 6.1.3. Separate Compilation
+
+Separate compilation lets us split our programs into several files, each of which can be compiled independently.
+
+例子，假设函数`fact`定义在文件`fact.cc`，它的声明在头文件`Chapter6.h`。`main`函数在第二个文件中`factMain.cc`。要产生可执行文件，需要所有文件：
+
+```
+$ CC factMain.cc fact.cc  # generates factMain.exe or a.out
+$ CC factMain.cc fact.cc -o main # generates main or main.exe
+```
+
+上面CC是编译器。
+
+改变某个文件后，期望只重新编译改变的文件。Most compilers provide a way to separately compile each file. 此过程常擦汗女生一个`.obj`(Windows)或`.o`(UNIX)文件。
+
+The compiler lets us *link* object files together to form an executable. On the system we use, we would separately compile our program as follows:
+
+```
+$ CC -c factMain.cc # generates factMain.o
+$ CC -c fact.cc  # generates fact.o
+$ CC factMain.o fact.o  # generates factMain.exe or a.out
+$ CC factMain.o fact.o -o main # generates main or main.exe
+```
+
+### 6.2 参数传递
+
+> Parameter initialization works the same way as variable initialization.
+
+如果形参是引用(§ 2.3.1)则形参绑定到实参（按引用传递）。否则实参拷贝到形参，此时形参与实参是对立的对象（按值传递）。
+
+#### 6.2.1. 按值传递
+
+> 熟悉C的程序员常通过指针访问函数外的对象，但C++程序员一般使用引用。
+
+如果参数是指针，也是按值传递——指针值被拷贝。于是形参和实现指向同一个对象。
+
+#### 6.2.2. 按引用传递
+
+最佳实践：若函数内不会改变引用参数，引用应该被置为`const`。
+
+```cpp
+	// compare the length of two strings
+    bool isShorter(const string &s1, const string &s2)
+    {
+        return s1.size() < s2.size();
+    }
+```
+
+#### （未）6.2.3. const形参与实参
+
+#### 6.2.4. 数组参数
+
+数组两个特性：不能拷贝数组(§ 3.5.1)，使用数组时，常被转换为指针(§ 3.5.3)。因为不能拷贝，因此不能按值传递。因为数组常被转换为指针，将数组传给函数时，实际传递的是数组第一个元素的指针。
+
+```cpp
+// despite appearances, these three declarations of print are equivalent
+// each function has a single parameter of type const int*
+void print(const int*);
+void print(const int[]);  // shows the intent that the function takes an
+array
+void print(const int[10]); // dimension for documentation purposes (at
+best)
+```
+
+> Note that all three versions of our printfunction defined their array parameters as
+pointers to const. The discussion in § 6.2.3(p. 213) applies equally to pointers as to
+references. When a function does not need write access to the array elements, the
+array parameter should be a pointer to const(§ 2.4.2, p. 62). A parameter should be
+a plain pointer to a nonconsttype only if the function needs to change element
+values.
+
+这三个声明是等价的。每个函数实际接受的参数都是`const int*`。因此实参只要是`const int*`：
+
+```cpp
+int i= 0, j[2] = {0, 1};
+print(&i); // ok: &i is int*
+print(j);  // ok: j is converted to an int* that points to j[0]
+```
+
+如果实参是数组，实参会被自动转换为指向第一个元素的指针，数组的大小不被关心。由于函数不知道数组大小，因此一般需要附加参数。有三种策略：
+
+##### 数组结尾放一个标记元素
+
+例如，C风格的字符串，最后一个是null字符。
+
+```cpp
+    void print(const char *cp)
+    {
+        if(cp)  // 如果cp不是空指针
+            while(*cp)  // 不是空字符
+                cout << *cp++;
+    }
+```
+
+##### 使用标准库的约定
+
+传递数组首指针和数组后指针。
+
+```cpp
+    void print(const int *beg, const int *end)
+    {
+        // print every element starting at beg up to but not including end
+        while(beg != end)
+            cout<< *beg++ << endl; // print the current element
+        // and advance the pointer
+    }
+
+    int j[2]= {0, 1};
+	print(begin(j), end(j)); // begin and end functions, see § 3.5.3
+```
+
+##### 显式传递size参数
+
+```cpp
+    void print(const int ia[], size_t size)
+    {
+        for(size_t i = 0; i != size; ++i) {
+            cout << ia[i] << endl;
+        }
+    }
+
+	int j[] = { 0, 1 };  // int array of size 2
+	print(j, end(j) - begin(j));
+```
+
+##### 数组引用参数
+
+形参可以是到数组的引用。
+
+```cpp
+	// ok: parameter is a reference to an array; the dimension is part of the type
+    void print(int (&arr)[10])
+    {
+        for(auto elem : arr)
+            cout<< elem << endl;
+    }
+```
+
+注意括号。
+
+因为数组的大小是其类型的一部分。it is safe to rely on the dimension in
+the body of the function. 但这样限制了函数的用途。实参数组只能是10个元素。We’ll see in § 16.1.1(p. 654) how we might write this function in a way that would
+allow us to pass a reference parameter to an array of any size.
+
+##### 多维数组做参数
+
+As with any array, a multidimensional array is passed as a pointer to its first element (§ 3.6, p. 128). Because we are dealing with an array of arrays, that element is an array, so the pointer is a pointer to an array. The size of the second (and any subsequent) dimension is part of the element type and must be specified:
+
+```cpp
+    // matrix points to the first element in an array whose elements are arrays of ten ints
+    void print(int (*matrix)[10], int rowSize) { /* . . .*/ }
+```
+
+We can also define our function using array syntax. As usual, the compiler ignores the first dimension, so it is best not to include it:
+
+```cpp
+    // equivalent definition
+    void print(int matrix[][10], int rowSize) { /* . . .*/ }
+```
+
+#### （未）6.2.5. main: Handling Command-Line Options
 
 
 
