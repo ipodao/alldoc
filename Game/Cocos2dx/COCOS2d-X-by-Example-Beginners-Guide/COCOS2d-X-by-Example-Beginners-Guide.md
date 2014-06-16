@@ -1,21 +1,10 @@
 [toc]
 
-## 3. Your First Game – Air Hockey
+## 3. Air Hockey
 
-介绍内容：setting up the project's configuration, loading images, loading sounds, building a game for more than one screen resolution, and managing touch events.
+内容介绍：setting up the project's configuration, loading images, loading sounds, building a game for more than one screen resolution, and managing touch events.
 
 这个游戏是双人游戏。
-
-By the end of this chapter you will know:
-
- How to build an iPad-only game
- How to enable multi-touch
- How to support both retina and non-retina displays
- How to load images and sounds
- How to play sound effects
- How to create sprites
- How to extend the Cocos2d-x CCSpriteclass
- How to create labels and update them
 
 ### 游戏配置
 
@@ -55,7 +44,6 @@ In the File window navigate to the Resources folder and select both the sd and h
 It is very important that references are added to the actual folders, only in this way will Xcode be able to have two files with the same name inside the project and still keep them apart; one in each folder.
 
 #### 行动：添加Retina支持
-
 
 修改`AppDelegate.cpp`类。向`applicationDidFinishLaunching`方法，`pDirector->setOpenGLView( pEGLView)`之下添加：
 
@@ -535,25 +523,17 @@ The players are moved to their original position and their `_touch` properties a
 ```
 
 
+## 4. Sky Defense
 
-
-
-
-
-
-
-
-## 4. Fun with Sprites – Sky Defense
-
-Time to build our second game! This time you will become acquainted with the power of actions in Cocos2d-x. I'll show you how an entire game can be built just by running the various action commands contained in Cocos2d-x, to make your sprites move, rotate, scale, fade, blink, and so on. And you can also use actions to animate your sprites by using multiple images, as in a movie. So let's get started.
+This time you will become acquainted with the power of **actions** in Cocos2d-x. I'll show you how an entire game can be built just by running the various action commands contained in Cocos2d-x, to make your sprites move, rotate, scale, fade, blink, and so on. And you can also use actions to animate your sprites by using multiple images, as in a movie. So let's get started.
 
 In this chapter you will learn:
 
-* How to optimize development of your game by using sprite sheets
-* How to use bitmap fonts in your game
+* 利用sprite sheets优化游戏开发
+* 在游戏中使用bitmap fonts
 * How easy it is to implement and run CCActions
 * How to scale, rotate, swing, move, and fade out a sprite
-* How to load multiple .pngfiles and use them to animate a sprite
+* 使用多个.png做精灵动画
 * How to create a universal game with Cocos2d-x
 
 ### The game – Sky Defense
@@ -566,7 +546,545 @@ But it's not just bad news coming down. There are also health packs dropping fro
 
 #### The game settings
 
-This is a **universal** game. It is designed for the iPad retina screen and it will be scaled down to fit other screens. The game will be played in landscape mode, and it will not need to support multi-touch.
+This is a **universal** game. It is designed for the iPad retina screen and it will be scaled down to fit other screens. 游戏屏幕横屏。不支持多点触摸。
+
+#### The start project
+
+解压从`7341_04_START_PROJECT.zip`开始。Only this time, the **Device Family** is set to **Universal**. And in `RootViewController.mm`, the supported interface orientation is set to Landscape. 这次我们只需要一个类`GameLayer.cpp`, and you will find that the interface for this class already contains all of the information it needs.
+
+#### Adding screen support for a universal app
+
+上一个工程只支持iPad屏。现在要支持更小的屏。打开`AppDelegate.cpp`，在`applicationDidFinishLaunching`中：
+
+```cpp
+    CCSize screenSize = pEGLView->getFrameSize();
+    CCSize designSize = CCSize(2048, 1536);
+    CCEGLView::sharedOpenGLView()->setDesignResolutionSize(designSize.width,
+    	designSize.height, kResolutionExactFit);
+    if (screenSize.height > 768) {
+    	CCFileUtils::sharedFileUtils()->setResourceDirectory("ipadhd");
+    } else if (screenSize.height > 320) {
+    	CCFileUtils::sharedFileUtils()->setResourceDirectory("ipad");
+    } else {
+    	CCFileUtils::sharedFileUtils()->setResourceDirectory("iphone");
+    }
+    pDirector->setContentScaleFactor(screenSize.height/designSize.height);
+```
+
+Once again we tell our CCEGLView object (our OpenGL view) that we have designed the game for a certain screen size (the iPad retina screen) and once again we want our game screen to resize to match the screen on the device (`kResolutionExactFit`). Then we determine where to load our images from, based on the device's screen size. We have art for iPad retina, then for a regular iPad which is shared by iPhone retina, and finally for the regular iPhone. 最后设置缩放因数。
+
+#### 添加背景音乐
+
+`AppDelegate.cpp`：
+
+```cpp
+	SimpleAudioEngine::sharedEngine()->preloadBackgroundMusic(file);
+    //lower playback volume for effects
+    SimpleAudioEngine::sharedEngine()->setEffectsVolume(0.4f);
+```
+
+背景音乐的音量通过`setBackgroundMusicVolume`设置。
+
+#### 初始化游戏
+
+回到`GameLayer.cpp`，查看`init`发现游戏初始化涉及三个方法：`createGameScreen`, `createPools`, `createActions`。
+
+使用对象池，为了不必在主循环中再初始化精灵。
+
+There is a `CCArray` called `_fallingObjects` also created here, and we start playing the background music, with the loop flag set to true:
+
+```cpp
+    SimpleAudioEngine::sharedEngine()->playBackgroundMusic("background.mp3", true);
+```
+
+### 使用sprite sheets{{纹理贴图}}
+
+A sprite sheet is a way to group multiple images together into one image file. In order to texture a sprite with one of these images you must have the information of where in the sprite sheet that particular image is found (its rectangle). Sprite sheets通常组织成两个文件：图片文件和数据文件。
+
+I used TexturePacker to create these files for the game. You can find them inside the ipad, ipadhd, and iphone folders inside **Resources**. There is a **sprite_sheet.png** for the image and a **sprite_sheet.plist** that describes the individual frames inside the image.
+
+This is what the **sprite_sheet.png** file looks like:
+
+![](ch4-sprite-sheet.png)
+
+Sprite sheets与一个特殊的`CCNode`类连用：`CCSpriteBatchNode`。当同一个节点内的多个精灵使用同一个图片文件时可以使用此类。With `CCSpriteBatchNode`, you can substantially reduce the number of calls during the rendering stage of your game, which will help when targeting less powerful systems, though **not noticeably** in the Apple device family.
+
+`CCSpriteBatchNode`像其他任何节点一样可以充当容器。利用z-order可以将`CCSprites`在batch node呢分层排布。
+
+#### 行动：创建一个`CCSpriteBatchNode`
+
+下面实现`GameLayer.cpp`的`createGameScreen`方法。Just below the lines that add the `bg` sprite, we instantiate our batch node:
+
+```cpp
+    void GameLayer::createGameScreen() {
+        //add bg
+        CCSprite * bg = CCSprite::create("bg.png");
+        ...
+        CCSpriteFrameCache::sharedSpriteFrameCache()->
+        	addSpriteFramesWithFile("sprite_sheet.plist");
+        _gameBatchNode = CCSpriteBatchNode::create("sprite_sheet.png");
+        this->addChild(_gameBatchNode);
+```
+
+要从sprite sheet创建batch node，需要先加载帧信息：将`sprite_sheet.plist`加载到`CCSpriteFrameCache`。然后用`sprite_sheet.png`创建batch node。（背景图片不在贴图内。）
+
+创建`CCSprites`使用的帧名，也会出现在加载到`sprite_sheet.plist`中。
+
+接下来向`CCSpriteBatchNode`添加精灵。首先是city:
+
+```cpp
+    CCSprite * sprite;
+    for (int i = 0; i < 2; i++) {
+        sprite = CCSprite::createWithSpriteFrameName("city_dark.png");
+        sprite->setPosition(ccp(_screenSize.width * (0.25f + i * 0.5f),
+            sprite->boundingBox().size.height * 0.5f));
+        _gameBatchNode->addChild(sprite, kForeground);
+        sprite = CCSprite::createWithSpriteFrameName("city_light.png");
+        sprite->setPosition(ccp(_screenSize.width * (0.25f + i * 0.5f),
+            sprite->boundingBox().size.height * 0.9f));
+        _gameBatchNode->addChild(sprite, kBackground);
+    }
+```
+
+然后是树：
+
+```cpp
+    //add trees
+    for (int i = 0; i < 3; i++) {
+        sprite = CCSprite::createWithSpriteFrameName("trees.png");
+        sprite->setPosition(ccp(
+        	_screenSize.width * (0.2f + i * 0.3f),
+        	sprite->boundingBox().size.height * 0.5f));
+        _gameBatchNode->addChild(sprite, kForeground);
+    }
+```
+
+The screen so far is made up of two instances of city_dark.pngtiling at the bottom of the screen, and two instances of city_light.pngthat are also tiling. One needs to appear on top of the other, and for that we use the enumerated values declared in `GameLayer.h`:
+
+```cpp
+    enum {
+        kBackground,
+        kMiddleground,
+        kForeground
+    };
+```
+
+### Bitmap字体
+
+`CCLabelBMFont`用bitmap图像显式字母，而`CCLabelTTF`用的是true type font文件。
+
+The bitmap image we are using here was created with the program **GlyphDesigner**, and in essence it works just as a sprite sheet does. 其实`CCLabelBMFont`是`CCSpriteBatchNode`的子类, so it behaves just like a batch node. You have images for all of the individual characters that you'll need packed inside a PNG file (font.png), and then a data file (font.fnt) describing where each character is.
+
+![](ch4-bitmap-font.png)
+
+The difference between `CCLabelBMFont` and a regular `CCSpriteBatchNode` is that the data file also feeds the `CCLabelBMFont` object information on how to "write" with this font. In other words, how to space out the characters and lines correctly. 创建`CCLabelBMFont`是需要的参数依次是：初始字符串值、数据文件名，标签对象的宽度。
+
+```cpp
+    _scoreDisplay = CCLabelBMFont::create("0", "font.fnt", _screenSize.width * 0.3f);
+```
+
+可以通过`setString`改变标签内容：
+
+```cpp
+	_scoreDisplay->setString("My new Label");
+```
+
+#### 行动：创建`CCLabelBMFont`
+
+仍然在`createGameScreen`方法中：
+
+```cpp
+    _scoreDisplay = CCLabelBMFont::create("0", "font.fnt",
+    	_screenSize.width * 0.3f);
+    _scoreDisplay->setAnchorPoint(ccp(1, 0.5));
+    _scoreDisplay->setPosition(ccp(_screenSize.width * 0.8f,
+		_screenSize.height * 0.94f));
+    this->addChild(_scoreDisplay);
+
+    // And then add a label to display the energy level:
+    _energyDisplay = CCLabelBMFont::create("100%", "font.fnt",
+    	_screenSize.width * 0.1f, kCCTextAlignmentRight);
+    _energyDisplay->setPosition(ccp(_screenSize.width * 0.3f,
+    	_screenSize.height * 0.94f));
+    this->addChild(_energyDisplay);
+
+    // _energyDisplaylabel后面的一个图标
+    CCSprite * icon = CCSprite::createWithSpriteFrameName("health_icon.png");
+    icon->setPosition(ccp(_screenSize.width * 0.15f,
+    	_screenSize.height * 0.94f));
+    _gameBatchNode->addChild(icon, kBackground);
+```
+
+#### 行动：添加最终的屏幕精灵
+
+最后需要创建的精灵是云、炸弹和冲击波，及游戏的状态消息。
+
+仍然在`createGameScreen`，添加云：
+
+```cpp
+    CCSprite * cloud;
+    _clouds = CCArray::createWithCapacity(4); // 用数组，为了将来移动云
+    _clouds->retain();
+    float cloud_y;
+    for (int i = 0; i < 4; i++) {
+        cloud_y = i % 2 == 0 ? _screenSize.height * 0.4f : _screenSize.height * 0.5f;
+        cloud = CCSprite::createWithSpriteFrameName("cloud.png");
+        cloud->setPosition(ccp (_screenSize.width * 0.1f + i * _screenSize.width * 0.3f, cloud_y));
+        _gameBatchNode->addChild(cloud, kBackground);
+        _clouds->addObject(cloud);
+    }
+```
+
+创建`_bomb`精灵，用户按住屏幕时会变大：
+
+```cpp
+    _bomb = CCSprite::createWithSpriteFrameName("bomb.png");
+    _bomb->getTexture()->generateMipmap();
+    _bomb->setVisible(false);
+    CCSize size = _bomb->boundingBox().size;
+    //add sparkle inside bomb sprite
+    CCSprite * sparkle = CCSprite::createWithSpriteFrameName("sparkle.png");
+    sparkle->setPosition(ccp(size.width * 0.72f, size.height * 0.72f));
+    _bomb->addChild(sparkle, kMiddleground, kSpriteSparkle);
+    //add halo inside bomb sprite
+    CCSprite * halo = CCSprite::createWithSpriteFrameName("halo.png");
+    halo->setPosition(ccp(size.width * 0.4f, size.height * 0.4f));
+    _bomb->addChild(halo, kMiddleground, kSpriteHalo);
+    _gameBatchNode->addChild(_bomb, kForeground);
+```
+
+`_shockwave`精灵，在`_bomb`消失后出现：
+
+```cpp
+    _shockWave = CCSprite::createWithSpriteFrameName("shockwave.png");
+    _shockWave->getTexture()->generateMipmap();
+    _shockWave->setVisible(false);
+    _gameBatchNode->addChild(_shockWave);
+```
+
+最后，添加两条消息，分别用于游戏开始和结束状态：
+
+```cpp
+    _introMessage = CCSprite::createWithSpriteFrameName("logo.png");
+    _introMessage->setPosition(ccp(_screenSize.width * 0.5f,
+        _screenSize.height * 0.6f));
+    _introMessage->setVisible(true);
+    this->addChild(_introMessage, kForeground);
+
+    _gameOverMessage = CCSprite::createWithSpriteFrameName("gameover.png");
+    _gameOverMessage->setPosition(ccp(_screenSize.width * 0.5f,
+        _screenSize.height * 0.65f));
+    _gameOverMessage->setVisible(false);
+    this->addChild(_gameOverMessage, kForeground);
+```
+
+
+`_bomb->getTexture()->generateMipmap();` With this, we are telling the framework to create antialiased copies of this texture in diminishing sizes (mipmaps), since we are going to scale it down later. This is optional of course, as sprites can be resized without first generating mipmaps, but if you notice a loss of quality in the scaled sprites, you can fix it by creating mipmaps for their texture.
+
+> OpenGL的纹理大小必须是POT (power of two: 2, 4, 8, 16, and so on)。若不是Cocos2d-x将做两件事情：在内存中调整纹理大小，添加透明像素直到达到POT。或者，可能在某个`Assert`处停止执行。With textures used for mipmaps the framework will stop execution for non-POT textures.
+
+I add the sparkle and the halo sprites as children to the `_bomb` sprite. This will use the container characteristic of `CCNodes` to our advantage. 当炸弹变大时，它的孩子也会跟着变大。
+
+`addChild`的第三个参数是一个整数标签：
+```cpp
+	bomb->addChild(halo, kMiddleground, kSpriteHalo);
+```
+
+该标签来自`GameLayer.h`中的另一个枚举。利用此标签，可以从精灵中取到它的孩子：
+
+```cpp
+	CCSprite * halo = (CCSprite *) bomb->getChildByTag(kSpriteHalo);
+```
+
+![](ch4-demo-1.png)
+
+#### 行动：创建对象池
+
+池只是一个对象数组。在`createPools`方法：
+
+```cpp
+    void GameLayer::createPools() {
+        CCSprite * sprite;
+        int i;
+        // 流星池
+        _meteorPool = CCArray::createWithCapacity(50);
+        _meteorPool->retain();
+        _meteorPoolIndex = 0;
+        for (i = 0; i < 50; i++) {
+            sprite = CCSprite::createWithSpriteFrameName("meteor.png");
+            sprite->setVisible(false);
+            _gameBatchNode->addChild(sprite, kMiddleground, kSpriteMeteor);
+            _meteorPool->addObject(sprite);
+        }
+
+        // 医疗包
+        _healthPool = CCArray::createWithCapacity(20);
+        _healthPool->retain();
+        _healthPoolIndex = 0;
+        for (i = 0; i < 20; i++) {
+            sprite = CCSprite::createWithSpriteFrameName("health.png");
+            sprite->setVisible(false);
+            sprite->setAnchorPoint(ccp(0.5f, 0.8f));
+            _gameBatchNode->addChild(sprite, kMiddleground, kSpriteHealth);
+            _healthPool->addObject(sprite);
+        }
+    }
+```
+
+We'll use the corresponding pool index to retrieve objects from the arrays as the game progresses.
+
+### CCActions
+
+`CCNode`存储着节点的位置、缩放、旋转、可见性、透明度信息。可以通过`CCAction`类改变这些值，即产生动画。Actions一般通过静态方法create创建。第一个参数一般是action的时长。例如：
+```cpp
+	CCFadeOut *fadeout = CCFadeOut::create(1.0f);
+```
+
+`1.0f`表示1秒。令节点运行此Action：
+```cpp
+	mySprite->runAction(fadeout);
+```
+
+还可以创建action序列（`CCSequence`）；or you can apply easing effects (CCEaseIn, CCEaseOut, and so on) to your actions. 可以重复action数次（`CCRepeat`）甚至永远（`CCRepeatForever`）；可以指定一个回调函数，在Action完成后执行。
+
+#### 行动：创建Actions
+
+在`createActions`方法中，实例化在游戏中反复使用的actions。
+
+```cpp
+    void GameLayer::createActions() {
+        //swing action for health drops
+        CCFiniteTimeAction* easeSwing = CCSequence::create(
+            CCEaseInOut::create(CCRotateTo::create(1.2f, -10), 2),
+            CCEaseInOut::create(CCRotateTo::create(1.2f, 10), 2),
+            NULL);
+        _swingHealth = CCRepeatForever::create((CCActionInterval*) easeSwing);
+        _swingHealth->retain();
+
+        //action sequence for shockwave: fade out, callback when done
+        _shockwaveSequence = CCSequence::create(
+            CCFadeOut::create(1.0f),
+            CCCallFunc::create(this, callfunc_selector(GameLayer::shockwaveDone)),
+            NULL);
+        _shockwaveSequence->retain();
+
+		// action to grow bomb
+        _growBomb = CCScaleTo::create(6.0f, 1.0);
+        _growBomb->retain();
+
+        //action to rotate sprites
+        CCActionInterval* rotate = CCRotateBy::create(0.5f , -90);
+        _rotateSprite = CCRepeatForever::create( rotate );
+        _rotateSprite->retain();
+```
+
+### 精灵动画
+
+动画仅是另一种形式的`CCAction`——改变的是`CCSprite`使用的纹理。动画action(`CCAnimate`)使用`CCAnimation`对象。`CCAnimation`包含动画所需的所有纹理。纹理（帧）是`CCSpriteFrame`对象，从`CCSpriteFrameCache`获取，后者包含`sprite_sheet.plist`中的信息。
+
+
+#### 创建动画
+
+仍在`createActions`方法。首先是流行到达城市时的爆炸。首先将帧加载到`CCAnimation`对象：
+
+```cpp
+        CCAnimation* animation;
+        CCSpriteFrame * frame;
+        //create CCAnimation object
+        animation = CCAnimation::create();
+        CCString * name;
+        for(int i = 1; i <= 10; i++) {
+            name = CCString::createWithFormat("boom%i.png", i);
+            frame = CCSpriteFrameCache::sharedSpriteFrameCache()
+            	->spriteFrameByName(name->getCString());
+            animation->addSpriteFrame(frame);
+        }
+```
+
+利用`CCAnimation`创建`CCAnimate`：
+
+```cpp
+        animation->setDelayPerUnit(1 / 10.0f);
+        animation->setRestoreOriginalFrame(true);
+        _groundHit = CCSequence::create(
+        	CCMoveBy::create(0, ccp(0, _screenSize.height * 0.12f)),
+        	CCAnimate::create(animation),
+        	CCCallFuncN::create(this, callfuncN_selector(GameLayer::animationDone)),
+        	NULL);
+        _groundHit->retain();
+```
+
+The same steps are repeated to create the other explosion animation, which is used when the player hits a meteor or a health pack.
+
+```cpp
+        animation = CCAnimation::create();
+        for(int i = 1; i <= 7; i++) {
+            name = CCString::createWithFormat("explosion_small%i.png", i);
+            frame = CCSpriteFrameCache::sharedSpriteFrameCache()
+            	->spriteFrameByName(name->getCString());
+            animation->addSpriteFrame(frame);
+        }
+        animation->setDelayPerUnit(0.5 / 7.0f);
+        animation->setRestoreOriginalFrame(true);
+        _explosion = CCSequence::create(
+        	CCAnimate::create(animation),
+        	CCCallFuncN::create(this, callfuncN_selector
+        	(GameLayer::animationDone)),
+        	NULL);
+        _explosion->retain();
+```
+
+如果`setRestoreOriginalFrame`设为`true`，则在动画完成后，精灵将回到初始状态。
+
+In both instances I make a call to an `animationDone` callback already implemented in the class. This makes the calling sprite invisible:
+
+```cpp
+	void GameLayer::animationDone (CCNode* pSender) {
+		pSender->setVisible(false);
+	}
+```
+
+### 令游戏运转
+
+We will use a system of countdowns to add new meteors and new health packs, as well as a countdown that will incrementally make the game harder to play.
+
+On touch, the player will start the game, if the game is not running, and also add bombs and explode them during gameplay. An explosion creates a shockwave.
+
+在`update`中，检查`_shockwave`和下落对象的碰撞。Cocos2d-x will take care of all of the rest through our created actions and callbacks!
+
+#### 行动：处理触摸
+
+实现`ccTouchesBegan`方法，显来处理两个状态：进入和游戏结束。
+
+```
+    void GameLayer::ccTouchesBegan(CCSet* pTouches, CCEvent* event){
+        //if game not running, we are seeing either intro or gameover
+        if (!_running) {
+        	//if intro, hide intro message
+        	if (_introMessage->isVisible()) {
+        		_introMessage->setVisible(false);
+            //if game over, hide game over message
+        	} else if (_gameOverMessage->isVisible()) {
+        		SimpleAudioEngine::sharedEngine()->stopAllEffects();
+        		_gameOverMessage->setVisible(false);
+        	}
+        this->resetGame();
+        return;
+    }
+```
+
+接下来处理触摸。这里只需要处理单点，因此调用`->anyObject()`：
+
+```cpp
+    CCTouch *touch = (CCTouch *)pTouches->anyObject();
+    if (touch) {
+        //if bomb already growing...
+        if (_bomb->isVisible()) {
+            //stop all actions on bomb, halo and sparkle
+            _bomb->stopAllActions();
+            CCSprite * child;
+            child = (CCSprite *) _bomb->getChildByTag(kSpriteHalo);
+            child->stopAllActions();
+            child = (CCSprite *) _bomb->getChildByTag(kSpriteSparkle);
+            child->stopAllActions();
+            //if bomb is the right size, then create shockwave
+            if (_bomb->getScale() > 0.3f) {
+                _shockWave->setScale(0.1f);
+                _shockWave->setPosition(_bomb->getPosition());
+                _shockWave->setVisible(true);
+                _shockWave->runAction(CCScaleTo::create(0.5f,
+                    _bomb->getScale() * 2.0f));
+                _shockWave->runAction((CCFiniteTimeAction*)_shockwaveSequence->copy()->autorelease());
+                SimpleAudioEngine::sharedEngine()->playEffect("bombRelease.wav");
+            } else {
+            	// 炸弹不够大
+                SimpleAudioEngine::sharedEngine()->playEffect("bombFail.wav");
+            }
+            _bomb->setVisible(false);
+            //reset hits with shockwave, so we can count combo hits
+            _shockwaveHits = 0;
+            //if no bomb currently on screen, create one
+        } else {
+            CCPoint tap = touch->getLocation();
+            _bomb->stopAllActions();
+            _bomb->setScale(0.1f);
+            _bomb->setPosition(tap);
+            _bomb->setVisible(true);
+            _bomb->setOpacity(50);
+            _bomb->runAction((CCAction *) _growBomb->copy()->autorelease());
+            CCSprite * child;
+            child = (CCSprite *) _bomb->getChildByTag(kSpriteHalo);
+            child->runAction((CCAction *) _rotateSprite->copy()->autorelease());
+            child = (CCSprite *) _bomb->getChildByTag(kSpriteSparkle);
+            child->runAction((CCAction *) _rotateSprite->copy()->autorelease());
+         }
+    }
+```
+
+#### 行动：开始和重启游戏
+
+```cpp
+    void GameLayer::resetGame(void) {
+        _score = 0;
+        _energy = 100;
+        //reset timers and "speeds"
+        _meteorInterval = 2.5;
+        _meteorTimer = _meteorInterval * 0.99f;
+        _meteorSpeed = 10;//in seconds to reach ground
+        _healthInterval = 20;
+        _healthTimer = 0;
+        _healthSpeed = 15;//in seconds to reach ground
+        _difficultyInterval = 60;
+        _difficultyTimer = 0;
+        _running = true;
+        //reset labels
+        CCString * value = CCString::createWithFormat("%i%s", _energy, "%");
+    	_energyDisplay->setString(value->getCString());
+    	value = CCString::createWithFormat("%i", _score);
+    	_scoreDisplay->setString(value->getCString());
+    }
+
+    void GameLayer::stopGame() {
+        _running = false;
+        //stop all actions currently running
+        int count = _fallingObjects->count();
+        CCSprite * sprite;
+        for (int i = count-1; i >= 0; i--) {
+            sprite = (CCSprite *) _fallingObjects->objectAtIndex(i);
+            sprite->stopAllActions();
+            sprite->setVisible(false);
+            _fallingObjects->removeObjectAtIndex(i);
+        }
+        if (_bomb->isVisible()) {
+            _bomb->stopAllActions();
+            _bomb->setVisible(false);
+            CCSprite * child;
+            child = (CCSprite *) _bomb->getChildByTag(kSpriteHalo);
+            child->stopAllActions();
+            child = (CCSprite *) _bomb
+            ->getChildByTag(kSpriteSparkle);
+            child->stopAllActions();
+        }
+        if (_shockWave->isVisible()) {
+            _shockWave->stopAllActions();
+            _shockWave->setVisible(false);
+        }
+    }
+```
+
+Already implemented in the class is the method that makes the game more difficult as time progresses. If you take a look at the method (`increaseDifficulty`) you will see that it reduces the interval between meteors, and reduces the time it takes for meteors to reach the ground.
+
+#### （及以下未）行动：更新游戏
+
+
+
+
+
+
+
+
+
+
 
 
 
