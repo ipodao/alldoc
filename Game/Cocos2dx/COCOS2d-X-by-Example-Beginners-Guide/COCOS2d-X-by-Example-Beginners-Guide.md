@@ -1076,6 +1076,154 @@ Already implemented in the class is the method that makes the game more difficul
 
 #### （及以下未）行动：更新游戏
 
+## 5 Rock thought
+
+本章内容：
+
+- 粒子系统
+- How to draw primitives (lines, circles, and more) on a CCNode
+- How to use the vector math helper methods included in Cocos2d-x
+
+### The game – Rocket Through
+
+In this sci-fi version of the classic Snake game engine, you control a rocket ship that must move around seven planets collecting tiny supernovas. But here's the catch: you can only steer the rocket by rotating it around pivot points put in place through touch events. So the vector of movement we set for the rocket ship is at times linear and at times circular.
+
+#### The game settings
+
+This is a universal game designed for the regular iPad and then scaled up and down to match the screen resolution of other devices. It is set to play in portrait mode and it does not support multi-touches.
+
+#### Play first, work later
+
+Download the 7341_05_START_PROJECT.zip and 7341_05_FINAL_PROJECT.zip files from this book's support page. You will once again use the Start Project option to work on; this way you won't need to type logic or syntax already covered in previous chapters. The Start Project option contains all of the resource files, and all the classes declarations, as well as place-holders for all of the methods inside the classes' implementation files. We'll go over these in a moment.
+
+You should Run the Final Project version to acquaint yourself with the game: By pressing and dragging your finger on the rocket ship you draw a line. Release the touch and you create a pivot point. The ship will rotate around this pivot point until you press again on the ship to release it. Your aim is to collect the bright supernovas and avoid the planets.
+
+![](ch4-demo.png)
+
+#### The start project
+
+If you run the Start Project option you should see that the basic game screen is already in place. There is no need to repeat the steps we've taken in our previous tutorial for creating a batch node and positioning all the screen sprites. We once again have a `_gameBatchNode` object and a `createGameScreen` method.
+
+By all means read through the code inside the `createGameScreen` method. Of key importance here is that each planet we create is stored inside `_planets` CCArray. We also create our `_rocket` object (class `Rocket`) and our `_lineContainer` object (`LineContainer` class) here. More on these soon.
+
+#### Screen settings
+
+Assuming that you have the Start Project option opened in Xcode, let's review the screen settings for this game in `AppDelegate.cpp`, where inside the `applicationDidFinishLaunching` method you should see this:
+
+```cpp
+    CCSize designSize = CCSize(768, 1024);
+    CCEGLView::sharedOpenGLView()->setDesignResolutionSize(designSize.width,
+    	designSize.height, kResolutionExactFit);
+    float screenRatio = screenSize.height / screenSize.width;
+    if (screenSize.width > 768) {
+    	CCFileUtils::sharedFileUtils()->setResourceDirectory("ipadhd");
+    	pDirector->setContentScaleFactor(screenSize.height/designSize.height);
+    } else if (screenSize.width > 320) {
+        if (screenRatio >= 1.5f) {
+        	CCFileUtils::sharedFileUtils()->setResourceDirectory("iphonehd");
+        } else {
+        	CCFileUtils::sharedFileUtils()->setResourceDirectory("ipad");
+        }
+    	pDirector->setContentScaleFactor(screenSize.height/designSize.height);
+    } else {
+        CCFileUtils::sharedFileUtils()->setResourceDirectory("iphone");
+        pDirector->setContentScaleFactor(screenSize.height/designSize.height);
+    }
+```
+The iPad is the oddball in terms of screen size: it has a 1.33 screen ratio (longer side divided by shorter side). Most Android devices will range between 1.6 and 1.77, with a few sharing the iPhone screen ratio of 1.5.
+
+Why should you care? In this game most sprites are circles and the difference in screen ratio would cause them to look squished when ported to different screens using the `kResolutionExactFit` parameter, which distorts your game screen to fit the screen of the device. 有多种解决方式。例如，可以以iPhone的比率为设计目标（因为它接近各种比率的平均值），然后使用`kResolutionShowAll`。这将产生黑边，但不会使精灵变形（第8章将使用该方法）。But here I used another method, I created sprite sheets that account for the squished look of the sprites in different screen ratios, counteracting the distortion. You, or your designer, could produce art for different screen ratios, such as 1.3, 1.5, 1.6, and 1.7, and pack different sets of images for different device families. For the Apple family, the solution shown here works very well and we can use the entire screen through `kResolutionExactFit`.
+
+The following image shows two sets of images found in the sprite sheets. Notice the distortion in the iPhone ones. In the actual game this distortion will disappear as it will counteract the change from a 1.3 screen ratio to a 1.5:
+
+![](ch4-distortion_images.png)
+
+### 什么是粒子
+
+In this game, the particles were created in **ParticleDesigner**.
+
+#### 行动：创建粒子系统
+
+需要一个XML文件描述例子系统的属性。ParticleDesigner将粒子系统数据导出到plist文件。这个文件用于创建`CCParticleSystemQuad`对象。From Cocos2d-x you can modify any of these settings through setters inside `CCParticleSystem`.
+
+`GameLayer.cpp`的`createParticle`方法：
+
+```cpp
+    _jet = CCParticleSystemQuad::create("jet.plist");
+    _jet->setSourcePosition(ccp(-_rocket->getRadius() * 0.8f,0));
+    _jet->setAngle(180);
+    _jet->stopSystem();
+    this->addChild(_jet, kBackground);
+
+    _boom = CCParticleSystemQuad::create("boom.plist");
+    _boom->stopSystem();
+    this->addChild(_boom, kForeground);
+
+	_comet = CCParticleSystemQuad::create("comet.plist");
+    _comet->stopSystem();
+    _comet->setPosition(ccp(0, _screenSize.height * 0.6f));
+    _comet->setVisible(false);
+    this->addChild(_comet, kForeground);
+
+	_pickup = CCParticleSystemQuad::create("plink.plist");
+    _pickup->stopSystem();
+    this->addChild(_pickup, kMiddleground);
+
+	_warp = CCParticleSystemQuad::create("warp.plist");
+    _warp->setPosition(_rocket->getPosition());
+    this->addChild(_warp, kBackground);
+
+	_star = CCParticleSystemQuad::create("star.plist");
+    _star->stopSystem();
+    _star->setVisible(false);
+    this->addChild(_star, kBackground, kSpriteStar);
+```
+
+All particle systems are added as children to `GameLayer`; they cannot be added to our `CCSpriteBatchNode`. And you must call `stopSystem()` on each system as they're created; otherwise they will start playing as soon as they are added to a node.
+
+> Cocos2d-x comes bundled with some common particle systems that you can modify for your own needs. If you go to the test folder at: samples/TestCpp/Classes/ParticleTestyou will see examples of these systems being used. The actual particles data files are found at: samples/TestCpp/Resources/Particles
+
+### 创建网格
+
+This grid is created inside the `createStarGrid` method in `GameLayer.cpp`. What the method does is determine all of the possible **spots** on the screen where we can place the `_star` particle system.
+
+We use a C++ `vector` list called `_grid` to store the available spots, as it will be easier to *shuffle* the list this way than to use CCArray:
+
+```cpp
+	std::vector<CCPoint> _grid;
+```
+
+The method divides the screen into multiple cells of 32 x 32 pixels, ignoring the areas too close to the screen borders (`gridFrame`). Then we check the distance between each cell and the planet sprites stored inside CCArray `_planets`. If the cell is far enough from the planets we store it inside the `_grid` vector as CCPoint.
+
+In the following image you can get an idea of the result we're after. We do not want any of the white cells overlapping any of the planets.
+
+![](ch4-grid.png)
+
+We output a message to the console with `CCLog` stating how many cells we end up with:
+
+```cpp
+	CCLog("POSSIBLE STARS: %i", _grid.size());
+```
+
+This vector list will be shuffled at each new game, so we end up with a random sequence of possible positions for our star:
+
+```cpp
+	std::random_shuffle(_grid.begin(), _grid.end());
+```
+
+This way we never place a star on top of a planet or too close to it that the rocket could not reach it without colliding with the planet.
+
+### 绘制基本图形
+
+`LineContainer.cpp`是`CCNode`的一个子类，允许我们在屏幕上绘制线和圆。每个`CCNode`都有一个`draw`方法。This is where the OpenGL drawing of our sprites take place, and it gets called automatically by the framework during rendering (so up to 60 times a second). So in order to draw something yourself, you just need to override this method; and then in order to draw primitives, you use the helper methods from a Cocos2d-x class called `CCDrawingPrimitives.cpp`.
+
+The methods we'll use are: `ccDrawLine` and `ccDrawCircle`.
+
+#### （未）行动：绘制
+
+
+
+
 
 
 

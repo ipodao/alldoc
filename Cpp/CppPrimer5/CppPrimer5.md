@@ -2721,5 +2721,28 @@ We can also define our function using array syntax. As usual, the compiler ignor
 
 #### （未）6.2.5. main: Handling Command-Line Options
 
+#### 6.2.6 变长参数
+
+新标准提供了两种解决办法：如果参数类型相同，可以传入一个库类型`initializer_list`。如果参数类型不同，可以编写一种特殊的函数，称为variadic template, which we’ll cover in § 16.4。
+
+C++ also has a special parameter type, ellipsis, that can be used to pass a varying number of arguments. We’ll look briefly at ellipsis parameters in this section. However, it is worth noting that this facility ordinarily should be used only in programs that need to interface to C functions.
+
+##### `initializer_list`
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
