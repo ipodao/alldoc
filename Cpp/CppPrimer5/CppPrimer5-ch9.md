@@ -263,6 +263,86 @@ As with any container, the initializer must have the same type as the container 
 
 #### 9.2.5. 赋值和swap
 
+赋值操作将左面的容器整个替换成右边的：
+
+```cpp
+	c1 = c2;
+    c1 = {a,b,c}; // after the assignment c1 has size 3
+```
+
+
+`swap(a, b)`或`a.swap(b)`。交换往往比拷贝快得多。
+
+`seq.assign(b, e)`：替换`seq`中的元素，b和e是迭代器。迭代器不能引用`seq`中的元素。
+`seq.assign(il)`：用列表初始化seq。
+`seq.assign(n, t)`：n个t元素。
+
+assign不能用于`array`或associative容器。
+
+如果左右容器原来的大小不同，赋值后左容器大小等于右容器。
+
+与内建数组不同，库`array`支持赋值。运算符左右两侧必须是相同类型：
+
+```cpp
+	array<int, 10> a1 = {0,1,2,3,4,5,6,7,8,9};
+	array<int, 10> a2 = {0}; // elements all have value 0
+	a1 = a2; // replaces elements in a1
+	a2 = {0}; // error: cannot assign to an array from a braced list
+```
+
+因为右边操作数的大小可能与左边不同，`array`不支持`assign`，也不允许用列表赋值。
+
+#### 使用`assign`（只有顺序容器能用）
+
+赋值运算符要求左右两个操作数类型相同。It copies all the elements from the right-hand operand into the left-hand operand. The sequential containers (except `array`) also define a member named `assign` that lets us assign from a different but compatible type, or assign from a subsequence of a container. The `assign` operation replaces all the elements in the left-hand container with (copies of) the elements specified by its arguments. For example, we can use assign to assign a range of `char*` values from a `vector` into a list of string:
+
+```cpp
+    list<string> names;
+    vector<const char*> oldstyle;
+    names = oldstyle; // 错误：容器类型不匹配
+    // ok: can convert from  const char* to string
+    names.assign(oldstyle.cbegin(), oldstyle.cend());
+```
+
+> 警告：Because the existing elements are replaced, the iterators passed to  `assign` must not refer to the container on which `assign` is called.
+
+第二个版本的`assign`，重复指定数量的元素：
+
+```cpp
+    // equivalent to slist1.clear();
+    // followed by slist1.insert(slist1.begin(), 10, "Hiya!");
+    list<string> slist1(1); // one element, which is the empty string
+    slist1.assign(10, "Hiya!"); // ten elements; each one is Hiya  !
+```
+
+
+#### 使用`swap`
+
+The `swap` operation exchanges the contents of two containers of the same type. After the call to  swap, the elements in the two containers are interchanged:
+
+```cpp
+    vector<string> svec1(10); // vector with ten elements
+    vector<string> svec2(24); // vector with 24 elements
+    swap(svec1, svec2);
+```
+
+With the exception of `array`s, swapping two containers is guaranteed to be fast—the elements themselves are not swapped; 交换的只是内部数据结构。Excepting `array`, `swap`不会拷贝、删除元素，保证在常量时间完成。
+
+The fact that elements are not moved means that, with the exception of `string`, iterators, references, and pointers into the containers are not invalidated. They refer to the same elements as they did before the swap. However, after the swap, those elements are in a different container. For example, had `iter` denoted the `string` at position `svec1[3]` before the swap, it will denote the element at position `svec2[3]` after the swap. Differently from the containers, a call to `swap` on a `string` may invalidate iterators, references and pointers.
+
+Unlike how `swap` behaves for the other containers, swapping two arrays does exchange the elements. As a result, swapping two `array`s requires time proportional to the number of elements in the array.
+
+After the swap, pointers, references, and iterators remain bound to the same element they denoted before the swap. Of course, the value of that element has been
+swapped with the corresponding element in the other array.
+ 
+In the new library, the containers offer both a member and nonmember version of
+swap. Earlier versions of the library defined only the member version of swap. The
+nonmember  swap is of most importance in generic programs. As a matter of habit, it
+is best to use the nonmember version of  swap.
+
+
+
+
 
 
 

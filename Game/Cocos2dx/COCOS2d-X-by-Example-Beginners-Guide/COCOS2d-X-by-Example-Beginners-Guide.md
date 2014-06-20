@@ -1252,7 +1252,7 @@ This is a universal game designed for the regular iPad and then scaled up and do
 
 #### Play first, work later
 
-Download the 7341_05_START_PROJECT.zip and 7341_05_FINAL_PROJECT.zip files from this book's support page. You will once again use the Start Project option to work on; this way you won't need to type logic or syntax already covered in previous chapters. The Start Project option contains all of the resource files, and all the classes declarations, as well as place-holders for all of the methods inside the classes' implementation files. We'll go over these in a moment.
+Download the `7341_05_START_PROJECT.zip` and `7341_05_FINAL_PROJECT.zip` files from this book's support page. You will once again use the Start Project option to work on; this way you won't need to type logic or syntax already covered in previous chapters. The Start Project option contains all of the resource files, and all the classes declarations, as well as place-holders for all of the methods inside the classes' implementation files. We'll go over these in a moment.
 
 You should Run the Final Project version to acquaint yourself with the game: By pressing and dragging your finger on the rocket ship you draw a line. Release the touch and you create a pivot point. The ship will rotate around this pivot point until you press again on the ship to release it. Your aim is to collect the bright supernovas and avoid the planets.
 
@@ -1262,9 +1262,9 @@ You should Run the Final Project version to acquaint yourself with the game: By 
 
 If you run the Start Project option you should see that the basic game screen is already in place. There is no need to repeat the steps we've taken in our previous tutorial for creating a batch node and positioning all the screen sprites. We once again have a `_gameBatchNode` object and a `createGameScreen` method.
 
-By all means read through the code inside the `createGameScreen` method. Of key importance here is that each planet we create is stored inside `_planets` CCArray. We also create our `_rocket` object (class `Rocket`) and our `_lineContainer` object (`LineContainer` class) here. More on these soon.
+By all means read through the code inside the `createGameScreen` method. Of key importance here is that each planet we create is stored inside `_planets` `CCArray`. We also create our `_rocket` object (class `Rocket`) and our `_lineContainer` object (`LineContainer` class) here. More on these soon.
 
-#### Screen settings
+#### 屏幕设置
 
 Assuming that you have the Start Project option opened in Xcode, let's review the screen settings for this game in `AppDelegate.cpp`, where inside the `applicationDidFinishLaunching` method you should see this:
 
@@ -1288,7 +1288,7 @@ Assuming that you have the Start Project option opened in Xcode, let's review th
         pDirector->setContentScaleFactor(screenSize.height/designSize.height);
     }
 ```
-The iPad is the oddball in terms of screen size: it has a 1.33 screen ratio (longer side divided by shorter side). Most Android devices will range between 1.6 and 1.77, with a few sharing the iPhone screen ratio of 1.5.
+The iPad is the oddball in terms of screen size: it has a 1.33 screen ratio (longer side divided by shorter side). 多数Android设备在`1.6`和`1.77`之间，with a few sharing the iPhone screen ratio of 1.5.
 
 Why should you care? In this game most sprites are circles and the difference in screen ratio would cause them to look squished when ported to different screens using the `kResolutionExactFit` parameter, which distorts your game screen to fit the screen of the device. 有多种解决方式。例如，可以以iPhone的比率为设计目标（因为它接近各种比率的平均值），然后使用`kResolutionShowAll`。这将产生黑边，但不会使精灵变形（第8章将使用该方法）。But here I used another method, I created sprite sheets that account for the squished look of the sprites in different screen ratios, counteracting the distortion. You, or your designer, could produce art for different screen ratios, such as 1.3, 1.5, 1.6, and 1.7, and pack different sets of images for different device families. For the Apple family, the solution shown here works very well and we can use the entire screen through `kResolutionExactFit`.
 
@@ -1298,15 +1298,16 @@ The following image shows two sets of images found in the sprite sheets. Notice 
 
 ### 什么是粒子
 
-In this game, the particles were created in **ParticleDesigner**.
+粒子通过 **ParticleDesigner** 创建。
 
 #### 行动：创建粒子系统
 
-需要一个XML文件描述例子系统的属性。ParticleDesigner将粒子系统数据导出到plist文件。这个文件用于创建`CCParticleSystemQuad`对象。From Cocos2d-x you can modify any of these settings through setters inside `CCParticleSystem`.
+需要一个XML文件描述例子系统的属性。ParticleDesigner 将粒子系统数据导出到plist文件。这个文件用于创建`CCParticleSystemQuad`对象。From Cocos2d-x you can modify any of these settings through setters inside `CCParticleSystem`.
 
 `GameLayer.cpp`的`createParticle`方法：
 
 ```cpp
+	// CCParticleSystem * _jet;
     _jet = CCParticleSystemQuad::create("jet.plist");
     _jet->setSourcePosition(ccp(-_rocket->getRadius() * 0.8f,0));
     _jet->setAngle(180);
@@ -1337,21 +1338,21 @@ In this game, the particles were created in **ParticleDesigner**.
     this->addChild(_star, kBackground, kSpriteStar);
 ```
 
-All particle systems are added as children to `GameLayer`; they cannot be added to our `CCSpriteBatchNode`. And you must call `stopSystem()` on each system as they're created; otherwise they will start playing as soon as they are added to a node.
+所有的例子系统都被添加到`GameLayer`的孩子；不能添加到`CCSpriteBatchNode`。创建后要调用`stopSystem()`，否则被添加到一个节点时会立即执行。
 
-> Cocos2d-x comes bundled with some common particle systems that you can modify for your own needs. If you go to the test folder at: samples/TestCpp/Classes/ParticleTestyou will see examples of these systems being used. The actual particles data files are found at: samples/TestCpp/Resources/Particles
+> Cocos2d-x携带了一些常用例子系统，可以在此基础上修改。If you go to the test folder at: `samples/TestCpp/Classes/ParticleTest` you will see examples of these systems being used. The actual particles data files are found at: `samples/TestCpp/Resources/Particles`.
 
 ### 创建网格
 
 This grid is created inside the `createStarGrid` method in `GameLayer.cpp`. What the method does is determine all of the possible **spots** on the screen where we can place the `_star` particle system.
 
-We use a C++ `vector` list called `_grid` to store the available spots, as it will be easier to *shuffle* the list this way than to use CCArray:
+用`_grid`存储所有可用的地点，as it will be easier to *shuffle* the list this way than to use CCArray:
 
 ```cpp
 	std::vector<CCPoint> _grid;
 ```
 
-The method divides the screen into multiple cells of 32 x 32 pixels, ignoring the areas too close to the screen borders (`gridFrame`). Then we check the distance between each cell and the planet sprites stored inside CCArray `_planets`. If the cell is far enough from the planets we store it inside the `_grid` vector as CCPoint.
+该方法将屏幕分成多个网格。每个 32 x 32 像素，ignoring the areas too close to the screen borders (`gridFrame`). Then we check the distance between each cell and the planet sprites stored inside CCArray `_planets`. If the cell is far enough from the planets we store it inside the `_grid` vector as `CCPoint`.
 
 In the following image you can get an idea of the result we're after. We do not want any of the white cells overlapping any of the planets.
 
@@ -1377,21 +1378,448 @@ This way we never place a star on top of a planet or too close to it that the ro
 
 The methods we'll use are: `ccDrawLine` and `ccDrawCircle`.
 
-#### （未）行动：绘制
+#### 行动：绘制
 
+在`LineContainer.cpp`中实现绘制。Basically `LineContainer` will be used to display the lines that the player draws on screen in order to manipulate `_rocket` sprite, as well as display an energy bar that acts as a sort of timer in our game:
 
+改变`CCNode`的`draw`方法：
 
+```cpp
+    switch (_lineType) {
+        case LINE_NONE:
+            break;
+        case LINE_TEMP:
+            ccDrawColor4F(1.0, 1.0, 1.0, 1.0);
+            ccDrawLine(_tip, _pivot);
+            ccDrawCircle(_pivot, 10, CC_DEGREES_TO_RADIANS(360), 10, false);
+            break;
+        case LINE_DASHED:
+            ccDrawColor4F(1.0, 1.0, 1.0, 1.0);
+            ccDrawCircle(_pivot, 10, M_PI, 10, false);
+            int segments = _lineLength / (_dash + _dashSpace);
+            float t = 0.0f;
+    		float x_;
+            float y_;
+            for (int i = 0; i < segments + 1; i++) {
+                x_ = _pivot.x + t * (_tip.x - _pivot.x);
+                y_ = _pivot.y + t * (_tip.y - _pivot.y);
+                ccDrawCircle(ccp ( x_, y_ ), 4, M_PI, 6, false);
+                t += (float) 1 / segments;
+            }
+            break;
+    }
 
+    // 下面是绘制能量条
+    ccDrawColor4F(0.0, 0.0, 0.0, 1.0);
+    ccDrawLine(ccp(_energyLineX, _screenSize.height * 0.1f),
+        ccp(_energyLineX, _screenSize.height * 0.9f));
+    ccDrawColor4F(1.0, 0.5, 0.0, 1.0);
+    ccDrawLine(ccp(_energyLineX, _screenSize.height * 0.1f),
+        ccp(_energyLineX, _screenSize.height * 0.1f + _energy * _energyHeight ));
+```
 
+If  _lineType is LINE_TEMP this means that the player is currently dragging a finger away 
+from the  _rocket object and we want to show a white line from the _rocket current 
+position to the player's current touch position. These points are called, respectively, tip  
+and pivot. We also draw a circle directly on the pivot point.
 
+If  _lineType is LINE_DASHED then this means that the player has removed his or her 
+finger from the screen and set a new pivot point for the  _rocket to rotate around. We draw 
+a white dotted line, using what is known as the bezier linear formula to draw a series of tiny 
+circles from the  _rocket's current position and the pivot point.
 
+在`LineContainer.cpp`构造器中，注意到设置了每个ccDraw使用的线宽：
+```cpp
+	glLineWidth(8.0 * CC_CONTENT_SCALE_FACTOR());
+```
 
+但注意框架不会负责缩放这个值。当遇到不会缩放的值时，你需要手写逻辑，乘以`CC_CONTENT_SCALE_FACTOR()`（在`AppDelegate.cpp`中设置的缩放）。
 
+### 火箭精灵
 
+在`Rocket.cpp`中，根据一个标志设置火箭的纹理：
 
+```cpp
+    if (flag) {
+        this->setDisplayFrame(CCSpriteFrameCache::sharedSpriteFrameCache()
+        	->spriteFrameByName("rocket_on.png"));
+    } else {
+        this->setDisplayFrame(CCSpriteFrameCache::sharedSpriteFrameCache()
+        	->spriteFrameByName("rocket.png"));
+    }
+```
 
+#### 行动：更新火箭
 
+游戏主循环每次循环都会调用火箭的`update`方法：
 
+```cpp
+    CCPoint position = this->getPosition();
+    if (_rotationOrientation == ROTATE_NONE) {
+        position.x += _vector.x * dt;
+        position.y += _vector.y * dt;
+    } else {
+        // 根据当前位置、轴点和旋转焦点确定下一个位置
+        CCPoint rotatedPoint = ccpRotateByAngle(position, _pivot, _angularSpeed * dt);
+        position.x = rotatedPoint.x;
+        position.y = rotatedPoint.y;
+        float rotatedAngle;
+        CCPoint clockwise = ccpRPerp( ccpSub(position, _pivot) );
+        if (_rotationOrientation == ROTATE_COUNTER) {
+            rotatedAngle = atan2 (-1 * clockwise.y, -1 * clockwise.x);
+        } else {
+            rotatedAngle = atan2 (clockwise.y, clockwise.x);
+        }
+        //update rocket vector
+        _vector.x = _speed * cos (rotatedAngle);
+        _vector.y = _speed * sin (rotatedAngle);
+        this->setRotationFromVector();
+        if (this->getRotation() > 0) {
+            this->setRotation( fmodf(this->getRotation(), 360.0f));
+        } else {
+            this->setRotation( fmodf(this->getRotation(), -360.0f));
+        }
+    }
+```
+
+> 使用`CCNode`的受保护字段还是使用其setter方法。调用setter一般会将`dirty`置位，将导致精灵被重绘。直接改变属性不会置位`dirty`，因此有可能看不到改变。
+
+我们不能用`CCAction`实现旋转，因为旋转更新的太快了｛｛参数配置更新快，不是说旋转的快｝｝，而`CCAction`需要时间初始化和运行。
+
+#### 行动：处理触摸
+
+在`GameLayer.cpp`的`ccTouchesBegan`方法中：
+
+```cpp
+    if (!_running) return;
+    CCTouch *touch = (CCTouch *)pTouches->anyObject();
+    if (touch) {
+        CCPoint tap = touch->getLocation();
+        // track if tapping on ship
+        float dx = _rocket->getPositionX() - tap.x;
+        float dy = _rocket->getPositionY() - tap.y;
+        if (dx * dx + dy * dy <= pow(_rocket->getRadius() * 1.2, 2)) {
+           // clear lines
+           _lineContainer->setLineType ( LINE_NONE );
+           _rocket->setRotationOrientation ( ROTATE_NONE );
+           _drawing = true;
+        }
+    }
+```
+
+判断是否点了暂停：
+
+```cpp
+    if (!_running) return;
+    CCTouch *touch = (CCTouch *)pTouches->anyObject();
+    if(touch) {
+        CCPoint tap = touch->getLocation();
+        if (_pauseBtn->boundingBox().containsPoint(tap)) {
+            _paused->setVisible(true);
+            _state = kGamePaused;
+            _pauseBtn->setDisplayFrame(
+                CCSpriteFrameCache::sharedSpriteFrameCache()
+                    ->spriteFrameByName("btn_pause_on.png"));
+            _running = false;
+            return;
+        }
+    }
+```
+
+What follows next is even more math, using the amazingly helpful methods from Cocos2d-x that are related to vector math (ccpRPerp, ccpDot, ccpSub, to name a few) some of which we've seen already in the Rocket class:
+
+```cpp
+        CCPoint clockwise = ccpRPerp(ccpSub(_rocket->getPosition(), _rocket->getPivot()));
+        float dot = ccpDot ( clockwise, _rocket->getVector() );
+        if (dot > 0) {
+            _rocket->setAngularSpeed (_rocket->getAngularSpeed() * -1 );
+            _rocket->setRotationOrientation ( ROTATE_CLOCKWISE);
+            _rocket->setTargetRotation (CC_RADIANS_TO_DEGREES(atan2(clockwise.y, clockwise.x) ) );
+            } else {
+            _rocket->setRotationOrientation ( ROTATE_COUNTER );
+            _rocket->setTargetRotation (CC_RADIANS_TO_DEGREES(atan2(-1 * clockwise.y, -1 * clockwise.x) ) );
+        }
+        _lineContainer->setLineType ( LINE_DASHED );
+    }
+}
+```
+
+### 游戏循环
+
+主循环负责碰撞检测，更新`_lineContainer`中的点，adjusting our `_jet` particle system to our `_rocket` sprite, and a few other things.
+
+实现主`update`方法：
+
+```cpp
+    if (!_running) return;
+
+    if (_lineContainer->getLineType() != LINE_NONE) {
+        _lineContainer->setTip (_rocket->getPosition() );
+
+    }
+    // track collision with sides
+    if (_rocket->collidedWithSides()) {
+        _lineContainer->setLineType ( LINE_NONE );
+    }
+    _rocket->update(dt);
+    // update jet particle so it follows rocket
+    if (!_jet->isActive()) _jet->resetSystem();
+    _jet->setRotation(_rocket->getRotation());
+    _jet->setPosition(_rocket->getPosition());
+```
+
+### Kill and reset
+
+## 6 快速原型开发：Rush Hour
+
+- How to quickly create placeholder sprites
+- How to code collision for a platform game
+- How to create varied terrain for a side-scroller
+
+### 游戏：Victorian Rush Hour
+
+In this game you control a cyclist in Victorian London trying to avoid the traffic on his way 
+home. For reasons no one can explain, he's riding his bike on top of the buildings. As the 
+player, it is your job to ensure he makes it.
+
+The controls are very simple: you tap the screen to make the cyclist jump. While he's in the 
+air, if you tap the screen again the cyclist will open his trusty umbrella, either slowing his 
+descent or adding a boost to his jump.
+
+This game is of a type commonly known as a dash game, a genre that has become increasingly popular online and on various app stores.
+
+这个游戏中，地形是敌人。
+
+The game is an universal application, designed for the iPad's retina display but with support for other display sizes. It is played in landscape mode and it does not support multi-touch.
+
+### 快速原型
+
+用矩形作为精灵的快速原型，验证游戏创意。
+
+#### 行动：创建占位符精灵
+
+从`7341_06_START_PROJECT.zip`开始。
+
+向`GameLayer.cpp`，`createGameScreen`最后添加三行：
+
+```cpp
+    CCSprite * quickSprite = CCSprite::create("blank.png");
+    quickSprite->setTextureRect(CCRectMake(0, 0, 100, 100));
+    quickSprite->setColor(ccc3(255,255,255));
+    quickSprite->setPosition(ccp(_screenSize.width * 0.5,
+    	_screenSize.height * 0.5));
+    this->addChild(quickSprite);
+```
+
+`blank.png`是一个1像素的白色块。
+
+删掉上述代码，改成：
+
+```cpp
+_gameBatchNode = CCSpriteBatchNode::create("blank.png", 200);
+this->addChild(_gameBatchNode, kMiddleground);
+```
+
+于是整个游戏只需要一个图片。
+
+继续：
+
+```cpp
+	_terrain = Terrain::create();
+	_gameBatchNode->addChild(_terrain, kMiddleground);
+
+	_player = Player::create();
+	_gameBatchNode->addChild(_player, kBackground);
+```
+
+### Player对象
+
+表示自行车。It will jump, float, and collide with the `_terrain` object. It's x speed is passed to the `_terrain` object causing it to move, side scrolling to the left of the screen.
+
+`Player`派生自`GameSprite`。This one has getters and setters for next position, vector of movement, and the sprite's width and height.
+
+The Player interface has inline helper methods to retrieve information about its rectangle boundaries related to its current position (left, right, top, bottom) and its next position (next_left, next_right, next_top, next_bottom). These will be used in collision detection with the `_terrain`  object.
+
+### Block对象
+
+`_terrain`对象由多个Block对象构成。可能是一个建筑物，或之间的缝隙。有四纵不同的建筑。Block对象可以有不同的宽度和高度。
+
+`Block`也派生自`GameSprite`， and it also has inline helper methods to retrieve information about its boundaries, but only in relation to its current position, since Block don't technically move.
+
+### Terrain对象
+
+This object contains the individual Block objects that form the landscape. It contains just enough Block objects to **fill** the screen, and as the `_terrain` object scrolls to the left, the Block objects that leave the screen are moved to the far right side of the `_terrain` and **reused** as new Blocks, ensuring continuous scrolling.
+
+The `_terrain` object also is responsible for collision checks with the `_player` object, since it has quick access to all information we'll need for collision detection; namely the list of blocks currently on the screen, their size, type, and position. Our main loop then will call on the `Terrain` object to test for player collision.
+
+#### 行动：编写Player
+
+打开`Player.cpp`。_player is created through a static method that uses our  blank.png file to texture the sprite. That method also makes a call to `initPlayer`, and this is what you should type for that method:
+
+```cpp
+    void Player::initPlayer () {
+        this->setAnchorPoint(ccp(0.5f, 1.0f));
+        this->setPosition(ccp(_screenSize.width * 0.2f,
+        	_nextPosition.y));
+        _height = 228;
+        _width = 180;
+        this->setTextureRect(CCRectMake(0, 0, _width, _height));
+        this->setColor(ccc3(255,255,255));
+    }
+```
+
+为了动画方便，`_player`对象的锚点放在顶部中间。
+
+```cpp
+    void Player::setFloating (bool value) {
+        if (_floating == value) return;
+        if (value && _hasFloated) return;
+        _floating = value;
+        if (value) {
+            _hasFloated = true;
+            _vector.y += PLAYER_JUMP * 0.5f;
+        }
+    }
+```
+The `_hasFloated` property  will ensure the player can only open the umbrella once while in the air. And when we set `_floating` to true we give the `_player` y vector a boost.
+
+```cpp
+	void Player::update (float dt) {
+        if (_speed + ACCELERATION <= _maxSpeed) {
+            _speed += ACCELERATION;
+        } else {
+            _speed = _maxSpeed;
+        }
+
+        _vector.x = _speed;
+```
+
+随着时间增加增加`_maxSpeed`，以增加游戏难度。
+
+Next, we update  the  _player object based on its _state of movement:
+
+```cpp
+    switch (_state) {
+        case kPlayerMoving:
+            _vector.y -= GRAVITY;
+            if (_hasFloated) _hasFloated = false;
+            break;
+       case kPlayerFalling:
+          if (_floating) {
+             _vector.y -= FLOATNG_GRAVITY;
+             _vector.x *= FLOATING_FRICTION;
+          } else {
+             _vector.y -= GRAVITY;
+             _vector.x *= AIR_FRICTION;
+             _floatingTimer = 0;
+          }
+          break;
+       case kPlayerDying:
+          _vector.y -= GRAVITY;
+          _vector.x = -_speed;
+          this->setPositionX(this->getPositionX() + _vector.x);
+          break;
+    }
+```
+
+We have different values for gravity and friction depending on move state. We also have a time limit for how long the `_player` object can be floating, and we reset that timer when the `_player` object is not floating. If the `_player` object is dying (collided with a wall), we move the `_player` object backwards and downwards until it leaves the screen.
+
+```cpp
+        if (_jumping) {
+            _state = kPlayerFalling;
+            _vector.y += PLAYER_JUMP * 0.25f;
+            if (_vector.y > PLAYER_JUMP ) _jumping = false;
+        }
+
+        if (_vector.y < -TERMINAL_VELOCITY)
+        	_vector.y = -TERMINAL_VELOCITY;
+
+        _nextPosition.y = this->getPositionY() + _vector.y;
+
+        if (_floating) {
+            _floatingTimer += dt;
+            if (_floatingTimer > _floatingTimerMax) {
+                _floatingTimer = 0;
+                this->setFloating(false);
+            }
+        }
+    }
+```
+
+When the player presses the screen for a jump we shouldn't make the sprite jump immediately. Changes in state should always happen **smoothly**. So we have a boolean property in `_player` called `_jumping`. It is set to true when the player presses the screen and we slowly add the jump force to `_vector.y`. So the longer the player presses the screen, the higher the jump will be and a quick tap will result in a shorter jump. This is a nice feature to add to any platform game.
+
+We next limit the y speed with a terminal velocity, update the next position of the `_player` object, and update the floating timer if `_player` is floating.
+
+#### 行动：初始化`Terrain`类
+
+```cpp
+    void Terrain::initTerrain () {
+        _increaseGapInterval = 5000;
+        _increaseGapTimer = 0;
+        _gapSize = 2;
+        _blockPool = CCArray::createWithCapacity(20);
+        _blockPool->retain();
+        // 初始化对象池
+        Block * block;
+        for (int i = 0; i < 20; i++) {
+            block = Block::create();
+            this->addChild(block);
+            _blockPool->addObject(block);
+        }
+        _blocks = CCArray::createWithCapacity(20);
+        _blocks->retain();
+
+        _minTerrainWidth = _screenSize.width * 1.5f;
+        random_shuffle(_blockPattern.begin(), _blockPattern.end());
+        random_shuffle(_blockWidths.begin(), _blockWidths.end());
+        random_shuffle(_blockHeights.begin(), _blockHeights.end());
+        this->addBlocks(0);
+    }
+```
+
+We have a timer to increase the width of gaps (we begin with gaps two tiles long).
+
+创建一个block的对象池。于是在游戏过程中再实例化。20足够多了。`_terrain`对象的最小宽度是屏幕宽度的1.5倍。
+
+```cpp
+    void Terrain::addBlocks(int currentWidth) {
+        Block * block;
+        while (currentWidth < _minTerrainWidth) {
+            block = (Block *) _blockPool->objectAtIndex(_blockPoolIndex);
+            _blockPoolIndex++;
+            if (_blockPoolIndex == _blockPool->count()) {
+                _blockPoolIndex = 0;
+          }
+          this->initBlock(block);
+          currentWidth += block->getWidth();
+          _blocks->addObject(block);
+       }
+       this->distributeBlocks();
+    }
+```
+
+反复增加block直到`_terrain`对象的宽度超过最小宽度。
+
+放置块：
+
+```cpp
+    void Terrain::distributeBlocks() {
+        int count = _blocks->count();
+
+        Block * block;
+        Block * prev_block;
+        for (int i = 0; i < count; i++) {
+            block = (Block *) _blocks->objectAtIndex(i);
+            if (i != 0) {
+                prev_block = (Block *) _blocks->objectAtIndex(i - 1);
+                block->setPositionX( prev_block->getPositionX()
+                    + prev_block->getWidth());
+            } else {
+                block->setPositionX ( 0 );
+            }
+        }
+    }
+```
 
 
 
