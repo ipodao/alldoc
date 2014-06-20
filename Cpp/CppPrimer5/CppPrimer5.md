@@ -15,10 +15,10 @@ GNU compiler, version 4.7.0. There are only a few features used in this book tha
 ### 1.1. 编写一个简单的C++程序
 
 ```cpp
-int main()
-{
-    return 0;
-}
+    int main()
+    {
+        return 0;
+    }
 ```
 
 On most systems, the value returned from main is a status indicator. 返回0表示成功。A nonzero return has a meaning that is defined by the system.

@@ -38,7 +38,9 @@ Finally, a few lines below in the `supportedInterfaceOrientations` method change
 #### 行动：添加图片
 
 打开`7341_03_RESOURCES.zip`。里面有两个文件夹分别是`hd`和`sd`，分别用于retina屏和非retina屏。将这两个文件夹拖动你工程的`Resources`文件夹。
+
 Go back to Xcode. Select the Resources folder in your project navigation panel. Then go to `File| Add Files` to Air Hockey.
+
 In the File window navigate to the Resources folder and select both the sd and hd folders. This is very important: Make sure Create folder references for any added folders is selected. Also make sure you selected Air Hockey as the target. It wouldn't hurt to make sure **Copy items to destination...** is also selected. Click Add.
 
 It is very important that references are added to the actual folders, only in this way will Xcode be able to have two files with the same name inside the project and still keep them apart; one in each folder.
@@ -107,7 +109,7 @@ GameSprite.h：
     #endif // __GAMESPRITE_H__
 ```
 
-利用宏创建三个合成（synthesized）属性：利用红创建getter和setter方法。You declare the type, the `protected` variable name, and the words that will be appended to the get and set methods.
+利用宏创建三个合成（synthesized）属性：利用宏创建getter和setter方法。You declare the type, the `protected` variable name, and the words that will be appended to the get and set methods.
 
 `gameSpriteWithFile`用于实例化。
 
@@ -181,7 +183,7 @@ Rename the `HelloWorldScene` files to `GameLayer`, and the class inside them fro
             int _player2Score;
             void playerScore (int player);
 
-            public:
+        public:
             ~GameLayer();
             virtual bool init();
             static CCScene* scene();
@@ -189,7 +191,7 @@ Rename the `HelloWorldScene` files to `GameLayer`, and the class inside them fro
             virtual void ccTouchesBegan(CCSet* pTouches, CCEvent* event);
             virtual void ccTouchesMoved(CCSet* pTouches, CCEvent* event);
             virtual void ccTouchesEnded(CCSet* pTouches, CCEvent* event);
-            void update (float dt);
+            void update (float dt); // 普通成员方法，不是父类中的
         };
     #endif // __GAMELAYER_H__
 ```
@@ -230,6 +232,7 @@ Rename the `HelloWorldScene` files to `GameLayer`, and the class inside them fro
     this->addChild(_player2);
 
     _ball = GameSprite::gameSpriteWithFile("puck.png");
+    // 球的位置偏下，不在中线上
     _ball->setPosition(ccp(_screenSize.width * 0.5,
     	_screenSize.height * 0.5 - 2 * _ball->radius()));
     this->addChild(_ball);
@@ -242,7 +245,7 @@ We create a `CCArray` method to store the player objects and we **retain** this 
     _players->retain();
 ```
 
-利用`CCLabelTTF`创建标签。once again the font size will be automatically scaled in the high definition version)。
+利用`CCLabelTTF`创建标签。once again the font size will be automatically scaled in the high definition version。
 
 ```cpp
     _player1ScoreLabel = CCLabelTTF::create("0", "Arial", 60);
@@ -263,9 +266,9 @@ Label objects (`CCLabelTTF`) can use any of the fonts supported by the target sy
 最后，声明`CCLayer`允许监听触摸事件。并开始排期主循环：
 
 ```cpp
-    //listen for touches
+    // listen for touches
     this->setTouchEnabled(true);
-    //create main loop
+    // create main loop
     this->schedule(schedule_selector(GameLayer::update));
     return true;
 ```
@@ -353,12 +356,12 @@ Label objects (`CCLabelTTF`) can use any of the fonts supported by the target sy
     	player = (GameSprite *) _players->objectAtIndex(p);
     	if (player->getTouch() != NULL && player->getTouch() == touch) {
     		player->setTouch(NULL);
-    		player->setVector(ccp(0,0)););
+    		player->setVector(ccp(0,0));
     	}
     }
 ```
 
-实现多点触摸的另一种方式是实现`CCTargetedTouchDelegate`协议。But this may result in the implementation of up to eight methods. You may go to the test code in samples/TestCpp/Classes/TouchesTest and review the code used in the Paddle.h and Paddle.cpp files for an example of `CCTargetedTouchDelegate` in action.
+实现多点触摸的另一种方式是实现`CCTargetedTouchDelegate`协议。But this may result in the implementation of up to eight methods. You may go to the test code in `samples/TestCpp/Classes/TouchesTest` and review the code used in the Paddle.h and Paddle.cpp files for an example of `CCTargetedTouchDelegate` in action.
 
 #### 行动：主循环
 

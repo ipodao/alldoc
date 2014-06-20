@@ -668,7 +668,7 @@ Instead of overriding every base-class version that it inherits, a derived class
 
 The normal rules for a `using` declaration inside a class apply to names of overloaded functions (§15.5, p. 615); every overloaded instance of the function in the base class must be accessible to the derived class. The access to the overloaded versions that are not otherwise redefined by the derived class will be the access in effect at the point of the using declaration.
 
-### 15.7. Constructors and Copy Control
+### （及以下未）15.7. Constructors and Copy Control
 
 
 
