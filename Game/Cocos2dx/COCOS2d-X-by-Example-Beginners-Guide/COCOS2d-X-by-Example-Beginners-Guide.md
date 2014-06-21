@@ -1821,5 +1821,347 @@ We have a timer to increase the width of gaps (we begin with gaps two tiles long
     }
 ```
 
+#### 行动：初始化Blocks
+
+Finally the method that initializes the blocks based on our `patterns` array.
+
+Inside the `Terrain` class, we start the `initBlock` method like this:
+
+```cpp
+    void Terrain::initBlock(Block * block) {
+	    int blockWidth;
+    	int blockHeight;
+    	int type = _blockTypes[_currentTypeIndex];
+    	_currentTypeIndex++;
+    	if (_currentTypeIndex == _blockTypes.size()) {
+    		_currentTypeIndex = 0;
+    	}
+```
+
+开始构建块：
+
+```cpp
+        if (_startTerrain) {
+        	//...
+        } else {
+        	_lastBlockHeight = 2; // 2个瓷砖高
+        	_lastBlockWidth = rand() % 2 + 2;
+        	block->setupBlock (_lastBlockWidth, _lastBlockHeight, type);
+        }
+````
+
+The player must tap the screen to begin the game (`_startTerrain`), until then we show buildings with the same height (two **tiles**) and random width.
+
+If we are set to `_startTerrain`:
+
+```cpp
+        if (_startTerrain) {
+            if (_showGap) {
+            	int gap = rand() % _gapSize;
+            	if (gap < 2) gap = 2;
+            	block->setupBlock (gap, 0, kBlockGap);
+            	_showGap = false;
+        } else {
+        	//...
+```
+
+The information inside `_blockPattern` determines how many buildings we show in a row, and once a series is completed we show a gap by setting the boolean value of `_showGap` to true. A gap's width is based on the current value of `_gapSize`, which may increase as the game gets harder and it can't be less than two times the tile width.
+
+If we are not creating a gap this time:
+
+```cpp
+    } else {
+        blockWidth = _blockWidths[_currentWidthIndex];
+        _currentWidthIndex++;
+        if (_currentWidthIndex == _blockWidths.size()) {
+	        random_shuffle(_blockWidths.begin(), _blockWidths.end());
+        	_currentWidthIndex = 0;
+        }
+        if (_blockHeights[_currentHeightIndex] != 0) {
+        	// change height of next block
+        	blockHeight = _blockHeights[_currentHeightIndex];
+        	// if difference too high, decrease it
+            if (blockHeight - _lastBlockHeight > 2 
+            	&& _gapSize == 2) {
+                blockHeight = 1;
+            }
+        } else {
+        	blockHeight = _lastBlockHeight;
+        }
+        _currentHeightIndex++;
+        if (_currentHeightIndex == _blockHeights.size()) {
+            _currentHeightIndex = 0;
+            random_shuffle(_blockHeights.begin(), _blockHeights.end());
+        }
+        block->setupBlock (blockWidth, blockHeight, type);
+        _lastBlockWidth = blockWidth;
+        _lastBlockHeight = blockHeight;
+```
+
+We determine the width and height of the new block based on the current indexed values of `_blockWidths` and `_blockHeights`. Notice how we reshuffle the arrays once we are done iterating through them (`random_shuffle`).
+
+We finish by updating the count in the current series of buildings, to determine if we should show a gap next, or not:
+
+```cpp
+    //select next block series pattern
+    _currentPatternCnt++;
+    if (_currentPatternCnt > _blockPattern[_currentPatternIndex]) {
+        _showGap = true;
+        //start new pattern
+        _currentPatternIndex++;
+        if (_currentPatternIndex == _blockPattern.size()) {
+            random_shuffle(_blockPattern.begin(),
+                _blockPattern.end());
+            _currentPatternIndex = 0;
+        }
+        _currentPatternCnt = 1;
+    }
+}
+```
+
+#### 行动：移动和重置
+
+We move the terrain inside the `move` method:
+
+`xMove`表示在x轴移动的距离。其值取决于`_player`的速度。
+
+```cpp
+    void Terrain::move (float xMove) {
+        if (xMove < 0) return;
+        if (_startTerrain) {
+            if (xMove > 0 && _gapSize < 5)
+            	_increaseGapTimer += xMove;
+            if (_increaseGapTimer > _increaseGapInterval) {
+            	_increaseGapTimer = 0;
+            	_gapSize += 1;
+            }
+        }
+        this->setPositionX(this->getPositionX() - xMove);
+        Block * block;
+        block = (Block *) _blocks->objectAtIndex(0);
+        if (m_tPosition.x + block->getWidth() < 0) {
+            _blocks->removeObjectAtIndex(0);
+            _blocks->addObject(block);
+            m_tPosition.x += block->getWidth();
+            float width_cnt = this->getWidth() - block->getWidth()
+            	- ((Block *) _blocks->objectAtIndex(0))-> getWidth();
+            this->initBlock(block);
+            this->addBlocks(width_cnt);
+        }
+    }
+```
+
+定时器用于增大间隙。然后我们将terrain向左移动。如果移动后，一个块移出了屏幕，则将它移到`_blocks`最后，将其初始化一个新的块（`initBlock`）。
+
+最后调用`addBlocks`确保terrain超过最小要求的长度。
+
+```cpp
+    void Terrain::reset() {
+        this->setPosition(ccp(0,0));
+        _startTerrain = false;
+        int count = _blocks->count();
+        Block * block;
+        int currentWidth = 0;
+        for (int i = 0; i < count; i++) {
+            block = (Block *) _blocks->objectAtIndex(i);
+            this->initBlock(block);
+            currentWidth += block->getWidth();
+        }
+        while (currentWidth < _minTerrainWidth) {
+            block = (Block *) _blockPool->objectAtIndex(_blockPoolIndex);
+            _blockPoolIndex++;
+            if (_blockPoolIndex == _blockPool->count()) {
+            	_blockPoolIndex = 0;
+            }
+            _blocks->addObject(block);
+            this->initBlock(block);
+            currentWidth += block->getWidth();
+        }
+        this->distributeBlocks();
+        _increaseGapTimer = 0;
+        _gapSize = 2;
+    }
+```
+
+### 平台碰撞检测逻辑
+
+In this game we'll need to check collision between the _player's bottom side and the Block's top side, and between the _player's right side and the Block's left side. We'll do that by checking the _player's current and next position.
+
+Still in `Terrain.cpp`:
+
+```cpp
+    void Terrain::checkCollision (Player * player) {
+        if (player->getState() == kPlayerDying) return;
+        int count = _blocks->count();
+        Block * block;
+        bool inAir = true;
+        for (int i = 0; i < count; i++) {
+            block = (Block *) _blocks->objectAtIndex(i);
+            if (block->getType() == kBlockGap) continue;
+            // if within x range, check y (bottom collision)
+            if (player->right() >= this->getPositionX() + block->left()
+            	&& player->left() <= this->getPositionX() + block->right()) {
+	            if (player->bottom() >= block->top()
+                	&& player->next_bottom() <= block->top()
+                    && player->top() > block->top()) {
+            		player->setNextPosition(ccp(player->getNextPosition().x,
+                    	block->top() + player->getHeight()));
+            		player->setVector ( ccp(player->getVector().x, 0));
+                	inAir = false;
+                	break;
+                }
+        	}
+    	}
+```
+
+First we state that the _playerobject is currently falling with inAir = true. We don't check for collisions if _playeris dying and we skip collision checks with any gap blocks. 设为`inAir = false`表示玩家已着陆。
+
+下面检查x轴方向的碰撞：
+
+```cpp
+    for (int i = 0; i < count; i++) {
+        block = (Block *) _blocks->objectAtIndex(i);
+        if (block->getType() == kBlockGap) continue;
+        // now if within y range, check x (side collision)
+        if ((player->bottom() < block->top()
+        	&& player->top() > block->bottom())
+            || (player->next_bottom() < block->top()
+            && player->next_top() > block->bottom())) {
+        	if (player->right() >= this->getPositionX() + block->getPositionX()
+            	&& player->left() < this->getPositionX() + block->getPositionX()) {
+            player->setPositionX( this->getPositionX() + block->getPositionX() - player->getWidth() * 0.5f );
+            player->setNextPosition(ccp(this->getPositionX() + block->getPositionX() - player->getWidth() * 0.5f, player->getNextPosition().y));
+            player->setVector(ccp(player->getVector().x * -0.5f, player->getVector().y) );
+            if (player->bottom() + player->getHeight() * 0.2f < block->top()) {
+                player->setState(sprite);
+                return;
+            }
+            break;
+            }
+        }
+    }
+```
+
+We end by updating the `_player`'s state based on our collision results:
+
+```cpp
+        if (inAir) {
+            player->setState(kPlayerFalling);
+        } else {
+            player->setState(kPlayerMoving);
+            player->setFloating (false);
+        }
+    }
+```
+
+### 添加控制
+
+Remember, we want smooth transitions between states, so pay attention to how jumping 
+is implemented: not by immediately applying a force to the player's vector, but by simply 
+changing a booleanproperty and letting the _player's updatemethod handle the 
+change smoothly.
+
+#### 行动：处理触摸
+
+```cpp
+    void GameLayer::ccTouchesBegan(CCSet* pTouches, CCEvent* event) {
+        if (!_running) {
+            if (_player->getState() == kPlayerDying) {
+                _terrain->reset();
+                _player->reset();
+                resetGame();
+            }
+            return;
+        }
+
+        if (!_terrain->getStartTerrain()) {
+        _terrain->setStartTerrain ( true );
+            return;
+        }
+```
+
+Remember that at first the buildings are all the same height and there are no gaps. Once the player presses the screen, we begin changing that through `setStartTerrain`.
+
+```cpp
+        CCTouch *touch = (CCTouch *)pTouches->anyObject();
+        if (touch) {
+        	if (_player->getState() == kPlayerFalling) {
+        		_player->setFloating ( _player->getFloating()?false : true );
+            } else {
+                if (_player->getState() != kPlayerDying)
+                    _player->setJumping(true);
+            }
+        }
+    }
+```
+
+If a touch ends, we just need to stop any jumps:
+
+```cpp
+	void GameLayer::ccTouchesEnded(CCSet* pTouches, CCEvent* event) {
+		_player->setJumping(false);
+	}
+```
+
+#### 行动：主循环
+
+```cpp
+    void GameLayer::update(float dt) {
+    	if (!_running) return;
+    	if (_player->getPositionY() < -_player->getHeight()
+        	|| _player->getPositionX() < -_player->getWidth() * 0.5f)
+            {
+            _running = false;
+    	}
+```
+
+Now update all the elements positions and check for collision:
+
+```cpp
+        _player->update(dt);
+        _terrain->move(_player->getVector().x);
+        if (_player->getState() != kPlayerDying)
+        	_terrain->checkCollision(_player);
+        _player->place();
+```
+
+Move `_gameBatchNode` in relation to the `_player` object:
+
+```cpp
+        if (_player->getNextPosition().y > _screenSize.height * 0.6f) {
+        	_gameBatchNode->setPositionY( (_screenSize.height * 0.6f - _player->getNextPosition().y) * 0.8f);
+        } else {
+	        _gameBatchNode->setPositionY ( 0 );
+        }
+```
+
+And make the game more difficult as time goes on by increasing the _player's maximum speed:
+
+```cpp
+        if (_terrain->getStartTerrain() && _player->getVector().x > 0) {
+        	_speedIncreaseTimer += dt;
+            if (_speedIncreaseTimer > _speedIncreaseInterval) {
+                _speedIncreaseTimer = 0;
+                _player->setMaxSpeed (_player->getMaxSpeed() + 4);
+            }
+        }
+    }
+```
+
+## 7 向Victorian Rush Hour添加外观
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
