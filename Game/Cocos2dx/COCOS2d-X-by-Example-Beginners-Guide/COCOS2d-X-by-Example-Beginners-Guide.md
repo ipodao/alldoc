@@ -2562,6 +2562,167 @@ Inside `ccTouchesBegan`, in the switch statement, add the following cases:
         break;
 ```
 
+## 8 Box2D
+
+Cocos2d-x comes bundled with templates for 
+projects utilizing either Box2D or Chipmunk. These are so-called 2D physics 
+engines; the first written in C++ and the second in C.
+
+本书的例子将使用Box2D。The last two games I'll show you will be developed with that engine, starting with a simple pool game to illustrate all the main points about using Box2D in your projects.
+
+What you will learn:
+ How to create a project that incorporates Box2D
+ How to set up and run a Box2D simulation
+ How to create bodies
+ How to use the debug draw feature to quickly test your concepts
+ How to use collision filters and listeners
+
+### 创建Box2D工程
+
+Let's start by going over the various steps involved in creating a Box2D project with Cocos2d-x. We begin by firing up Xcode and choosing File| New| Project. This time, we select the cocos2dx_box2dtemplate option.
+
+If you run the project as-is in your iPhone simulator, you should see something like this:
+
+![](ch8-box2d-helloworld.png)
+
+Please understand that the following steps are all optional. I happen not to like the way the Box2D project template is set up:
+
+Go to the folder where you extracted the framework and locate the Testfiles, this time go to `samples/TestCpp/Classes/Box2DTestBed`. Drag the `GLES-Render.h` and `GLES-Render.cpp` files from **Box2DTestBed** to your project Classes group. Make sure to select **Copy items into destination...** and make sure you selected your project as the target.
+
+In the `HelloWorldScene.h` header file, leave the includes in place, but change the class declarations to match this much shorter one:
+
+```cpp
+    class HelloWorld : public cocos2d::CCLayer {
+    public:
+        ~HelloWorld();
+        HelloWorld();
+        static cocos2d::CCScene* scene();
+        void initPhysics();
+        virtual void draw();
+        void update(float dt);
+    private:
+    	b2World* world;
+    };
+```
+
+Then add this include:
+```cpp
+	#include "GLES-Render.h"
+```
+
+And add this private member:
+```cpp
+	GLESDebugDraw * m_debugDraw;
+```
+
+Then in the `HelloWorldScene.cpp` implementation file replace the lines between `using namespace CocosDenshion` and the `HelloWorld::scene` method with these:
+```cpp
+    #define PTM_RATIO 32
+    HelloWorld::HelloWorld()
+    {
+        this->initPhysics();
+        scheduleUpdate();
+    }
+    HelloWorld::~HelloWorld()
+    {
+        delete world;
+        world = NULL;
+        delete m_debugDraw;
+    }
+    void HelloWorld::initPhysics() {
+        b2Vec2 gravity;
+        gravity.Set(0.0f, -10.0f);
+        world = new b2World(gravity);
+        // Do we want to let bodies sleep?
+        world->SetAllowSleeping(true);
+        world->SetContinuousPhysics(true);
+        m_debugDraw = new GLESDebugDraw( PTM_RATIO );
+        world->SetDebugDraw(m_debugDraw);
+        uint32 flags = 0;
+        flags += b2Draw::e_shapeBit;
+            // flags += b2Draw::e_jointBit;
+            // flags += b2Draw::e_aabbBit;
+            // flags += b2Draw::e_pairBit;
+            // flags += b2Draw::e_centerOfMassBit;
+        m_debugDraw->SetFlags(flags);
+    }
+    void HelloWorld::draw()
+    {
+        // IMPORTANT:
+        // This is only for debug purposes
+        // It is recommend to disable it
+        CCLayer::draw();
+        ccGLEnableVertexAttribs( kCCVertexAttribFlag_Position );
+        kmGLPushMatrix();
+        world->DrawDebugData();
+        kmGLPopMatrix();
+    }
+    void HelloWorld::update(float dt)
+    {
+    	world->Step(dt, 8, 1);
+    }
+```
+
+The GLES-Renderclass is necessary to use the debug draw feature in Box2D. This will draw all the elements from the simulation on the screen. The debug draw object is created inside the `initPhysics` method alongside the Box2D simulation (b2World). We'll go over that logic in a moment.
+
+As the comment inside the `draw` method states, the debug draw feature should be switched off once you're done developing your game. So, all the lines pertaining to that object, as well as the `draw` method, should be commented out.
+
+### 什么是物理引擎
+
+Box2D是一个非常鲁棒的碰撞检测引擎。可以仅作为碰撞检测引擎使用。But the simulation will also process and return a bunch of information derived from the collisions and the interactions between bodies, including how the objects should behave, based on their shapes, mass, and all the forces at play in the simulation.
+
+#### Meet Box2D
+
+引擎的核心是`b2World`。This is the simulation. 向世界填充`b2Body`对象，and then you step through the simulation with `b2World->Step()`. You take the results of the simulation and display them to the user through your sprites, by grabbing a `b2Body`'s position and rotation and applying them to a sprite.
+
+The debug draw object allows you to see the simulation without using any sprites. A way to quickly test and prototype your game.
+
+#### Meet the world
+
+多数情况下，物理引擎要求创建一个`b2world`对象。However, you can get interesting results by managing more than one world object in the same game, for multiple views for instance. But that's for another book.
+
+对于简单的工程，创建世界的方法如下：
+```cpp
+    b2Vec2 gravity;
+    gravity.Set(0.0f, -10.0f);
+    world = new b2World(gravity);
+    // Do we want to let bodies sleep?
+    world->SetAllowSleeping(true);
+    world->SetContinuousPhysics(true);
+    m_debugDraw = new GLESDebugDraw( PTM_RATIO );
+    world->SetDebugDraw(m_debugDraw);
+    uint32 flags = 0;
+    flags += b2Draw::e_shapeBit;
+    // flags += b2Draw::e_jointBit;
+    // flags += b2Draw::e_aabbBit;
+    // flags += b2Draw::e_pairBit;
+    // flags += b2Draw::e_centerOfMassBit;
+    m_debugDraw->SetFlags(flags);
+```
+
+Box2D有自己的向量结构`b2Vec2`, and we use it here to create the world's gravity. The `b2World` object receives that as its parameter. A simulation does not always require gravity of course; in that case the argument will be a (0, 0) vector.
+
+`SetAllowSleeping` means that if objects are not moving and are therefore not generating derived data, skip checking for derived data from those objects.
+
+`SetContinuousPhysics` means we have some fast objects in our hands, which we'll later point out to the simulation, so it can pay extra attention for collisions. Then we create the debug draw object. This is optional, as I said before. The flags indicate what you wish to see in the drawing. In the previous code we only want to see the shapes of the objects.
+
+Then comes `PTM_RATIO`, the defined constant that we passed as a parameter to the debug draw. Box2D uses meters instead of pixels for a variety of reasons that are, entirely unnecessary for anyone to know. But keep this one thing in mind: every pixel position value used in the game will be divided by this ratio constant (PTM stands for pixel to meter). If the result from this division ever gets above 10 or below 0.1, increase or decrease the value for PTM_RATIO accordingly.
+
+Though you have some leeway, of course. By all means, play with this value once your game is completed, and pay special attention to the subtle differences in speed (another common value for this ratio is 100).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
