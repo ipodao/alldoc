@@ -2150,12 +2150,417 @@ And make the game more difficult as time goes on by increasing the _player's max
 
 ## 7 向Victorian Rush Hour添加外观
 
+本章内容：
+
+- How to use multiple sprites to texture a tiled terrain
+- How to use multiple containers inside a `CCSpriteBatchNode`
+- How to create a parallax effect
+- 如何向游戏添加菜单
+- How to build a game tutorial
+
+### Victorian Rush Hour – the game
+
+![](game-ch7.png)
+
+#### 新精灵
+
+- There is a group of cyclists at the beginning of the game representing the rush traffic.
+- We add a background layer (cityscape) and a foreground layer (lampposts) to help us with our parallax effect. The clouds in the background are also part of the effect.
+- We add chimneys to the buildings. These puff smoke as the player taps the screen.
+- And of course the usual stuff: score label, game logo, and a game over message.
+
+![](sprits-ch7.png)
+
+#### 动画
 
 
+`_player`运行动画`_rideAnimation`，展示它在骑自行车。 Also added was our old friend, the swinging animation, shown when the `_player` is floating (`_floatAnimation`). This is the reason for the odd registration point on the cyclist sprite, as the swing animation looks better if the sprite's anchor point is not centered. Our group of cyclists are also animated during the intro section of the game, and are moved offscreen when the game starts (`_jamAnimate`, `_jamMove`).
+
+We show a puff of smoke coming out of the chimneys whenever the player jumps. This animation is stored inside the new `Block.cpp` class and is created through a series of actions, including a frame animation (_puffAnimation, _puffSpawn, _puffMove, _puffFade, and _puffScale). In `GameLayer.cpp`, when the _player dies, we run a few actions on a `_hat` sprite to make it rise in the air and drop down again, just to add some humor.
+
+### 使用`CCSprite`给动画添加纹理
+
+在上一章的工程中，我们将游戏屏划分为128像素的一个瓷砖（iPad retina屏）。The width and height properties of the `Block` objects are based on this measurement. So a building two tiles wide, and three tiles tall would have in effect 256 pixels in width and 384 pixels in height. A gap too would be measured this way, though its height is set to 0.
+
+The logic we use to texture the buildings will take these tiles into account.
+
+![](ch7-buildings.png)
+
+四种不同的建筑(_tile1, _tile2, _tile3, and _tile4)。
+
+```cpp
+    void Block::initBlock() {
+        _tile1 = CCSpriteFrameCache::sharedSpriteFrameCache()
+        	->spriteFrameByName ("building_1.png");
+        _tile2 = CCSpriteFrameCache::sharedSpriteFrameCache()
+        	->spriteFrameByName ("building_2.png");
+        _tile3 = CCSpriteFrameCache::sharedSpriteFrameCache()
+        	->spriteFrameByName ("building_3.png");
+        _tile4 = CCSpriteFrameCache::sharedSpriteFrameCache()
+        	->spriteFrameByName ("building_4.png");
+```
+
+两种屋顶的贴图(_roof1 and _roof2)：
+
+```cpp
+        _roof1 = CCSpriteFrameCache::sharedSpriteFrameCache()
+        	->spriteFrameByName ("roof_1.png");
+        _roof2 = CCSpriteFrameCache::sharedSpriteFrameCache()
+        	->spriteFrameByName ("roof_2.png");
+```
+
+Next we create and distribute the various CCSprite tiles that form our building:
+
+```cpp
+        // create tiles
+        int i;
+        _wallTiles = CCArray::createWithCapacity(20);
+        _wallTiles->retain();
+        _roofTiles = CCArray::createWithCapacity(5);
+        _roofTiles->retain();
+        CCSprite * tile;
+        // place CCSprite tiles （每个建筑物5列4行）
+        for (i = 0; i < 5; i++) {
+            tile = CCSprite::createWithSpriteFrameName("roof_1.png");
+            tile->setAnchorPoint(ccp(0, 1));
+            tile->setPosition(ccp(i * _tileWidth, 0));
+            tile->setVisible(false);
+            this->addChild(tile, kMiddleground, kRoofTile);
+            _roofTiles->addObject(tile);
+            for (int j = 0; j < 4; j++) {
+                tile = CCSprite::createWithSpriteFrameName
+                ("building_1.png");
+                tile->setAnchorPoint(ccp(0, 1));
+                tile->setPosition(ccp(i * _tileWidth, -1 * (_tileHeight * 0.47f + j * _tileHeight)));
+                tile->setVisible(false);
+                this->addChild(tile, kBackground, kWallTile);
+                _wallTiles->addObject(tile);
+            }
+        }
+```
+
+一个`Block`由20个存储在`_wallTiles`中的`CCSprite`和5个存储在`_roofTiles`中的`CCSprite`组成。即一个Block对象，5个瓷砖宽，4个瓷砖高。I made the decision that no building in the game would exceed this size. If you decide to change this, then here is where you will make your changes.
+
+`initBlock`还将创建5个烟囱精灵，放在屋顶上。These will be spread out later according to the building type and could be very easily turned into obstacles for our `_player`. We also create the animation actions for the puffs of smoke, here inside `initBlock`.
+
+Moving on to our new `setupBlock` method, this is where the unnecessary tiles and chimneys are turned invisible and where we spread out the visible chimneys. We begin the method as follows:
+
+```cpp
+    void Block::setupBlock (int width, int height, int type) {
+        this->setPuffing(false);
+        _type = type;
+        _width = width * _tileWidth;
+        // add the roof height to the final height of the block
+        _height = height * _tileHeight + _tileHeight * 0.49f;
+        this->setPositionY(_height);
+        CCSpriteFrame * wallFrame;
+        CCSpriteFrame * roofFrame = rand() % 10 > 6 ? _roof1 : _roof2;
+        int num_chimneys;
+        float chimneyX[] = {0,0,0,0,0};
+```
+
+Then based on building type, we give different x positions for the chimney sprites and determine the texture we'll use on the wall tiles.
+
+```cpp
+    switch (type) {
+    case kBlockGap:
+        this->setVisible(false);
+        return;
+    case kBlock1:
+        wallFrame = _tile1;
+        chimneyX[0] = 0.2f;
+        chimneyX[1] = 0.8f;
+        num_chimneys = 2;
+        break;
+    case kBlock2:
+        wallFrame = _tile2;
+        chimneyX[0] = 0.2f;
+        chimneyX[1] = 0.8f;
+        chimneyX[2] = 0.5f;
+        num_chimneys = 3;
+        break;
+    case kBlock3:
+        wallFrame = _tile3;
+        chimneyX[0] = 0.2f;
+        chimneyX[1] = 0.8f;
+        chimneyX[2] = 0.5f;
+        num_chimneys = 3;
+        break;
+    case kBlock4:
+        wallFrame = _tile4;
+        chimneyX[0] = 0.2f;
+        chimneyX[1] = 0.5f;
+        num_chimneys = 2;
+        break;
+    }
+```
+
+The method then proceeds to position the visible chimneys. We finally move to texturing the building. The logic to texture the roof and wall tiles is the same; for instance, here's how the walls are tiled by changing the texture of each CCSprite wall through the `setDisplayFrame` method, and then turning unused tiles invisible:
+
+```cpp
+        count = _wallTiles->count();
+        for (i = 0; i < count; i++) {
+            tile = (CCSprite *) _wallTiles->objectAtIndex(i);
+            if (tile->getPositionX() < _width && tile
+                ->getPositionY() > -_height) {
+                tile->setVisible(true);
+                tile->setDisplayFrame(wallFrame);
+            } else {
+            	tile->setVisible(false);
+            }
+        }
+    }
+```
+
+When we instantiate a `Block` in `initBlock`, we create a 5 x 4 building made out of wall tiles and roof tiles, each a CCSprite. And when we need to turn this building into a 3 x 2 building, or 4 x 4 building, or whatever, we simply turn the excess tiles invisible at the end of setupBlock.
+
+### Containers within containers
+
+Before we move to the parallax effect logic, there is something I wanted to talk about related to the layering of our `_gameBatchNode`, which you'll recall is a `CCSpriteBatchNode` object.
+
+If you go to the static `create` method inside `Terrain.cpp`, you will notice that the object is still created with a reference to a `blank.png` texture:
+
+```cpp
+terrain->initWithSpriteFrameName("blank.png")
+```
+
+In fact the same 1x1 pixel image used in the test version is now in our sprite sheet, only this time the image is transparent. This is a bit of a hack, but necessary, **因为如果一个精灵的纹理源与创建Batch node的源相同，则精灵只能被放入batch node**。Now `Terrain` is just a container, it has no texture. But by setting its "blank" texture to something contained in our sprite sheet, we can place `_terrain` inside `_gameBatchNode`. The same thing is done with the `Block` class, which now, in the final version of the game, behaves as another textureless container. It will contain the various CCSprites for the wall and roof tiles as well as chimneys and puff animations as its children.
+
+The organization of the layers inside our `_gameBatchNode` object can seem complex and at times even absurd. After all in the same node we have a foreground "layer" of lampposts, a middle-ground "layer" of buildings, and a background "layer" containing a cityscape. The player is also placed in the background but on top of the cityscape. And not only that but all three layers are moved at different speeds to create our parallax effect, and all this inside the same `CCSpriteBatchNode`! But the amount of code this arrangement saves us justifies any confusion we might have at times keeping the batch node organized. Now we can animate the puffs of smoke, for instance, and never worry about keeping them "attached" to their respective chimney sprite as the terrain scrolls to the left. **The container will take care of keeping things together**.
+
+### 创建视察滚动特效
+
+一个特殊的`CCNode`：`CCParallaxNode`。`CCParallaxNode` helps create parallax effect with finite layers, or finite scrolling, meaning you can use it if your game screen has a limit to how much it can scroll each way. Implementing `CCParallaxNode` to a game screen that can scroll indefinitely, such as the one in Victorian Rush Hour, usually requires more effort than it takes to build your own effect.
+
+A parallax effect is created by moving objects at different depths by different speeds. The farther a layer appears from the screen, the slower its speed should be. In a game this usually means that the player sprite's speed is fractioned and sent to all the layers that appear behind it, and multiplied for the layers that appear in front of the player sprite.
+
+游戏中的时差滚动效果发生在主循环：
+
+```cpp
+    // update parallax
+    if (_player->getVector().x > 0) {
+    	_background->setPositionX(_background->getPosition().x - _player->getVector().x * 0.25f);
+```
+
+先移动`_background`精灵，which contains the cityscape texture repeated three times along the x axis, 速度是`_player`的四分之一。
+
+The `_background` scrolls to the left, and as soon as the first cityscape texture is off the screen, we shift the entire `_background` container to the right at precisely the spot where the second cityscape texture would appear if allowed to continue. We get this value by subtracting where the sprite would be from the total width of the sprite:
+
+```cpp
+    float diffx;
+    if (_background->getPositionX() < -_background ->getContentSize().width) {
+        diffx = fabs(_background->getPositionX()) - _background->getContentSize().width;
+        _background->setPositionX(-diffx);
+    }
+```
+
+So in effect we only ever scroll the first texture sprite inside the container.
+
+A similar process is repeated with the `_foreground` sprite and the three lamppost sprites it contains, only the `_foreground` moves at four times the speed of the `_player` sprite:
+
+```cpp
+    _foreground->setPositionX(_foreground->getPosition().x - _player->getVector().x * 4);
+    if (_foreground->getPositionX() < -_foreground ->getContentSize().width * 4) {
+        diffx = fabs(_foreground->getPositionX())
+			- _foreground ->getContentSize().width * 4;
+        _foreground->setPositionX(-diffx);
+    }
+```
+
+And we also employ our cloud sprites in the parallax effect. Since they appear behind the cityscape, so even farther away from the _player, the clouds move at an even lower rate (0.15):
+
+```cpp
+        int count = _clouds->count();
+        CCSprite * cloud;
+        for (int i = 0; i < count; i++) {
+            cloud = (CCSprite *) _clouds->objectAtIndex(i);
+            cloud->setPositionX(cloud->getPositionX() - _player
+            	->getVector().x * 0.15f);
+            if (cloud->getPositionX() + cloud
+            	->boundingBox().size.width * 0.5f < 0 )
+            	cloud->setPositionX(_screenSize.width + cloud
+            		->boundingBox().size.width * 0.5f);
+        }
+    }
+```
+
+### 添加游戏菜单
+
+使用一种特殊的层`CCLayer`——`CCMenu`。
+
+`CCMenu`是`CCMenuItemSprite`的集合。The layer is responsible for distributing its items as well as tracking touch events on all items.
 
 
+In GameLayer.cpp, scroll down to the `createGameScreen` method. We'll add the new logic to the end of this method. First, create the menu item for our start game button:
 
+```cpp
+    CCSprite * menuItemOn;
+    CCSprite * menuItemOff;
+    menuItemOn = CCSprite::createWithSpriteFrameName("btn_new_on.png");
+    menuItemOff = CCSprite::createWithSpriteFrameName("btn_new_off.png");
+    CCMenuItemSprite * starGametItem = CCMenuItemSprite::create(
+        menuItemOff,
+        menuItemOn,
+        this,
+        menu_selector(GameLayer::startGame)
+    );
+```
 
+Next we add the tutorial button:
+
+```cpp
+    menuItemOn = CCSprite::createWithSpriteFrameName("btn_howto_on.png");
+    menuItemOff = CCSprite::createWithSpriteFrameName("btn_howto_off.png");
+    CCMenuItemSprite * howToItem = CCMenuItemSprite::create(
+        menuItemOff,
+        menuItemOn,
+        this,
+        menu_selector(GameLayer::showTutorial));
+```
+
+Then it's time to create the menu:
+
+```cpp
+    _mainMenu = CCMenu::create(howToItem, starGametItem, NULL);
+    _mainMenu->alignItemsHorizontallyWithPadding(120);
+    _mainMenu->setPosition(ccp(_screenSize.width * 0.5f, _screenSize.height * 0.54));
+    this->addChild(_mainMenu, kForeground);
+```
+
+对齐方式：`alignItemsHorizontally`, `alignItemsHorizontallyWithPadding`, `alignItemsVertically`, `alignItemsVerticallyWithPadding`, `alignItemsInColumns`, `alignItemsInRows`。The items items appear in the order they are passed to the `CCMenu` constructor.
+
+回调函数：
+
+```cpp
+    void GameLayer::startGame (CCObject* pSender) {
+        _tutorialLabel->setVisible(false);
+        _intro->setVisible(false);
+        _mainMenu->setVisible(false);
+        _jam->runAction(_jamMove);
+        SimpleAudioEngine::sharedEngine()->playEffect("start.wav");
+        _terrain->setStartTerrain ( true );
+        _state = kGamePlay;
+    }
+    void GameLayer::showTutorial (CCObject* pSender) {
+        _tutorialLabel->setString("Tap the screen to make the player jump.");
+        _state = kGameTutorialJump;
+        _jam->runAction(_jamMove);
+        _intro->setVisible(false);
+        _mainMenu->setVisible(false);
+        SimpleAudioEngine::sharedEngine()->playEffect("start.wav");
+        _tutorialLabel->setVisible(true);
+    }
+```
+
+### 添加教程
+
+The unspoken rule of game tutorials is: make it playable. And that's what we'll attempt to do here.
+
+We'll create a game state for our tutorial, and we'll add a `CCLabelTTF` object to our stage, and make it invisible unless the tutorial state is on. We'll use the `CCLabelTTF` to display our tutorial text.
+
+Back to the `createGameScreen` method, add the following lines to create our `CCLabelTTF` object:
+
+```cpp
+    _tutorialLabel = CCLabelTTF::create("", "Times New Roman", 80);
+    _tutorialLabel->setPosition(ccp(_screenSize.width * 0.5f,
+    	_screenSize.height * 0.6f) );
+    this->addChild(_tutorialLabel, kForeground);
+    _tutorialLabel->setVisible(false);
+```
+
+We add four states to our enumerated list of game states. These will represent the different steps in our tutorial:
+
+```cpp
+    typedef enum {
+        kGameIntro,
+        kGamePlay,
+        kGameOver,
+        kGameTutorial,
+        kGameTutorialJump,
+        kGameTutorialFloat,
+        kGameTutorialDrop
+    } GameState;
+```
+
+The first tutorial state, `kGameTutorial`, acts as a separator from all other game states. So if the value for `_state` is greater than kGameTutorial, we are in tutorial mode.
+
+Depending on the mode, we display a different message and we wait on a different condition to change to a new tutorial state.
+
+If you recall, our `showTutorial` method starts with a message telling the player to tap the screen to make the sprite jump:
+
+```cpp
+	_tutorialLabel->setString("Tap the screen to make the player jump.");
+	_state = kGameTutorialJump;
+```
+
+Then in the `update` method, at the end of the method, we start adding the lines that will display the rest of our tutorial information. First if the player sprite is in the midst of a jump and has just begun falling:
+
+```cpp
+    if (_state > kGameTutorial) {
+        if (_state == kGameTutorialJump) {
+        	if (_player->getState() == kPlayerFalling && _player
+        		->getVector().y < 0) {
+                _player->stopAllActions();
+                _jam->setVisible(false);
+                _jam->stopAllActions();
+                _running = false;
+                _tutorialLabel->setString("While in the air, tap the screen to float.");
+		        _state = kGameTutorialFloat;
+    		}
+```
+
+As you can see, we let the player know that another tap will open the umbrella and cause the sprite to float.
+
+Next as the sprite is floating, when it reaches a certain distance from the buildings, we inform the player that another tap will close the umbrella and cause the sprite to drop:
+
+```cpp
+        } else if (_state == kGameTutorialFloat) {
+            if (_player->getPositionY() < _screenSize.height * 0.95f) {
+                _player->stopAllActions();
+                _running = false;
+                _tutorialLabel->setString("While floating, tap the screen again to drop.");
+                _state = kGameTutorialDrop;
+            }
+
+After that the tutorial is completed, and we show the message that the player may start the game:
+
+```cpp
+        } else {
+            _tutorialLabel->setString("That's it. Tap the screen to play.");
+            _state = kGameTutorial;
+        }
+    }
+```
+
+Whenever we change a tutorial state, we pause the game momentarily and wait for a tap. We handle the rest of our logic inside `ccTouchesBegan`, so we'll add that next.
+
+Inside `ccTouchesBegan`, in the switch statement, add the following cases:
+
+```cpp
+    case kGameTutorial:
+        _tutorialLabel->setString("");
+        _tutorialLabel->setVisible(false);
+        _terrain->setStartTerrain ( true );
+        _state = kGamePlay;
+        break;
+    case kGameTutorialJump:
+        if (_player->getState() == kPlayerMoving) {
+            SimpleAudioEngine::sharedEngine()
+            ->playEffect("jump.wav");
+            _player->setJumping(true);
+        }
+        break;
+    case kGameTutorialFloat:
+        if (!_player->getFloating()) {
+            _player->setFloating (true);
+            _running = true;
+        }
+        break;
+    case kGameTutorialDrop:
+        _player->setFloating (false);
+        _running = true;
+        break;
+```
 
 
 
