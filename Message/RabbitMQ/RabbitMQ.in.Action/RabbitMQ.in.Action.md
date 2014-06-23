@@ -7,20 +7,20 @@ RabbitMQ更像是联邦快递，它是一个递送服务。
 
 ### 2.1 消费者和生产者
 
-消息有两部分：负载和标签。标签描述负载，包括一个exchange名和一个可选的主题标签。RabbitMQ根据标签确定收信人。
+消息有两部分：负载和标签。标签描述负载，包括一个exchange名和一个可选的主题标签。RabbitMQ根据**标签**确定收信人。
 
-消费者只会收到消息的负载，不会得到标签——甚至不知道生产者是谁。生产者可以选择将自己的标识放入负载。
+消费者只会收到消息的负载，**不会得到标签**——甚至不知道生产者是谁。生产者可以选择将自己的标识放入负载。
 
-收发消息前先要建立**信道**（Channel）。信道是一个真实TCP连接中的虚拟连接。每个信道有自己的唯一ID（AMQP库会帮你记住）。**一个TCP连接上可以有多个信道**，数量不限制。此举可以降低建立和销毁TCP的开销，以及，在一个TCP连接上创建新信道比创建一个新的TCP连接速度快得多。
+收发消息前先要建立**信道**（Channel）。信道是一个TCP连接中的虚拟连接。每个信道有自己的唯一ID（AMQP库会帮你记住）。**一个TCP连接上可以有多个信道**，数量不限制。此举可以降低建立和销毁TCP的开销，以及，在一个TCP连接上创建新信道比创建一个新的TCP连接速度快得多。
 
 ### 2.2 队列
 
-AMQP消息路由需要三部分：exchange、队列和绑定（bindings）。The exchanges are where producers publish their messages；队列是消息最终的归宿，消息在这里等待被消费；绑定决定消息如何从exchange路由到队列。
+AMQP消息路由需要三部分：exchange、队列和绑定（bindings）。Exchanges是生产者发布消息的地方；队列是消息最终的归宿，消息在这里等待被消费；绑定决定消息如何从exchange路由到队列。
 
 消费者接收消息有两种方式：
 
 - 通过AMQP命令`basic.consume`订阅。该命令将信道置为接收模式（直到解除订阅）。在订阅过程中，在消费完一个消息后，你将自动从队列中收到下一条消息。You should use `basic.consume` if your consumer is processing many messages out of a queue and/or needs to automatically receive messages from a queue as soon as they arrive.
-- 有时，只需要从队列中接收一个消息（后解除订阅）。此时，使用`basic.get`命令。不要在一个循环中使用`basic.get`。需要收取多个消息时，要用`basic.consume`。
+- 有时，只需要从队列中接收一个消息（然后解除订阅）。此时使用`basic.get`命令。不要在一个循环中使用`basic.get`。需要收取多个消息时，要用`basic.consume`。
 
 消息进入队列时，若无消费者连接，则消息等在队列中，待消费者连接后发出。
 
@@ -28,39 +28,37 @@ AMQP消息路由需要三部分：exchange、队列和绑定（bindings）。The
 
 消费者收到的所有消息都需要被ACK：消费者需要显式发送AMQP命令`basic.ack`，或者在订阅队列时设置`auto_ack`参数为true。When `auto_ack` is specified, RabbitMQ will automatically consider the message acknowledged by the consumer as soon as **the consumer has** received it. 注意，消费者ACK消息，只是向RabbitMQ确认，于是消息可以从RabbitMQ队列中移除。与生产者无关，并不会通知生产者消息被消费。
 
-如果消费者在收到消息后，没有ACK，就断开连接（或解除订阅）。RabbitMQ会认为该消息没有被递送成功，会递送给下一个订阅者。
+如果消费者在收到消息后，没有ACK就断开连接（或解除订阅）。RabbitMQ会认为该消息没有被递送成功，会递送给下一个订阅者。
 
 如果你的APP有Bug，忘记ACK，Rabbit不会再递送消息给你。因为只有你ACK之后，Rabbit才会觉得你已准备好接收下一条。当处理大的消息时，你可以延迟ACK直到处理完。在这段时间，RabbitMQ不会递送消息，于是你的应用不会过载。
 
 有时在收到后，你需要拒绝，而不是ACK消息。比如当你觉得自己不无法处理该消息。拒绝消息有两种方式（需要在ACK之前）：
 
 * 断开与RabbitMQ服务器的连接。RabbitMQ会自动将消息再递送给其他消费者。任何版本的RabbitMQ都支持该方法。只是有额外开销。
-* RabbitMQ 2.0.0 之后支持 AMQP 命令`basic.reject`。如果调用时，`requeue`参数为true，则RabbitMQ将重新递送给其他消费者。设置`requeue`为false，则RabbitMQ只是从队列中移除消息，不再递送。
-
+* RabbitMQ 2.0.0之后支持 AMQP 命令`basic.reject`。如果调用时`requeue`参数为true，则RabbitMQ将重新递送给其他消费者。设置`requeue`为false，则RabbitMQ只是从队列中移除消息，不再递送。
 
 > 为什么`basic.reject`并设置`requeue`参数为false，而不是直接ACK消息。因为 RabbitMQ 将来会支持一种特殊的 “dead letter” 队列，用于防止被拒绝且不被递送的消息。A dead letter queue lets you inspect rejected/undeliverable messages for issues. If you want your app to automatically take advantage of the dead letter queue feature when it’s added to Rabbit, use the rejectcommand with requeueset to false.
 
-如何创建队列？消费者和生产者都可以通过`queue.declare`创建队列。But consumers can’t declare a queue while subscribed to another one on the same channel. They must first unsubscribe in order to place the channel in a “`transmit`” mode. 创建队列时，一般要指定伊特名字。否则，Rabbit会分配一个随机名，并作为`queue.declare`的返回值。(this is useful when using temporary “anonymous” queues for RPC-over-AMQPapplications, as you’ll see in chapter 4).
+如何创建队列？消费者和生产者都可以通过`queue.declare`创建队列。但消费者无法在同一信道上已有一个订阅队列的情况下，声明另一个队列。必须先解除订阅，将信道职位“`transmit`”状态。创建队列时，一般要指定一个名字。否则Rabbit会分配一个随机名，并作为`queue.declare`的返回值。(this is useful when using temporary “anonymous” queues for RPC-over-AMQPapplications, as you’ll see in chapter 4).
 
 创建队列时的选项：
 
 - `exclusive`：若设为true，则队列变成私有，只有你的App可以消费。
 - `auto-delete`：在最后一个消费者解除订阅后自动删除队列。
 
-当你想要声明的队列已存在时，只要声明的参数与存在的队列匹配，Rabbit什么也不会做，直接返回成功。如果参数不匹配，会返回失败。如果你只是想检查队列是否存在，可以调用`queue.declare`时，`passive`选项设为true。此时，如果队列存在，`queue.declare`会返回成功。但如果队列不存在，返回错误。
+当你想要声明的队列已存在时，只要声明的参数与存在的队列匹配，Rabbit直接返回成功，什么也不会做。如果参数不匹配会返回失败。如果你只是想检查队列是否存在，可以调用`queue.declare`时，`passive`选项设为true。此时，如果队列存在，`queue.declare`会返回成功。但如果队列不存在，返回错误。
 
-
-既然消费者和生产者都能创建队列，那么该由谁负责创建？不一定。首先，消费者要订阅，必须现有队列存在。另一方面，由于如果发布到到exchange的消息没有下一站的队列，则消息会被丢弃。如果丢弃消息不可接受，则应由生产者创建队列。
+既然消费者和生产者都能创建队列，那么该由谁负责创建？不一定。首先，消费者要订阅，必须先有队列存在。另一方面，**由于如果发布到到exchange的消息没有下一站的队列，则消息会被丢弃**。**如果丢弃消息不可接受，则应由生产者创建队列**。
 
 ### 2.3 exchanges 和 bindings
 
-消息送往队列前，需要先发到exchange。然后根据特定规则，RabbitMQ决定递送到哪个队列。规则称为routing keys。A queue is said to be bound to an exchange by a routing key. 向broker发送的消息都带一个routing key（即使为空），将与bindings的routing keys绑定。如果没有匹配的绑定，消息送入黑洞。
+消息送往队列前先被发到exchange。然后根据特定规则，RabbitMQ决定递送到哪个队列。规则称为**routing keys**。A queue is said to be bound to an exchange by a routing key. 向broker发送的消息都带一个**routing key**（即使为空），将与bindings的routing keys绑定。如果没有匹配的绑定，消息送入黑洞。
 
-协议提供四种exchanges：direct, fanout, topic, and headers，实现不同的路由算法。
+协议提供四种exchanges：direct, fanout, topic, headers，实现不同的路由算法。
 
 **headers exchange**，匹配AMQP消息中的一个头，而不是routing key。其他方面与direct exchange一致，但性能差很多。因此实际很少被使用。
 
-**direct exchange**，如果路由键匹配，则消息会被递送到响应队列。broker必须实现direct exchange，并提供一个默认exchange，其名字为空。When a queue is declared, it’ll be automatically bound to that exchange using the queue name as routing key.
+**direct exchange**，如果路由键匹配，则消息会被递送到相应队列。broker必须实现direct exchange，并提供一个**默认exchange，其名字为空**。When a queue is declared, it’ll be automatically bound to that exchange using the queue name as routing key.
 ```php
 $channel->basic_publish($msg, '','queue-name');
 ```
@@ -71,7 +69,9 @@ When the default direct exchange isn’t enough for your application’s needs, 
 
 ![](fanout-exchange-flow.png)
 
-**fanout exchange**, 将消息多播到多个绑定的队列。The messaging pattern is simple: when you send a message to a fanout exchange, it’ll be delivered to all the queues attached to this exchange. This allows you to react in different ways based on only one message. For example, a web application may require that when a user uploads a new picture, the user’s own image gallery cache must be  cleared and also they should be rewarded with some points. You can have two queues bound to the upload-pictures exchange, one with consumers clearing the cache and the other one for increasing user points. Also from this scenario, you can see the advantage of using exchanges, bindings, and queues over publishing messages directly to queues. Let’s say that the first requirement of the application was that after a picture was uploaded to the website, the user gallery cache was cleared. You can easily implement that by using just one queue, but what happens when the product owner comes to you with the new feature of giving awards to users for their actions? If you’re sending messages directly to queues, then you have to modify the publisher’s code to send message to the new points queue. If you’ve been using fanout exchanges, the only thing that you have to do is to write the code for your new consumer and then declare and bind a new queue to the fanout exchange. As we said earlier, the publisher’s code is completely decoupled from the consumer’s code, allowing you to increase your application functionality with ease.
+**fanout exchange**, 将消息多播到多个绑定的队列。当消息发送到fanout exchange，它会被递送到所有与此exchange绑定的队列。
+
+使用Exchange、队列两级比只使用队列的好处是：例如，加入一个消息要触发三个处理。则这三个处理可以由三个绑定到同一个Exchange的队列构成。将来如果要再增加处理，只需要再绑定一个队列。如果有生产者直接发给队列，则从发送三个队列到发送到四个队列需要生产者改代码。
 
 ![](topic-exchange-flow.png	)
 
@@ -100,16 +100,13 @@ $channel->queue_bind('all-logs', 'logs-exchange', '#');
 
 `all-logs`队列将收到所有消息。Unlike the `*` operator, which considers `.` in the routing key as a part delimiter, the `#` operator has no concept of parts and considers any `.` characters as part of the key to match.
 
-
 ### 2.4 虚拟机
 
-Within every RabbitMQ server is the ability to create virtual  message brokers called virtual hosts (vhosts). Each one is essentially a mini-RabbitMQ server with its own queues, exchanges, and bindings … and, more important, its own permissions. 于是多个应用可以安全的使用同一个 RabbitMQ 服务器，不必担心一个应用破坏另一个应用的队列。还能避免队列和Exchange命令的冲突。
+Within every RabbitMQ server is the ability to create virtual message brokers called **virtual hosts (vhosts)**. Each one is essentially a mini-RabbitMQ server with its own queues, exchanges, and bindings … and, more important, its own permissions. 于是多个应用可以安全的使用同一个 RabbitMQ 服务器，不必担心一个应用破坏另一个应用的队列。还能避免队列和Exchange命令的冲突。
 
-连接时需要指定连哪个虚拟机。RabbitMQ自带一个默认的虚拟机，称为`/`。默认通过用户名*guest*和密码*guest*访问（改密码见第3章）。AMQP未规定权限粒度是虚拟机i还是服务器。对于RabbitMQ，是每个虚拟机一个权限设置。
+连接时需要指定连哪个虚拟机。RabbitMQ自带一个默认的虚拟机，称为`/`。默认通过用户名*guest*和密码*guest*访问（改密码见第3章）。AMQP未规定权限粒度是虚拟机还是服务器。对于RabbitMQ，是每个虚拟机一个权限设置。
 
-
-在Rabbit创建用户后，为它至少分配一个虚拟机，则它只能访问此虚拟机的队列、exchanges、绑定。Also, 虚拟机之前的分离是绝对的。你不能把一个虚拟机上的exchange跟另一台虚拟机上的队列绑定。Hence, we highly recommend identifying the common functionality groups in your infrastructure (such as
-web logging) and giving each one its own vhost. Also, keep in mind that when you create a vhost on a RabbitMQ cluster, it’s created across the entire cluster.
+在Rabbit创建用户后，为它至少分配一个虚拟机，则它只能访问此虚拟机的队列、exchanges、绑定。Also, 虚拟机之间的分离是绝对的。你不能把一个虚拟机上的exchange跟另一台虚拟机上的队列绑定。Hence, we highly recommend identifying the common functionality groups in your infrastructure (such as web logging) and giving each one its own vhost. Also, keep in mind that when you create a vhost on a RabbitMQ cluster, it’s created across the entire cluster.
 
 虚拟机和权限是AMQP的primitives，不能通过像队列一样 AMQP 协议创建。RabbitMQ中，创建需要使用`./sbin/rabbitmqctl`工具。创建虚拟机需要运行`rabbitmqctl add_vhost [vhost_name]`。删除虚拟机：`rabbitmqctl delete_vhost [vhost_name]`。列出服务器上的虚拟机：`rabbitmqctl list_vhosts`。
 ```
@@ -121,7 +118,7 @@ sycamore
 ...done.
 ```
 
-> Typically you’ll run `rabbitmqctl` directly on the server with the RabbitMQ node you want to manage. But you can also pass  the `-n rabbit@[server_name]` option before any command to manage a remote RabbitMQ node. The node identifier (rabbit@[server_name]) is split into two parts at the `@`: the left half is the Erlang application name and will almost always be rabbit, and the right half is the server hostname or IPaddress. You need to make sure the server running the Rabbit node and the workstation you’re running `rabbitmqctl` on have the same Erlang cookie installed. For more info on Erlang cookies, check out section 3.4.1.
+> Typically you’ll run `rabbitmqctl` directly on the server with the RabbitMQ node you want to manage. But you can also pass the `-n rabbit@[server_name]` option before any command to manage a remote RabbitMQ node. The node identifier (rabbit@[server_name]) is split into two parts at the `@`: the left half is the Erlang application name and will almost always be rabbit, and the right half is the server hostname or IPaddress. You need to make sure the server running the Rabbit node and the workstation you’re running `rabbitmqctl` on have the same Erlang cookie installed. For more info on Erlang cookies, check out section 3.4.1.
 
 ### 2.5 Durability、持久化、事务、发送确认
 
