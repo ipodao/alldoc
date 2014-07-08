@@ -26,7 +26,7 @@ C++中， **名字有作用域(§ 2.2.4)，对象有生命周期**。
 
 参数是自动对象。Storage for the parameters is allocated when the function begins. 参数在函数体的作用域内定义。
 
-对应局部变量的自动对象，如果定义中不含初始化器，则它们将被默认初始化(§ 2.2.1)。即未初始化的内建类型的局部变量的值是未定的。
+对应局部变量的自动对象，如果定义中不含初始化器，则它们将被**默认初始化**(§ 2.2.1)。即未初始化的内建类型的局部变量的值是未定的。
 
 ##### Local static Objects
 
@@ -43,7 +43,7 @@ It can be useful to have a local variable whose lifetime continues across calls 
     int main()
     {
         for(size_t i = 0; i != 10; ++i)
-        	cout << count_calls() << endl;
+            cout << count_calls() << endl;
         return 0;
     }
 ```
@@ -76,7 +76,7 @@ $ CC factMain.cc fact.cc -o main # generates main or main.exe
 
 其中CC是编译器。
 
-改变某个文件后，期望只重新编译改变的文件。Most compilers provide a way to separately compile each file. 此过程常擦汗女生一个`.obj`(Windows)或`.o`(UNIX)文件。
+改变某个文件后，期望只重新编译改变的文件。Most compilers provide a way to separately compile each file. 此过程常产生一个`.obj`(Windows)或`.o`(UNIX)文件。
 
 The compiler lets us *link* object files together to form an executable. On the system we use, we would separately compile our program as follows:
 
@@ -95,7 +95,7 @@ $ CC factMain.o fact.o -o main # generates main or main.exe
 
 #### 6.2.1. 按值传递
 
-> 熟悉C的程序员常通过指针访问函数外的对象，但C++程序员一般使用引用。
+> 熟悉C的程序员常通过指针访问函数外的对象，**但C++程序员一般使用引用**。
 
 如果参数是指针，也是按值传递——指针值被拷贝。于是形参和实现指向同一个对象。
 
@@ -171,7 +171,7 @@ $ CC factMain.o fact.o -o main # generates main or main.exe
     find_char("Hello World!", 'o', ctr);
 ```
 
-引用版本的`reset`方法只能接收`int`类型的对象。不能传字面量，一个求值结果为`int`的表达式，需要转换的对象，或`const int`对象。Similarly, we may pass only an int* to the pointer version of reset(§ 6.2.1). 但我们可以将一个字面量传给`find_char`(§ 6.2.2)。因为形参是到常量的引用。
+引用版本的`reset`方法只能接收`int`类型的对象。不能传字面量，一个求值结果为`int`的表达式，需要转换的对象，或`const int`对象。Similarly, we may pass only an `int*` to the pointer version of reset(§ 6.2.1). 但我们可以将一个字面量传给`find_char`(§ 6.2.2)。因为形参是到常量的引用。
 
 ##### 尽量使用到常量的引用
 
@@ -204,10 +204,8 @@ $ CC factMain.o fact.o -o main # generates main or main.exe
 
 ```cpp
     void print(const int*);
-    void print(const int[]); // shows the intent that the function takes an
-    array
-    void print(const int[10]); // dimension for documentation purposes (at
-    best)
+    void print(const int[]); // shows the intent that the function takes an array
+    void print(const int[10]); // dimension for documentation purposes (at best)
 ```
 
 这三个声明是等价的。每个函数实际接受的参数都是`const int*`。因此实参只要是`const int*`：
@@ -271,7 +269,7 @@ $ CC factMain.o fact.o -o main # generates main or main.exe
 形参可以是到数组的引用。
 
 ```cpp
-	// ok: parameter is a reference to an array; the dimension is part of the type
+	// 注意the dimension is part of the type
     void print(int (&arr)[10])
     {
         for(auto elem : arr)
@@ -326,7 +324,7 @@ C++还有一种特殊的参数类型**ellipsis**，可以用于传递数量可�
 	initializer_list<int> li; // initializer_list of ints
 ```
 
-与`vector`不同的是，`initializer_list`中的值总是常量；没有办法`initializer_list`中的元素的值。We can write our function to produce error messages from a varying number of arguments as follows:
+与`vector`不同的是，`initializer_list`中的值总是常量；没有办法改变`initializer_list`中的元素的值。We can write our function to produce error messages from a varying number of arguments as follows:
 
 ```cpp
     void error_msg(initializer_list<string> il)
@@ -415,7 +413,7 @@ The first form specifies the type(s) for some of foo’s parameters. Arguments t
         string ret;
         // transform ret in some way
         if (!ret.empty())
-        	return ret;  // WRONG: returning a reference to a local object!
+        	return ret; // WRONG: returning a reference to a local object!
         else
         	return "Empty"; // WRONG: "Empty" is a local temporary string
     }
@@ -427,7 +425,7 @@ The first form specifies the type(s) for some of foo’s parameters. Arguments t
 
 ##### 返回引用返回的是左值
 
-函数调用是左值还是右值取决于函数返回值类型。返回引用的函数调用是左值，否则是右值。如果引用非常量，则可以给函数调用赋值：
+函数调用是左值还是右值取决于函数返回值类型。返回**引用**的函数调用是左值，否则是右值。如果引用不是常量，则可以给函数调用赋值：
 
 ```cpp
     char &get_val(string &str, string::size_type ix)
@@ -510,8 +508,8 @@ may we mention them in usingdeclarations.
 
 ```cpp
     int arr[10];  // arr is an array of ten ints
-    int *p1[10];  // p1 is an array of ten pointers
-    int (*p2)[10] = &arr; // p2 points to an array of ten ints
+    int *p1[10];  // p1是数组，10个指针
+    int (*p2)[10] = &arr; // p2是指针，指向具有10个元素的数组
 ```
 
 此时：
@@ -519,7 +517,7 @@ may we mention them in usingdeclarations.
 ```cpp
 	Type(*function(parameter_list))[dimension]
 ```
-As a concrete example, the following declares funcwithout using a type alias:
+As a concrete example, the following declares `func` without using a type alias:
 
 ```cpp
 	int (*func(int i))[10];
@@ -550,6 +548,121 @@ As a concrete example, the following declares funcwithout using a type alias:
 
 ### 6.4. 重载函数
 
+同一作用域、同名但参数列表不同的函数重载。例子：
+
+```cpp
+	void print(constchar *cp);
+	void print(const int *beg, const int *end);
+	void print(const int ia[], size_t size);
+```
+
+> The main function may not be overloaded.
+
+##### 定义重载函数
+
+We can call `lookup` passing a value of any of several types:
+
+```cpp
+Record lookup(const Account&);  // find by Account
+Record lookup(const Phone&);  // find by Phone
+Record lookup(const Name&);  // find by Name
+Account acct;
+Phone phone;
+Record r1 = lookup(acct);  // call version that takes an Account
+Record r2 = lookup(phone); // call version that takes a Phone
+```
+
+If the parameter lists of two functions match but the return types differ, then the second declaration is an error:
+
+```cpp
+    Record lookup(constAccount&);
+    bool lookup(const Account&);  // 错误
+```
+
+##### 两个参数类型是否不同
+
+看起来不同的两个参数列表其实是相同的：
+
+```cpp
+    // each pair declares the same function
+    Record lookup(const Account &acct);
+    Record lookup(const Account&); // parameter names are ignored
+    typedef Phone Telno;
+    Record lookup(const Phone&);
+    Record lookup(const Telno&); // Telno and Phone are the same type
+```
+
+##### 重载与常量参数
+
+As we saw in § 6.2.3, top-level const has no effect on the objects that can be passed to the function. 带顶级常量的参数与不带的参数等价：
+
+```cpp
+    Record lookup(Phone);
+    Record lookup(const Phone); // redeclares Record lookup(Phone)
+    Record lookup(Phone*);
+    Record lookup(Phone* const); // redeclares Record lookup(Phone*)
+```
+
+第一个和第二个声明等价。
+
+但使用低级常量的两个参数不等价：
+
+```cpp
+    // declarations for four independent, overloaded functions
+    Record lookup(Account &); // 引用指向的是非常量
+    Record lookup(const Account&); // 引用指向的是常量
+    Record lookup(Account *); // new function, takes a pointer to Account
+    Record lookup(const Account *); // new function, takes a pointer to const
+```
+
+Because there is no conversion (§ 4.11.2) from const, we can pass a const object (or a pointer to const) only to the version with a const parameter. Because there is a conversion to const, we can call either function on a nonconst object or a pointer to nonconst. However, as we’ll see in §6.6.1, the compiler will prefer the nonconst versions when we pass a nonconst object or pointer to nonconst.
+
+##### `const_cast`与重载
+
+In § 4.11.3 we noted that `const_cast`s are most useful in the context of overloaded functions. As one example, recall our `shorterString` function from §6.3.2:
+
+```cpp
+    // return a reference to the shorter of two strings
+    const string &shorterString(const string &s1, const string &s2)
+    {
+    	return s1.size() <= s2.size() ? s1 : s2;
+    }
+```
+
+函数返回到常量的引用。调用这个函数时，可以传入两个非常量的字符串，但返回的却是一个常量的字符串。但我们期望有一个`shorterString`版本，传入的字符串不是常量时，返回的也不是常量。可以通过`const_cast`实现：
+
+```cpp
+    string &shorterString(string &s1, string &s2)
+    {
+        auto &r = shorterString(const_cast<const string&>(s1),
+        	const_cast<const string&>(s2));
+        return const_cast<string&>(r);
+    }
+```
+
+#### 6.4.1. 重载与作用域
+
+> Ordinarily, it is a bad idea to declare a function locally. However, to explain how scope interacts with overloading, we will violate this practice and use local function declarations.
+
+重载与作用域没有特殊关系：与平时一样，如果我们在内层作用域声明一个名字，它将隐藏外层作用域的名字。**名字不会跨作用域重载**：
+
+```cpp
+    string read();
+    void print(const string &);
+    void print(double);  // 重载
+    void fooBar(int ival)
+    {
+        bool read = false; // 新作用域：隐藏外部的read
+        strings = read(); // 错误：read不再是函数
+        // 不好的做法：不要在内层作用域声明函数
+        void print(int); // 将隐藏外面的 所有 重载版本的print
+        print("Value:"); // 错误：隐藏了print(const string &)
+        print(ival); // 正确：print(int)是可见的
+        print(3.14); // 正确：调用的是print(int)；但print(double)被隐藏了
+    }
+```
+
+调用`print`时，当编译器在内层作用域找到声明时，便会忽略外层的名字。
 
 
 
@@ -557,3 +670,5 @@ As a concrete example, the following declares funcwithout using a type alias:
 
 
 
+
+	
