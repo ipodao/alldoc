@@ -1,3 +1,5 @@
+[toc]
+
 ## 6. 函数
 
 ### 6.1 函数基础
@@ -663,6 +665,360 @@ In § 4.11.3 we noted that `const_cast`s are most useful in the context of overl
 ```
 
 调用`print`时，当编译器在内层作用域找到声明时，便会忽略外层的名字。
+
+> In C++, name lookup happens before type checking.
+
+第一次调用传入字符串字面量，但作用域中唯一的`print`声明只接收`int`参数。字符串无法被转换为`int`，因此出错。`print(const string&)`已被隐藏，不考虑。
+
+### 6.5. 其他特性
+
+本节讲默认实参，内联和`constexpr`函数。
+
+#### 6.5.1. 默认实参
+
+```cpp
+    typedef string::size_type sz;
+    string screen(sz ht = 24, sz wid = 80, char backgrnd = ' ');
+```
+
+这里，为每个形参都提供给了一个默认值。若一个参数带默认值，则它后面的参数都要带。
+
+
+##### 调用带默认实参的函数
+
+下面的调用都是游戏的：
+```cpp
+    string window;
+    window = screen(); // equivalent to screen(24,80,' ')
+    window = screen(66);// equivalent to screen(66,80,' ')
+    window = screen(66, 256); // screen(66,256,' ')
+    window = screen(66, 256, '#'); // screen(66,256,'#')
+```
+
+调用时，只能省略最右端的实参。
+
+##### 默认实参声明
+
+尽管最常见的做法是在头文件中只声明函数一次。但声明多次也是合法的。但在一个作用域中，参数只能被指定一次默认值。后续的声明，可以向之前没有指定过默认值的参数指定默认值。As usual, defaults can be specified only if all parameters to the right already have defaults. For example, given
+
+```cpp
+// no default for the height or width parameters
+string screen(sz, sz, char = ' ');
+```
+
+不能改变之前声明的默认值：
+
+```cpp
+string screen(sz, sz, char = '*'); // error: redeclaration
+```
+
+但可以增加默认值：
+
+```cpp
+string screen(sz= 24, sz = 80, char);
+```
+
+> 最佳实践：默认实参一般应该在头文件中的函数声明中指定
+
+##### 默认实参初始化
+
+局部变量不能用于默认实参。除此之外，任何表达式都可以，只要类型能兼容：
+
+```cpp
+    // wd, def, ht必须位于函数之外（不是局部变量）
+    sz wd = 80;
+    char def = ' ';
+    sz ht();
+    string screen(sz = ht(), sz = wd, char = def);
+    string window = screen(); // calls screen(ht(), 80, ' ')
+```
+
+Names used as default arguments are resolved in the scope of the function declaration. 这些名字表示的值在调用时求值：
+
+```cpp
+    void f2()
+    {
+    	def = '*'; // 改变默认实参的值
+    	sz wd = 100; // 隐藏了外层的定义
+    	window= screen(); // calls screen(ht(), 80, '*')
+    }
+```
+
+调用`screen`时，`def`参数将使用更新后的值。但注意，重定义的内层的局部变量`wd`与默认实参无关，因此不影响调用。
+
+#### 6.5.2. 内联与`constexpr`函数
+
+##### inline函数避免函数调用的开销
+
+定义内联函数，在函数返回类型前加`inline`关键字：
+
+```cpp
+    inline const string & shorterString(const string &s1, const string &s2)
+    {
+        return s1.size() <= s2.size() ? s1 : s2;
+    }
+```
+
+> 内联只是给编译器的请求，编译器可以选择忽略
+
+Many compilers will not inline a recursive function. A 75-line function will almost surely not be expanded inline.
+
+##### `constexpr`函数
+
+`constexpr`函数是可以被用于常量表达式(§ 2.4.4)的函数。`constexpr`的限制是：The return type and the type of each parameter in a must be a literal type (§ 2.4.4), and the function body must contain exactly one return
+statement:
+
+```cpp
+	constexpr int new_sz() { return 42; }
+    constexpr int foo = new_sz(); // ok: foo is a constant expression
+```
+
+Here we defined `new_sz` as a `constexpr` that takes no arguments. The compiler can verify—at compile time—that a call to new_szreturns a constant expression, so we can use `new_sz` to initialize our `constexpr` variable, foo.
+
+When it can do so, the compiler will replace a call to a `constexpr` function with its resulting value. In order to be able to expand the function immediately, `constexpr` functions are implicitly inline.
+
+A `constexpr` function body may contain other statements so long as those statements generate no actions at run time. For example, a `constexpr` function may contain null statements, type aliases (§ 2.5.1), and using declarations.
+
+A `constexpr` functionis permitted to return a value that is not a constant:
+
+```cpp
+// scale(arg) isa constant expression if arg is a constant expression
+constexpr size_t scale(size_t cnt) { return new_sz() * cnt; }
+```
+
+The scale function will return a constant expression if its argument is a constant expression but not otherwise:
+Click hereto view code image
+int arr[scale(2)];// ok: scale(2) is a constant expression
+int i = 2;  // i is not a constant expression
+int a2[scale(i)];  // error: scale(i) is not a constant expression
+
+When we pass a constant expression—such as the literal 2—then the return is a constant expression. In this case, the compiler will replace the call to scale with the resulting value.
+
+If we call scalewith an expression that is not a constant expression—such as on the intobject i—then the return is not a constant expression. If we use scalein a context that requires a constant expression, the compiler checks that the result is a constant expression. If it is not, the compiler will produce an error message.
+
+> A constexpr functionis not required to return a constant expression.
+
+##### 将内联与`constexpr`函数放入头文件
+
+Unlike other functions, inline and `constexpr` functions may be defined multiple times in the program. After all, the compiler needs the definition, not just the declaration, in order to expand the code. However, all of the definitions of a given inline or constexprmust match exactly. As a result, inlineand constexpr functions normally are defined in headers.
+
+#### （未）6.5.3. 帮助调试
+
+### 6.6 函数匹配
+
+若重载的函数参数数量相同，且其中的有些参数的类型可以转换，则匹配并不是那么容易。例如：
+
+void f();
+voidf(int);
+void f(int, int);
+void f(double, double = 3.14);
+f(5.6); // calls void f(double, double)
+
+##### 找出候选和可行（Viable）函数
+
+第一步找出候选函数。候选函数要求名字匹配，且其声明在调用时可见。在上面的例子中，有四个候选函数`f`。
+
+第二步，匹配参数。参数匹配的函数是可行（viable）函数。要可行，函数的参数数量首先要匹配。其次，实参形参类型能够转换。根据参数数量可以去掉两个候选函数。
+
+在这个例子中，剩下的两个函数都是可行的：
+
+- `f(int)`可行，因为可以将`double`转换为`int`
+- `f(double, double)`可行，因为第二个参数有默认值，第一个参数精确匹配。
+
+> If there are no viable functions, the compiler will complain that there is no matching function.
+
+##### 寻找最佳匹配
+
+第三步，从可行（viable）函数中找最佳匹配。This process looks at each argument in the call and selects the viable function (or functions) for which the corresponding parameter best matches the argument. We’ll explain the details of “best” in the next section, but the idea is that the closer the types of the argument and parameter are to each other, the better the match.
+
+In our case, there is only one (explicit) argument in the call. That argument has type `double`. To call `f(int)`, the argument would have to be converted from double to int. The other viable function, `f(double, double)`, is an exact match for this argument. An exact match is better than a match that requires a conversion.
+
+Therefore, the compiler will resolve the call `f(5.6)` as a call to the function that has two double parameters. The compiler will add the default argument for the second, missing argument.
+
+##### 多个参数的函数匹配
+
+若实参有多个，情况将更加复杂。例如：
+```cpp
+f(42, 2.56);
+```
+
+The set of viable functions is selected in the same way as when there is only one parameter. The compiler selects those functions that have the required number of parameters and for which the argument types match the parameter types. In this case, the viable functions are `f(int, int)` and `f(double, double)`. The compiler then determines, argument by argument, which function is (or functions are) the best match. There is an overall best match if there is one and only one function for which
+
+- The match for each argument is no worse than the match required by any other viable function
+- There is at least one argument for which the match is better than the match provided by any other viable function
+- If after looking at each argument there is no single function that is preferable, then the call is in error. The compiler will complain that the call is ambiguous.
+
+In this call, when we look only at the first argument, we find that the function `f(int, int)` is an exact match. To match the second function, the intargument 42 must be converted to double. A match through a built-in conversion is “less good” than one that is exact. Considering only the first argument, `f(int, int)` is a better match than `f(double, double)`.
+
+When we look at the second argument, `f(double, double)` is an exact match to the argument 2.56. Calling `f(int, int)` would require that 2.56 be converted from doubleto int. When we consider only the second parameter, the function `f(double, double)` is a better match.
+
+The compiler will reject this call because it is ambiguous: Each viable function is a better match than the other on one of the arguments to the call. It might be tempting to force a match by explicitly casting (§ 4.11.3) one of our arguments.
+
+However, in well-designed systems, argument casts should not be necessary.
+
+> **Best Practices** Casts should not be needed to call an overloaded function. The need for a cast suggests that the parameter sets are designed poorly.
+
+#### （未）6.6.1. 实参类型转换
+
+In order to determine the best match, the compiler ranks the conversions that could be used to convert each argument to the type of its corresponding parameter.
+
+Conversions are ranked as follows:
+
+1. An exact match. An exact match happens when:
+	- The argument and parameter types are identical.
+    - The argument is converted from an array or function type to the corresponding pointer type. (§ 6.7 covers function pointers.)
+    - A top-level constis added to or discarded from the argument.
+2. Match through a const conversion (§ 4.11.2).
+3. Match through a promotion (§ 4.11.1).
+4. Match through an arithmetic (§ 4.11.1) or pointer conversion (§ 4.11.2).
+5. Match through a class-type conversion. (§ 14.9 covers these conversions.)
+
+### 6.7. 指向函数的指针
+
+与其他指针一样，函数指针指向一个特定的类型。函数的类型由返回值类型和参数类型决定。函数名不是函数类型的一部分。例如：
+
+```cpp
+    // compares lengths of two strings
+    bool lengthCompare(const string &, const string &);
+```
+
+的类型是`bool(const string&, const string&)`。声明函数指针时，指针名放在原来函数名的地方：
+
+```cpp
+    // pf是指针
+    bool (*pf)(const string &, const string &); // 为初始化指针
+```
+
+> 注意，`*pf`两端的括号是必要的。若省略，then we declare pfas a function that returns a pointer to bool
+
+##### 使用函数指针
+
+当将函数名用作值时，函数会被自动转换为指针。例如把`lengthCompare`赋给`pf`：
+
+```cpp
+    pf = lengthCompare; // pf现在指向一个名为lengthCompare的函数
+    pf = &lengthCompare; // 等价；取值是可选的
+```
+
+可以使用函数指针调用函数。不需要解引用指针：
+
+```cpp
+    bool b1 = pf("hello", "goodbye");  // calls lengthCompare
+    bool b2 = (*pf)("hello", "goodbye"); // equivalent call
+    bool b3 = lengthCompare("hello", "goodbye"); // equivalent call
+```
+
+There is no conversion between pointers to one function type and pointers to another function type. However, as usual, we can assign `nullptr`(§ 2.3.2, p. 53) or a **zero**-valued integer constant expression to a function pointer to indicate that the pointer does not point to any function:
+
+```cpp
+    string::size_type sumLength(const string&, const string&);
+    bool cstringCompare(const char*, const char*);
+    pf = 0; // ok: pf points to no function
+    pf = sumLength;  // error: return type differs
+    pf = cstringCompare; // error: parameter types differ
+    pf = lengthCompare;  // ok: function and pointer types match exactly
+```
+
+##### 指向重载函数
+
+```cpp
+    void ff(int*);
+    void ff(unsigned int);
+    void (*pf1)(unsigned int) = ff;  // pf1 points to ff(unsigned)
+```
+
+the compiler uses the type of the pointer to determine which overloaded function to use. The type of the pointer must match one of the overloaded functions exactly:
+
+```cpp
+    void (*pf2)(int)= ff; // error: no ff with a matching parameter list
+    double (*pf3)(int*) = ff; // error: return type of ff and pf3 don't match
+```
+
+##### 函数指针参数
+
+与数组一样(§ 6.2.4)，函数参数不能是一个函数，但可以是函数指针。函数参数看起来是一个函数类型，但实际会被当成指针：
+
+```cpp
+// 第三个参数是一个函数类型，会被当作函数指针
+void useBigger(const string &s1, const string &s2,
+	bool pf(const string &, const string &));
+// 等价声明，显式指明这是个指针
+void useBigger(const string &s1, const string &s2,
+	bool(*pf)(const string &, const string &));
+```
+
+将函数做实参，会被自动转换为指针：
+```cpp
+useBigger(s1, s2, lengthCompare);
+```
+
+利用类型别名(§ 2.5.1)、decltype(§ 2.5.3)可以简化代码 ：
+```cpp
+// Func and Func2 have function type
+typedef bool Func(const string&, const string&);
+typedef decltype(lengthCompare) Func2; // equivalent type
+// FuncP and FuncP2 have pointer to function type
+typedef bool(*FuncP)(const string&, const string&);
+typedef decltype(lengthCompare) *FuncP2;  // equivalent type
+```
+
+Here we’ve used `typedef` to define our types. Both Func and Func2 are function types, whereas FuncP and FuncP2 are pointer types. It is important to note that `decltype` returns the function type; the automatic conversion to pointer is not done. Because decltype returns a function type, if we want a pointer we must add the * ourselves. We can redeclare useBigger using any of these types:
+
+```cpp
+// equivalent declarations of useBigger using type aliases
+void useBigger(const string&, const string&, Func);
+void useBigger(const string&, const string&, FuncP2);
+```
+
+Both declarations declare the same function. In the first case, the compiler will automatically convert the function type represented by Functo a pointer.
+
+##### 返回函数指针
+
+与数组一样(§ 6.3.3)，我们不能返回一个函数类型但可以返回函数指针。且必须显式声明为指针类型。使用时，最好结合别名以简化书写：
+
+```cpp
+using F = int(int*, int); // F is a function type, not a pointer
+using PF = int(*)(int*, int); // PF is a pointer type
+```
+
+The thing to keep in mind is that, unlike what happens to parameters that have function type, the return type is not automatically converted to a pointer type. We must explicitly specify that the return type is a pointer type:
+
+```cpp
+PF f1(int); // ok: PF是函数指针；f1返回这个指针
+F f1(int); // 错误：F是函数类型；f1 can't return a function
+F *f1(int); // ok: explicitly specify that the return type is a pointer to function
+```
+
+Of course, we can also declare `f1` directly, which we’d do as
+
+```cpp
+	int (*f1(int))(int*,int);
+```
+
+Reading this declaration from the inside out, we see that f1 has a parameter list, so f1 is a function. f1 is preceded by a * so f1 returns a pointer. The type of that pointer itself has a parameter list, so the pointer points to a function. That function returns an int.
+
+For completeness, it’s worth noting that we can simplify declarations of functions that return pointers to function by using a trailing return (§ 6.3.3):
+
+```cpp
+auto f1(int)-> int (*)(int*, int);
+```
+
+##### Using auto or decltype for Function Pointer Types
+
+If we know which function(s) we want to return, we can use `decltype` to simplify writing a function pointer return type. For example, assume we have two functions, both of which return a `string::size_type` and have two const string& parameters. We can write a third function that takes a string parameter and returns a pointer to one of these two functions as follows:
+
+```cpp
+string::size_type sumLength(conststring&, const string&);
+string::size_type largerLength(const string&, const string&);
+// depending on the value of its string parameter,
+// getFcn returns a pointer to sumLength or to largerLength
+decltype(sumLength) *getFcn(const string &);
+```
+
+The only tricky part in declaring getFcnis to remember that when we apply decltype to a function, it returns a function type, not a pointer to function type. We must add a * to indicate that we are returning a pointer, not a function.
+
+
+
 
 
 
