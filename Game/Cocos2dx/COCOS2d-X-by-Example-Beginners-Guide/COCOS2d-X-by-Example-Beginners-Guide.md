@@ -2,7 +2,7 @@
 
 ## 3. Air Hockey
 
-内容介绍：setting up the project's configuration, loading images, loading sounds, building a game for more than one screen resolution, and managing touch events.
+内容介绍：工程配置、加载图片、加载声音；适配多种分辨率；管理触摸事件。
 
 这个游戏是双人游戏。
 
@@ -109,9 +109,9 @@ GameSprite.h：
     #endif // __GAMESPRITE_H__
 ```
 
-利用宏创建三个合成（synthesized）属性：利用宏创建getter和setter方法。You declare the type, the `protected` variable name, and the words that will be appended to the get and set methods.
+利用宏创建三个合成（synthesized）属性：利用宏创建getter和setter方法。
 
-`gameSpriteWithFile`用于实例化。
+`gameSpriteWithFile`用于是静态工厂方法。
 
 #### 行动：实现`GameSprite`
 
@@ -142,7 +142,7 @@ GameSprite.h：
 覆盖`CCNode`的`setPosition`方法。为的是，改变位置后，新值更新到`_nextPosition`：
 
 ```cpp
-    void GameSprite::setPosition(const CCPoint& pos) {
+    void GameSprite::setPosition(const CCPoint &pos) {
         CCSprite::setPosition(pos);
         if (!_nextPosition.equals(pos)) {
         	_nextPosition = pos;
@@ -169,12 +169,12 @@ Rename the `HelloWorldScene` files to `GameLayer`, and the class inside them fro
 
         class GameLayer : public cocos2d::CCLayer
         {
-            GameSprite * _player1;
-            GameSprite * _player2;
-            GameSprite * _ball;
-            CCArray * _players;
-            CCLabelTTF * _player1ScoreLabel;
-            CCLabelTTF * _player2ScoreLabel;
+            GameSprite *_player1;
+            GameSprite *_player2;
+            GameSprite *_ball;
+            CCArray *_players;
+            CCLabelTTF *_player1ScoreLabel;
+            CCLabelTTF *_player2ScoreLabel;
 
             CCSize _screenSize; // 因为经常使用，存下来
 
@@ -238,11 +238,19 @@ Rename the `HelloWorldScene` files to `GameLayer`, and the class inside them fro
     this->addChild(_ball);
 ```
 
-We create a `CCArray` method to store the player objects and we **retain** this array to keep a reference to it throughout the game:
+利用`CCArray`存储player对象，**retain**它，于是可以在整个游戏中引用它｛｛不retain()就在下一个游戏循环被回收了｝｝：
 
 ```cpp
     _players = CCArray::create(_player1, _player2, NULL);
     _players->retain();
+```
+
+在析构器中释放之前`retain`的数组：
+
+```cpp
+    GameLayer::~GameLayer() {
+    	CC_SAFE_RELEASE(_players);
+    }
 ```
 
 利用`CCLabelTTF`创建标签。once again the font size will be automatically scaled in the high definition version。
@@ -261,8 +269,6 @@ We create a `CCArray` method to store the player objects and we **retain** this 
     this->addChild(_player2ScoreLabel);
 ```
 
-Label objects (`CCLabelTTF`) can use any of the fonts supported by the target system; these change from system to system, however. But there is an option of loading your own TTF files.
-
 最后，声明`CCLayer`允许监听触摸事件。并开始排期主循环：
 
 ```cpp
@@ -271,14 +277,6 @@ Label objects (`CCLabelTTF`) can use any of the fonts supported by the target sy
     // create main loop
     this->schedule(schedule_selector(GameLayer::update));
     return true;
-```
-
-在析构器中释放之前retain的数组：
-
-```cpp
-    GameLayer::~GameLayer() {
-    	CC_SAFE_RELEASE(_players);
-    }
 ```
 
 ![](ch3-demo-1.png)
@@ -292,7 +290,7 @@ Label objects (`CCLabelTTF`) can use any of the fonts supported by the target sy
         CCSetIterator i;
         CCTouch* touch;
         CCPoint tap;
-        GameSprite * player;
+        GameSprite *player;
         for( i = pTouches->begin(); i != pTouches->end(); i++) {
             touch = (CCTouch*) (*i);
             if(touch) {
@@ -361,7 +359,7 @@ Label objects (`CCLabelTTF`) can use any of the fonts supported by the target sy
     }
 ```
 
-实现多点触摸的另一种方式是实现`CCTargetedTouchDelegate`协议。But this may result in the implementation of up to eight methods. You may go to the test code in `samples/TestCpp/Classes/TouchesTest` and review the code used in the Paddle.h and Paddle.cpp files for an example of `CCTargetedTouchDelegate` in action.
+实现多点触摸的另一种方式是实现`CCTargetedTouchDelegate`协议。但这种方式需要实现多达8个方法。You may go to the test code in `samples/TestCpp/Classes/TouchesTest` and review the code used in the Paddle.h and Paddle.cpp files for an example of `CCTargetedTouchDelegate` in action.
 
 #### 行动：主循环
 
@@ -381,7 +379,7 @@ Label objects (`CCLabelTTF`) can use any of the fonts supported by the target sy
 接下来碰撞检测：
 
 ```cpp
-        GameSprite * player;
+        GameSprite *player;
         CCPoint playerNextPosition;
         CCPoint playerVector;
 
@@ -483,7 +481,7 @@ Label objects (`CCLabelTTF`) can use any of the fonts supported by the target sy
         _ball->setVector(ccp(0,0));
 ```
 
-Then we update the score for the scoring player, updating the score label in the process. And the ball moves to the court of the player against whom a point was just scored:
+然后更新分数，更新分数显示。把球移到输者的半场：
 
 ```cpp
         char score_buffer[10];
@@ -502,7 +500,7 @@ Then we update the score for the scoring player, updating the score label in the
         }
 ```
 
-The players are moved to their original position and their `_touch` properties are cleared:
+球员移动到初始位置，清除`_touch`属性：
 
 ```cpp
         _player1->setPosition(ccp(_screenSize.width * 0.5,
@@ -517,7 +515,7 @@ The players are moved to their original position and their `_touch` properties a
 也可以使用`CCString`：
 
 ```cpp
-    CCString * score = CCString::createWithFormat("%i", _player1Score);
+    CCString *score = CCString::createWithFormat("%i", _player1Score);
     _player1ScoreLabel->setString(score->getCString());
 ```
 
@@ -598,9 +596,7 @@ There is a `CCArray` called `_fallingObjects` also created here, and we start pl
 
 ### 使用sprite sheets{{纹理贴图}}
 
-精灵清单（sprite sheet）用于将多个图片组成成一张图片。当使用其中的一张图片给精灵贴图时，必须知道这张图片（矩形）在精灵清单的什么地方。精灵清单通常组织成两个文件：图片文件和数据文件。
-
-I used TexturePacker to create these files for the game. You can find them inside the ipad, ipadhd, and iphone folders inside **Resources**. There is a **sprite_sheet.png** for the image and a **sprite_sheet.plist** that describes the individual frames inside the image.
+精灵清单（sprite sheet）用于将多个图片组成成一张图片。当使用其中的一张图片给精灵贴图时，必须知道这张图片（矩形）在精灵清单的什么地方。精灵清单通常组织成两个文件：图片文件和数据文件。我使用**TexturePacker**创建这些文件。You can find them inside the ipad, ipadhd, and iphone folders inside **Resources**. There is a **sprite_sheet.png** for the image and a **sprite_sheet.plist** that describes the individual frames inside the image.
 
 下面是**sprite_sheet.png**：
 
@@ -608,7 +604,7 @@ I used TexturePacker to create these files for the game. You can find them insid
 
 精灵清单与一个特殊的`CCNode`类连用：`CCSpriteBatchNode`。当同一个节点内的多个精灵使用同一个图片文件时可以使用此类。With `CCSpriteBatchNode`, you can substantially reduce the number of calls during the rendering stage of your game, which will help when targeting less powerful systems, though **not noticeably** in the Apple device family.
 
-`CCSpriteBatchNode`像其他任何节点一样可以充当容器。利用z-order可以将`CCSprites`在batch node内分层排布。
+`CCSpriteBatchNode`像其他任何节点一样可以充当容器。利用`z-order`可以将`CCSprites`在batch node内分层排布。
 
 #### 行动：创建一个`CCSpriteBatchNode`
 
@@ -625,13 +621,11 @@ I used TexturePacker to create these files for the game. You can find them insid
         this->addChild(_gameBatchNode);
 ```
 
-要利用精灵清单创建batch node，需要先加载帧信息：将`sprite_sheet.plist`加载到`CCSpriteFrameCache`。然后用`sprite_sheet.png`创建batch node。（背景图片不在贴图内，于是单独加载。）
+要利用精灵清单创建batch node，需要先加载帧信息：将`sprite_sheet.plist`加载到`CCSpriteFrameCache`。然后用`sprite_sheet.png`创建batch node。背景图片不在贴图内，于是单独加载。
 
 创建`CCSprites`使用的帧名，在定义在`sprite_sheet.plist`。
 
 接下来向`CCSpriteBatchNode`添加精灵。首先是city:
-｛｛下面从清单中创建精灵时貌似只用到了帧，没有用到batch node。
-难道通过帧创建的精灵只能添加到batch node？其此batch node必须通过清单的图片创建？｝｝
 
 ```cpp
     CCSprite * sprite;
@@ -724,7 +718,7 @@ The difference between `CCLabelBMFont` and a regular `CCSpriteBatchNode` is that
 仍然在`createGameScreen`，添加云：
 
 ```cpp
-    CCSprite * cloud;
+    CCSprite *cloud;
     _clouds = CCArray::createWithCapacity(4); // 用数组，为了将来移动云
     _clouds->retain();
     float cloud_y;
@@ -798,7 +792,7 @@ sparkle和halo是`_bomb`的孩子。当炸弹变大时，它的孩子也会跟�
 该标签来自`GameLayer.h`中的另一个枚举。利用此标签，可以从精灵中取到它的孩子：
 
 ```cpp
-	CCSprite * halo = (CCSprite *) bomb->getChildByTag(kSpriteHalo);
+	CCSprite *halo = (CCSprite *) bomb->getChildByTag(kSpriteHalo);
 ```
 
 ![](ch4-demo-1.png)
@@ -848,6 +842,7 @@ We'll use the corresponding pool index to retrieve objects from the arrays as th
 ```
 
 `1.0f`表示1秒。令节点运行此Action：
+
 ```cpp
 	mySprite->runAction(fadeout);
 ```
@@ -894,11 +889,11 @@ We'll use the corresponding pool index to retrieve objects from the arrays as th
 仍在`createActions`方法。首先是流星到达城市时的爆炸。首先将帧加载到`CCAnimation`对象：
 
 ```cpp
-        CCAnimation* animation;
-        CCSpriteFrame * frame;
-        //create CCAnimation object
+        CCAnimation *animation;
+        CCSpriteFrame *frame;
+        // create CCAnimation object
         animation = CCAnimation::create();
-        CCString * name;
+        CCString *name;
         for(int i = 1; i <= 10; i++) {
             name = CCString::createWithFormat("boom%i.png", i);
             frame = CCSpriteFrameCache::sharedSpriteFrameCache()
@@ -1043,7 +1038,7 @@ We will use a system of countdowns to add new meteors and new health packs, as w
         _difficultyTimer = 0;
         _running = true;
         //reset labels
-        CCString * value = CCString::createWithFormat("%i%s", _energy, "%");
+        CCString *value = CCString::createWithFormat("%i%s", _energy, "%");
     	_energyDisplay->setString(value->getCString());
     	value = CCString::createWithFormat("%i", _score);
     	_scoreDisplay->setString(value->getCString());
@@ -1053,7 +1048,7 @@ We will use a system of countdowns to add new meteors and new health packs, as w
         _running = false;
         //stop all actions currently running
         int count = _fallingObjects->count();
-        CCSprite * sprite;
+        CCSprite *sprite;
         for (int i = count-1; i >= 0; i--) {
             sprite = (CCSprite *) _fallingObjects->objectAtIndex(i);
             sprite->stopAllActions();
@@ -1063,7 +1058,7 @@ We will use a system of countdowns to add new meteors and new health packs, as w
         if (_bomb->isVisible()) {
             _bomb->stopAllActions();
             _bomb->setVisible(false);
-            CCSprite * child;
+            CCSprite *child;
             child = (CCSprite *) _bomb->getChildByTag(kSpriteHalo);
             child->stopAllActions();
             child = (CCSprite *) _bomb->getChildByTag(kSpriteSparkle);
@@ -1104,7 +1099,7 @@ We will use a system of countdowns to add new meteors and new health packs, as w
 
 > 其实可以用Action替换这些定时器：`CCSequence`配合`CCDelay`再加上一个回调。But there are advantages to using these countdowns. It's easier to reset them and to change them, and we can take them right into our main loop.
 
-下面添加主循环：
+下面添加主循环。
 
 碰撞检测：
 
@@ -1167,7 +1162,6 @@ We give the player an extra visual cue as to when a bomb is ready to explode, by
 
 主循环中没有更新各个精灵，因为已经通过Action实现了。
 
-
 #### 从池中获取对象
 
 To retrieve meteor sprites, we'll use the `resetMeteor` method. `resetMeteor`方法会被`update`方法代替：
@@ -1177,7 +1171,7 @@ To retrieve meteor sprites, we'll use the `resetMeteor` method. `resetMeteor`方
       // 如果屏幕中对象太多
       if (_fallingObjects->count() > 30) return;
 
-      CCSprite * meteor = (CCSprite *) _meteorPool->objectAtIndex(_meteorPoolIndex);
+      CCSprite *meteor = (CCSprite *) _meteorPool->objectAtIndex(_meteorPoolIndex);
       _meteorPoolIndex++;
       if (_meteorPoolIndex == _meteorPool->count())
       	_meteorPoolIndex = 0;
@@ -1191,15 +1185,15 @@ To retrieve meteor sprites, we'll use the `resetMeteor` method. `resetMeteor`方
       	_screenSize.height + meteor->boundingBox().size.height * 0.5));
 
       // create action for meteor
-      CCActionInterval* rotate = CCRotateBy::create(0.5f ,  -90);
-      CCAction* repeatRotate = CCRepeatForever::create ( rotate );
+      CCActionInterval* rotate = CCRotateBy::create(0.5f, -90);
+      CCAction* repeatRotate = CCRepeatForever::create (rotate );
       CCFiniteTimeAction* sequence = CCSequence::create(
       	CCMoveTo::create(_meteorSpeed
         	ccp(meteor_target_x, _screenSize.height * 0.15f)),
         CCCallFuncN::create(this, callfuncN_selector(GameLayer::fallingObjectDone)),
         NULL);
 
-      meteor->setVisible ( true );
+      meteor->setVisible(true );
       meteor->runAction(repeatRotate);
       meteor->runAction(sequence);
       _fallingObjects->addObject(meteor); // 加入到下落对象集合
@@ -1213,7 +1207,7 @@ To retrieve meteor sprites, we'll use the `resetMeteor` method. `resetMeteor`方
 ```cpp
     GameLayer::~GameLayer () {
 
-      //release all retained actions
+      // release all retained actions
       CC_SAFE_RELEASE(_growBomb);
       CC_SAFE_RELEASE(_rotateSprite);
       CC_SAFE_RELEASE(_shockwaveSequence);
@@ -1221,7 +1215,7 @@ To retrieve meteor sprites, we'll use the `resetMeteor` method. `resetMeteor`方
       CC_SAFE_RELEASE(_groundHit);
       CC_SAFE_RELEASE(_explosion);
 
-      //release all retained arrays
+      // release all retained arrays
       CC_SAFE_RELEASE(_clouds);
       CC_SAFE_RELEASE(_meteorPool);
       CC_SAFE_RELEASE(_healthPool);
