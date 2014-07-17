@@ -70,4 +70,15 @@
     _player1ScoreLabel->setString(score->getCString());
 ```
 
+## 构建
 
+### 问题解决
+
+#### `Zip add failed`
+
+运行时报"Unable to add 'C:\app\Android\ndk\cocos2d-x-2.2.3\samples\Cpp\HelloCpp\proj.android\assets\fonts\Marker Felt.ttf': Zip add failed"的错误
+解决方法：打开cygwin安装目录下的etc\fstab文件，在文件最后添加
+
+```
+	none /cygdrive cygdrive binary,noacl,posix=0,user 0 0
+```

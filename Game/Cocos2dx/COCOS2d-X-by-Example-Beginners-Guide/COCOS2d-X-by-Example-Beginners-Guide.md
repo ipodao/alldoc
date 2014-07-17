@@ -1282,7 +1282,8 @@ Assuming that you have the Start Project option opened in Xcode, let's review th
         pDirector->setContentScaleFactor(screenSize.height/designSize.height);
     }
 ```
-The iPad is the oddball in terms of screen size: it has a 1.33 screen ratio (longer side divided by shorter side). 多数Android设备在`1.6`和`1.77`之间，with a few sharing the iPhone screen ratio of 1.5.
+
+The iPad is the odd ball in terms of screen size: it has a 1.33 screen ratio (longer side divided by shorter side). 多数Android设备在`1.6`和`1.77`之间，with a few sharing the iPhone screen ratio of 1.5.
 
 Why should you care? In this game most sprites are circles and the difference in screen ratio would cause them to look squished when ported to different screens using the `kResolutionExactFit` parameter, which distorts your game screen to fit the screen of the device. 有多种解决方式。例如，可以以iPhone的比率为设计目标（因为它接近各种比率的平均值），然后使用`kResolutionShowAll`。这将产生黑边，但不会使精灵变形（第8章将使用该方法）。But here I used another method, I created sprite sheets that account for the squished look of the sprites in different screen ratios, counteracting the distortion. You, or your designer, could produce art for different screen ratios, such as 1.3, 1.5, 1.6, and 1.7, and pack different sets of images for different device families. For the Apple family, the solution shown here works very well and we can use the entire screen through `kResolutionExactFit`.
 
@@ -1303,7 +1304,7 @@ The following image shows two sets of images found in the sprite sheets. Notice 
 ```cpp
 	// CCParticleSystem * _jet;
     _jet = CCParticleSystemQuad::create("jet.plist");
-    _jet->setSourcePosition(ccp(-_rocket->getRadius() * 0.8f,0));
+    _jet->setSourcePosition(ccp(-_rocket->getRadius() * 0.8f, 0));
     _jet->setAngle(180);
     _jet->stopSystem();
     this->addChild(_jet, kBackground);
