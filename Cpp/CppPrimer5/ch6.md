@@ -7,11 +7,11 @@
 为了与C兼容，当函数形参列表为空时，可以用`void`：
 
 ```cpp
-    void f1(){/* ... */ }  // implicit void parameter list
+    void f1(){/* ... */ } // implicit void parameter list
     void f2(void){ /* ... */ } // explicit void parameter list
 ```
 
-返回类型可以是`void`。**返回类型不可以是数组类型（§ 3.5）或函数类型**。但可以返回到数组或函数的指针。
+返回类型可以是`void`。返回类型不可以是**数组类型（§ 3.5）或函数类型**。但可以返回到数组或函数的指针。
 
 #### 6.1.1. Local Objects
 
