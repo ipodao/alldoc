@@ -440,3 +440,330 @@ var add = function (a, b) {
 - 第四部分是包含为大括号内的语句。
 
 函数定义可以嵌套。内部函数可以访问到外围函数的**参数和变量**。通过函数字面量创建的函数对象包含到外部上下文的连接，这被称为 **闭包** 。这是Javascript强大表现力的根基。
+
+
+### 4.3 调用
+
+除了声明时定义的形式参数，每个函数还接收两个附加参数：`this`和`arguments`。`this`的值取决于调用函数的方式。Javascript中一共有四种调用模式：**方法调用模式**、**函数调用模式**、**构造器调用模式**和**apply调用模式**。这些模式影响参数`this`的指向。
+
+当实参与形参个数不匹配时不会导致运行时错误。如果实参过多，多出的参数被忽略。如果参数值过少，缺失的值将被替换为`undefined`。对参数值不会进行类型检查。
+
+#### 方法调用模式
+
+当函数被存储为对象的一个属性时，称其为**方法**。当方法被调用时，`this`绑定到那个对象。
+
+```js
+var myObject = {
+    value: 0;
+    increment: function (inc) {
+        this.value += typeof inc === 'number' ? inc : 1;
+    }
+};
+
+myObject.increment();
+document.writeln(myObject.value);    // 1
+
+myObject.increment(2);
+document.writeln(myObject.value);    // 3
+```
+
+将`this`绑定到对象发生在调用时。这种极其延迟的绑定提高了使用`this`的函数的可重用性。Methods that get their object context from this are called public methods.
+
+#### 函数调用模式
+
+当函数不是对象的一个属性时，它被当作函数来调用：
+
+```js
+var sum = add(3, 4); // sum is 7
+```
+
+当函数以此模式调用时，`this`被绑定到全局对象，**这是一个设计错误**。正确的设计应该是当内部函数被调用时，`this`应绑定到外部函数的`this`变量。
+
+这个设计错误导致的问题是，若函数A内部定义了函数B，在函数A找那个调用B，B的`this`指向全局对象，而不是函数A的`this`。一个约定俗成的解决方法是：让方法定义一个变量并将`this`赋给它，那么内部函数就可以通过那个变量访问`this`。按照约定，我给那个变量命令为`that`：
+
+```js
+myObject.double = function () {
+    var that = this; // Workaround.
+    var helper = function () {
+        that.value = add(that.value, that.value)
+    };
+    helper(); // Invoke helper as a function.
+};
+
+// Invoke double as a method.
+myObject.double();
+document.writeln(myObject.getValue()); // 6
+```
+
+#### 构造器调用模式
+
+Javascript是一门基于原型的语言。但Javascript本身对其原型的本质也缺乏自信，于是提供了一套和基于类的语言类似的对象构造语法。
+
+如果调用一个函数时加`new`前缀，则将创建一个新对象。该对象隐式链接到函数的`prototype`的值上，`this`将被绑定到这个新对象。
+
+`new`也会改变`return`语句的行为。我们将会在后面看到更多内容。
+
+```js
+// 创建一个构造器函数Que。它创建一个对象，带有status属性。
+var Quo = function (string) {
+    this.status = string;
+};
+// 给Quo的所有实例一个公有方法，名为get_status。
+Quo.prototype.get_status = function () {
+    return this.status;
+};
+// Make an instance of Quo.
+var myQuo = new Quo("confused");
+document.writeln(myQuo.get_status());  // confused
+```
+
+我不推荐构造器函数，下一章将介绍更好的方法。
+
+#### apply调用模式
+
+因为Javascript是一门函数式的面向对象编程语言，所以函数可以拥有方法。`apply`是函数的一个方法，用于调用此函数。`apply`方法接受两个参数。第一个是将被绑定给this的值。第二个是一个参数数组。
+
+例如，正常的调用`sum`的方式：
+```js
+var sum = add(3, 4);
+```
+等价的调用方式：
+```js
+var array = [3, 4];
+var sum = add.apply(null, array); // sum is 7
+```
+
+```js
+// statusObject未继承Quo.prototype，但我们可以对statusObject对象调用get_status方法，即便statusObject对象没有get_status方法。
+
+var statusObject = {
+    status: 'A-OK'
+};
+
+var status = Quo.prototype.get_status.apply(statusObject);
+// status is 'A-OK'
+```
+
+### 4.4 参数
+
+通过`arguments`数组可以访问所有实参，包括那些多余参数。这使得编写一个无需指定参数个数的函数成为可能：
+
+```js
+var sum = function ( ) {
+    var i, sum = 0;
+    for (i = 0; i < arguments.length; i += 1) {
+        sum += arguments[i];
+    }
+    return sum;
+};
+
+document.writeln(sum(4, 8, 15, 16, 23, 42)); // 108
+```
+
+这不是一个特别有用的模式。在第6章中，我们将介绍如何给数组添加一个相似的方法来达到同样的效果。
+
+因为语言的设计错误，`arguments`并不是一个真正的数组。它只是一个“类似数组”的对象。`arguments`有`length`属性，但缺少所有的数组方法。我们将在本章结尾看到这个设计错误的后果。
+
+### 4.5 返回
+
+**函数总是会返回一个值**。如果没有指定返回值，返回`undefined`。
+
+如果调用函数时有加`new`关键字，若函数内return没有返回值，将返回`this`（即新创建的对象）。
+
+### 4.6 异常
+
+抛出：
+
+```js
+var add = function (a, b) {
+    if (typeof a !== 'number' || typeof b !== 'number') {
+        throw {
+            name: 'TypeError',
+            message: 'add needs numbers'
+        }
+    }
+    return a + b;
+}
+```
+
+捕获：
+
+```js
+// Make a try_it function that calls the new add
+// function incorrectly.
+var try_it = function () {
+    try {
+        add("seven");
+    } catch (e) {
+        document.writeln(e.name + ': ' + e.message);
+    }
+}
+
+tryIt();
+```
+
+一个`try`只能有一个`catch`，捕获所有（各种）异常。
+
+### 4.7 给类型增加方法
+
+Javascript允许给语言的基本类型添加方法。在第3章中介绍了通过给`Object.prototype`添加方法来使得该方法对所有对象可用。此方式也适用于函数、数组、字符串、数字、正则表达式和布尔值。
+
+例如，通过加强`Function.prototype`方法，可以令所有函数获得`method`方法：
+
+```js
+Function.prototype.method = function (name, func) {
+    this.prototype[name] = func;
+    return this;
+};
+```
+
+By augmenting `Function.prototype` with a method method, we no longer have to type the name of the `prototype` property. That bit of ugliness can now be hidden.
+
+
+Javascript并没有单独的整数类型，因此有时只提取数字中的整数部分是必要的。Javascript本身提供的取整方法有些丑陋。我们可以通过给`Number.prototype`添加一个`integer`方法来改善它：根据数字的正负来判断使用`Math.ceiling`还是`Math.floor`。
+
+```js
+Number.method('integer', function () {
+    return Math[this < 0 ? 'ceiling' : 'floor'](this);
+});
+
+document.writeln((-10 / 3).integer(  ));  // -3
+```
+
+
+Javascript缺少移除字符串末尾空白的方法，可以实现为：
+
+```js
+String.method('trim', function ( ) {
+    return this.replace(/^\s+|\s+$/g, '');
+});
+
+document.writeln('"' + "   neat   ".trim( ) + '"');
+```
+
+通过给基本类型增加方法，我们可以大大提高语言的表现力。因为Javascript原型继承的动态本质，新的方法立刻被赋予到所有的值（对象实例）上，哪怕值（对象实例）是在方法被创建之前就创建好了。
+
+基本类型的原型是公共的结构，所以在类库混用时务必小心。一个保险的做法是只在确定没有该方法时才添加它。
+
+```js
+// Add a method conditionally.
+Function.prototype.method = function (name, func) {
+    if (!this.prototype[name]) {
+        this.prototype[name] = func;
+    }
+};
+```
+
+### 4.8 递归
+
+Javascript并未优化**尾递归**。深度递归的函数可能因为返回栈溢出而运行失败。
+
+### 4.9 作用域
+
+Javascript不支持块级作用域。
+
+Javascript有函数作用域。
+
+很多现代语言都推荐尽可能迟地声明变量。而用在Javascript上却很糟糕，因为它缺少块级作用域。所以最好的做法是在函数体的**顶部**声明函数中可能用到的所有变量。
+
+### 4.10 闭包
+
+作用域的好处是内部函数可以访问定义它们的外部函数的参数和变量（`this`和`arguments`除外）。
+
+一个更有趣的情形是内部函数拥有比它的外部函数更长的生命周期。
+
+```js
+var myObject = function () {
+    var value = 0;
+
+    return {
+        increment: function (inc) {
+            value += typeof inc === 'number' ? inc : 1;
+        },
+        getValue: function () {
+            return value;
+        }
+    }
+}();
+```
+
+我们并没有把函数赋给`myObject`，而是把该函数的**返回值**赋给了`myObject`。注意最后的`()`。函数返回一个包含两个方法的对象，并且这些方法继续享有访问`value`变量的特权。
+
+本章之前定义的`Que`构造器，产生带有`status`属性和`get_status`方法的对象。注意那个`status`是公有的，不提供过`get_status`也能访问。下面我们将定义另一个形式的que函数，使得`status`只能通过getter函数方法：
+
+```js
+var quo = function (status) {
+    return {
+        get_status: function () {
+            return status;
+        }
+    };
+};
+// Make an instance of quo.
+var myQuo = quo("amazed");
+document.writeln(myQuo.get_status());
+```
+
+这个`que`函数被设计成无须在前面加上new来使用，所以名字也没有首字母大写。当调用`que`时，返回一个新对象。该对象包含一个`get_status`方法。即使`que`已经返回了，但`get_status`方法仍能访问`que`对象的`status`属性（其实是函数参数）。`get_status`方法并不访问该参数的一个拷贝，它访问的是该参数本身。函数可以访问被创建时所处的上下文环境，这被称为**闭包**。
+
+
+一个更有用的例子：
+```js
+// 定义一个函数，设置一个DOM节点为黄色，然后让它逐渐变白
+var fade = function (node) {
+    var level = 1;
+    var step = function ( ) {
+        var hex = level.toString(16);
+        node.style.backgroundColor = '#FFFF' + hex + hex;
+        if (level < 15) {
+            level += 1;
+            setTimeout(step, 100);
+        }
+    };
+    setTimeout(step, 100); // #1
+};
+fade(document.body);
+```
+
+fade函数定义了函数step，然后调用`setTimeout(step, 100)`;，意思是等100毫秒后调用step函数。然后fade返回，fade函数结束。100毫秒后，step函数被调用，然后可能继续调用setTimeout()。fade函数返回后，因step函数仍要用到level，因此level继续存在。
+
+理解内部函数访问外部函数的变量的实际值而非副本是很重要的，见下面这个错误：
+
+```js
+var add_the_handlers = function (nodes) {
+    var i;
+    for (i = 0; i < nodes.length; i += 1) {
+        nodes[i].onclick = function (e) {
+            alert(i);
+        }
+    }
+};
+```
+
+原本想每次弹出时显示节点序号，但最后每个节点显示的都是数字都等于节点数组（nodes.length）。原因是事件处理函数绑定的是变量`i`，而非`i`当时的值。
+
+正确的修改：
+
+```js
+var add_the_handlers = function (nodes) {
+    var i;
+    for (i = 0; i < nodes.length; i += 1) {
+        nodes[i].onclick = function (i) {
+            return function (e) {
+                alert(i);
+            };
+        }(i);
+    }
+};
+```
+
+### 4.11 回调
+
+```js
+request = prepare_the_request();
+send_request_asynchronously(request, function (response) {
+        display(response);
+    });
+```
+
+
