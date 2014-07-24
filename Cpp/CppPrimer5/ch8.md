@@ -180,11 +180,11 @@ In § 17.5.3 we’ll describe how to use the same file for both input and output
 
 #### 8.2.1 使用文件流对象
 
-With the new standard, file names can be either library strings or C-style character arrays. Previous versions of the library allowed only C-style character arrays.
+新标准允许文件名是库`string`或C风格的字符数组。
 
 ##### Using an `fstream` in Place of an `iostream&`
 
-As we noted in § 8.1, we can use an object of an inherited type in places where an object of the original type is expected. This fact means that functions that are written to take a reference (or pointer) to one of the `iostream` types can be called on behalf of the corresponding `fstream`(or `sstream`) type. That is, if we have a function that takes an `ostream&`, we can call that function passing it an `ofstream` object, and similarly for `istream&` and `ifstream`.
+This fact means that functions that are written to take a reference (or pointer) to one of the `iostream` types can be called on behalf of the corresponding `fstream`(or `sstream`) type. 即如果一个函数取形参`ostream&`，则调用时实参可以是`ofstream`。
 
 For example, we can use the `read` and `print` functions from § 7.1.3 to read from and write to named files. In this example, we’ll assume that the names of the input and output files are passed as arguments to main(§ 6.2.5):
 
@@ -211,35 +211,33 @@ Aside from using named files, this code is nearly identical to the version of th
 
 We can pass our `fstream` objects to these functions even though the parameters to those functions are defined as `istream&` and `ostream&`, respectively.
 
-##### The open and close Members
+##### open和close
 
-When we define an empty file stream object, we can subsequently associate that object with a file by calling `open`:
+若创建流时不绑定文件，可以后续通过`open`绑定：
 
 ```cpp
-	ifstream in(ifile); // construct an ifstream and open the given file
-	ofstream out; // output file stream that is not associated with any file
-	out.open(ifile + ".copy");  // open the specified file
+	ifstream in(ifile); // 构建流并打开文件
+	ofstream out; // 构建了流，但尚未与文件关联
+	out.open(ifile + ".copy"); // open the specified file
 ```
 
-If a call to `open` fails, `failbit` is set (§ 8.1.2). Because a call to open might fail, it is usually a good idea to verify that the opensucceeded:
+若调用`open`失败，`failbit`会被置位。最好在调用`open`检查是否成功：
 
 ```cpp
     if (out) // check that the open succeeded
     // the open succeeded, so we can use the file
 ```
 
-Once a file stream has been opened, it remains associated with the specified file. Indeed, calling open on a file stream that is already open will fail and set `failbit`. Subsequent attempts to use that file stream will fail. To associate a file stream with a different file, we must first `close` the existing file. Once the file is closed, we can open a new one:
+若流已经与打开的文件关联，再用此流打开文件，会导致`failbit`置位。此时此流已不可再被使用。要将流与另外的文件关联。必须先调用`close`。关闭后可与新文件关联：
 
 ```cpp
     in.close(); // close the file
     in.open(ifile + "2"); // open another file
 ```
 
-If the `open` succeeds, then opensets the stream’s state so that `good()` is true.
+如果`open`成功，流状态被设为`good()`返回true。
 
 ##### 自动构建和析构
-
-Consider a program whose main function takes a list of files it should process. Such a program might have a loop like the following:
 
 ```cpp
 // foreach file passed to the program
@@ -252,11 +250,9 @@ for (auto p = argv + 1; p != argv + argc; ++p) {
 	} // input goes out of scope and is destroyed on each iteration
 ```
 
-Each iteration constructs a new `ifstream` object named input and opens it to read the given file. As usual, we check that the `open` succeeded. If so, we pass that file to a function that will read and process the input. If not, we print an error message and continue.
+每次循环构建一个新的`ifstream`对象（`input`）。每次循环结束后，`input`被摧毁。当一个`fstream`对象离开作用域，它绑定的文件被自动关闭。
 
-Because input is local to the while, it is created and destroyed on each iteration. When an `fstream` object goes out of scope, the file it is bound to is automatically closed. On the next iteration, input is created anew.
-
-> When an `fstream` object is destroyed, `close` is called automatically.
+> `fstream`对象被销毁时，会自动调用`close`。
 
 #### 8.2.2. 文件模式
 
@@ -269,13 +265,13 @@ Each stream has an associated file mode that represents how the file may be used
 - `trunc`：truncate the file
 - `binary`：以二进制模式做IO
 
-The modes that we can specify have the following restrictions:
+能指定的模式有以下的限制：
 
 - `out`只能用于`ofstream`或`fstream`。
 - `in`只能用于`ifstream`或`fstream`。
 - `trunc` may be set only when `out` is also specified.
-- `app` mode may be specified so long as `trunc` is not. If `app` is specified, the file is always opened in output mode, even if `out` was not explicitly specified.
-- By default, a file opened in `out` mode is **truncated** even if we do not specify `trunc`. To preserve the contents of a file opened with out, either we must also specify `app`, in which case we can write only at the end of the file, or we must also specify `in`, in which case the file is open for both input and output (§17.5.3 will cover using the same file for input and output).
+- `app`：只要不指定`trunc`就可以使用此模式。若指定了`app`，文件总是以输出模式打开，即使未显式指定`out`。
+- 默认，以`out`模式打开的文件会被清空。若不想，需要指定`app`模式。or we must also specify `in`, in which case the file is open for both input and output (§17.5.3 will cover using the same file for input and output).
 - The `ate` and `binary` modes may be specified on any file stream object type and in combination with any other file modes.
 
 Each file stream type defines a default file mode that is used whenever we do not otherwise specify a mode. Files associated with an `ifstream` are opened in `in` mode; files associated with an `ofstream` are opened in `out` mode; and files associated with an `fstream` are opened with both `in` and `out` modes.
@@ -294,7 +290,7 @@ Each file stream type defines a default file mode that is used whenever we do no
     ofstream app2("file2", ofstream::out | ofstream::app);
 ```
 
-##### File Mode Is Determined Each Time `open` Is Called
+##### 每次调用`open`时改变模式
 
 The file mode of a given stream may change each time a file is opened.
 
@@ -310,4 +306,77 @@ The file mode of a given stream may change each time a file is opened.
 
 ### 8.3. `string`流
 
+头`sstream`：`istringstream` `wistringstream`读`string`。`ostringstream` `wostringstream`写`string`。`stringstream` `wstringstream`读写`string`。
+
+下面是字符串流特有的操作：
+
+- `sstream strm`：`strm`未绑定。`sstream`是上述类型中任一个。
+- `sstream strm(s)`：`strm`持有`string s`的拷贝。此构建器是`explicit`。
+- `strm.str()`：返回`strm`持有的`string`的拷贝。
+- `strm.str(s)`：拷贝`string s`到`strm`。返回void。
+
+#### 8.3.1. 使用`istringstream`
+
+An `istringstream` is often used when we have some work to do on an entire line, and other work to do with individual words within a line.
+As one example, assume we have a file that lists people and their associated phone numbers. Some people have only one number, but others have several, and so on. Our input file might look like the following:
+
+```cpp
+morgan 2015552368 8625550123
+drew 9735550130
+lee6095550132 2015550175 8005550000
+```
+
+Each record in this file starts with a name, which is followed by one or more phone numbers. We’ll start by defining a simple class to represent our input data:
+
+```cpp
+// membersare public by default; see § 7.2 (p. 268)
+struct PersonInfo {
+    string name;
+    vector<string> phones;
+};
+```
+
+Objects of type `PersonInfo` will have one member that represents the person’s name and a `vector` holding a varying number of associated phone numbers.
+
+Our program will read the data file and build up a `vector` of `PersonInfo`.
+
+```cpp
+    string line, word; // will hold a line and word from input, respectively
+    vector<PersonInfo> people;
+    // read the input a line at a time until cin hits end-of-file (or another error)
+    while (getline(cin, line)) {
+        PersonInfo info;
+        istringstream record(line);
+        record >> info.name; // read the name
+        while(record >> word) // read the phone numbers
+        	info.phones.push_back(word); // and store them
+        people.push_back(info);// append this record to people
+    }
+```
+
+#### 8.3.2. 使用`ostringstream`
+
+An `ostringstream` is useful when we need to build up our output a little at a time but do not want to print the output until later. For example, we might want to validate and reformat the phone numbers we read in the previous example. If all the numbers are valid, we want to print a new file containing the reformatted numbers. If a person has any invalid numbers, we won’t put them in the new file. Instead, we’ll write an error message containing the person’s name and a list of their invalid numbers.
+
+Because we don’t want to include any data for a person with an invalid number, we can’t produce the output until we’ve seen and validated all their numbers. We can, however, “write” the output to an in-memory `ostringstream`:
+
+```cpp
+for (const auto &entry : people) { // for each entry in people
+    ostringstream formatted, badNums; // objects created on each loop
+    for(const auto &nums : entry.phones) { // for each number
+    	if(!valid(nums)) {
+    		badNums << " " << nums;  // string in badNums
+    	} else
+    		// ''writes'' to formatted's string
+    		formatted << " " << format(nums);
+    }
+    if(badNums.str().empty())  // there were no bad numbers
+    	os << entry.name << " "  // print the name
+    	<< formatted.str() << endl; // and reformatted numbers
+    else // otherwise, print the name and bad numbers
+    	cerr << "input error: " << entry.name
+    	<< " invalid number(s) " << badNums.str() <<
+        endl;
+}
+```
 
