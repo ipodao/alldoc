@@ -766,4 +766,314 @@ send_request_asynchronously(request, function (response) {
     });
 ```
 
+### 4.12 模块
+
+我们可以使用函数和闭包来构造模块。模块是一个提供接口却隐藏 **状态** 与 **实现** 的函数或对象。通过**使用函数**去产生模块，我们几乎可以完全摒弃全局变量的使用。
+
+假定要给String增加一个`deentityify`方法。任务是寻找字符串中HTML实体并替换为对应的字符。那实体名字与对应字符的映射表保存在哪？不能保存到全局变量。但如果放在`deentityify`方法内，则每次运行时都要对映射表字面量求值。增加开销。理想方式是放入闭包：
+
+```js
+String.method('deentityify', function () {
+    var entity = {
+        quot: '"',
+        lt:   '<',
+        gt:   '>'
+    };
+
+    return function () {
+        return this.replace(/&([^&;]+);/g, function (a, b) {
+            var r = entity[b];
+            return typeof r === 'string' ? r : a;
+        });
+    };
+}());
+```
+
+赋给`String.deentityify`是函数产生的函数，注意最后的`()`。
+
+```js
+document.writeln('&lt;&quot;&gt;'.deentityify());  // <">
+```
+
+模块模式利用函数作用域和闭包来创建绑定对象与私有成员的关联，在这个例子中，至哟`deentityify`方法有权访问那个映射表。
+
+模块模式的一般形式是：一个定义了私有变量和函数的函数；利用闭包创建可以访问私有变量和函数的特权函数；最后返回这个特权函数，或者把它们保存到一个可访问的地方。
+
+模块模式的目的是促进信息封装，类似于面向对象（Java/C++）中封装的概念。
+
+模块模式也可以用来产生安全的对象。假定我们想要构造一个用来产生序列号的对象：
+
+```js
+var serial_maker = function () {
+// 产生一个对象，这个对象能够产生唯一的字符串。字符串包括前缀和顺序数两部分。
+// 对象包括两个方法用来设置前缀和顺序数
+// gensym方法产生唯一的字符串
+    var prefix = '';
+    var seq = 0;
+    return {
+        set_prefix: function (p) {
+            prefix = String(p);
+        },
+        set_seq: function (s) {
+            seq = s;
+        },
+        gensym: function () {
+            var result = prefix + seq;
+            seq += 1;
+            return result;
+        }
+    };
+}( );
+
+var seqer = serial_maker();
+seqer.set_prefix = 'Q';
+seqer.set_seq = 1000;
+var unique = seqer.gensym();    // unique is "Q1000"
+```
+
+如果我们把`seqer.gensym`作为一个值传递给第三方函数，这个第三方函数可以用它产生唯一字符串，却不能用来改变prefix和seq的值。
+
+### 4.13 级联
+
+让函数返回this。
+
+### 4.14 套用（Curry）
+
+套用允许我们将函数与传递给它的参数相结合，产生一个新函数。
+
+```js
+var add1 = add.curry(1);
+document.writeln(add1(6));    // 7
+```
+
+Javascript本身并未提供`curry()`方法。我们可以通过`Function.prototype`添加一个：
+
+```js
+Function.method('curry', function () {
+    var args = arguments, that = this;
+    return function () {
+        return that.apply(null, args.concat(arguments));
+    };
+}); // 这段代码有问题。
+```
+
+使用Array的concat方法去连接两个数组。糟糕的是，arguments并非真正的数组，所以它没有concat方法。要避开该问题，我们必须在两个arguments数组上都应用数组的slice()方法。这样产生出拥有concat方法的常规数组。
+
+```js
+Function.method('curry', function ( ) {
+    var slice = Array.prototype.slice,
+        args = slice.apply(arguments),
+        that = this;
+    return function ( ) {
+        return that.apply(null, args.concat(slice.apply(arguments)));
+    };
+});
+```
+
+### 4.15 记忆
+
+函数可以利用对象记住之前操作的结果，避免重复的运算。
+
+```js
+var fibonacci = function (n) {
+    return n < 2 ? n : fibonacci(n - 1) + fibonacci(n - 2);
+};
+
+for (var i = 0; i <= 10; i += 1) {
+    document.writeln('// ' + i + ': ' + fibonacci(i));
+}
+```
+
+fibonacci函数将被调用453次。
+使用一个名为memo的数组保存结果，结果隐藏在闭包中。
+
+```js
+var fibonacci = function ( ) {
+    var memo = [0, 1];
+    var fib = function (n) {
+        var result = memo[n];
+        if (typeof result !== 'number') {
+            result = fib(n - 1) + fib(n - 2);
+            memo[n] = result;
+        }
+        return result;
+    };
+    return fib;
+}( );
+```
+
+一个通用的记忆函数：
+
+```js
+var memoizer = function (memo, fundamental) {
+    var shell = function (n) {
+        var result = memo[n];
+        if (typeof result !== 'number') {
+            result = fundamental(shell, n);
+            memo[n] = result;
+        }
+        return result;
+    };
+    return shell;
+};
+```
+
+使用memoizer调用fibonacci。
+
+```js
+var fibonacci = memoizer([0, 1], function (shell, n) {
+    return shell(n - 1) + shell(n - 2);
+});
+```
+
+计算阶乘：
+
+```js
+var factorial = memoizer([1, 1], function (shell, n) {
+    return n * shell(n - 1);
+});
+```
+
+## （未）5 继承
+
+（略）
+
+## 6 数组
+
+Javascript中没有真正的数组，而是提供一些类数组的对象。它把数组下表转换为字符串，用其作为属性。它明显比真正的数组慢。数组有它们自己的字面量格式。数组有一套有用的内置方法，见第8章。
+
+### 6.1 数组字面量
+
+方括号内，逗号分隔。
+
+```js
+var empty = [];
+var numbers = [
+    'zero', 'one', 'two', 'three', 'four',
+    'five', 'six', 'seven', 'eight', 'nine'
+];
+
+empty[1]          // undefined
+numbers[1]        // 'one'
+
+empty.length      // 0
+numbers.length    // 10
+```
+
+数组下标以0开始。
+
+`numbers`继承自（原型是）`Array.prototype`。
+
+Javascript允许数组元素为混合类型：
+
+```js
+var misc = [
+    'string', 98.6, true, false, null, undefined,
+    ['nested', 'array'], {object: true}, NaN,
+    Infinity
+];
+misc.length    // 10
+```
+
+### 6.2 长度
+
+每个数组都有一个`length`属性。若使用下标时超过`length`，数组将扩大以容纳新元素。
+
+下标运算符`[]`将其中的表达式转换为一个字符串，转换使用表达式的`toString`方法。产生的字符串将作为属性名。如果这个字符串看起来像一个正整数，大于等于数组当前长度且小于4,294,967,295，则数组长度将增加到容纳这个下标。
+
+可以直接设置`length`值。Making the length larger does not allocate more space for the array. 令`length`减小相当于裁剪数组。
+
+```js
+numbers.length = 3;
+// numbers is ['zero', 'one', 'two']
+```
+
+通过下面的方式可以向数组添加元素：
+
+```js
+numbers[numbers.length] = 'shi';
+// numbers is ['zero', 'one', 'two', 'shi']
+```
+
+更好的方式是使用`push()`方法：
+
+```js
+numbers.push('go');
+// numbers is ['zero', 'one', 'two', 'shi', 'go']
+```
+
+### 6.3 删除
+
+使用`delete`删除数组元素，但会留下“空洞”。`delete`不是从数组中移除一个元素（后续元素上提），而是将指定位置上的值置为undefined。
+
+```js
+delete numbers[2];
+// numbers is ['zero', 'one', undefined, 'shi', 'go']
+```
+
+`splice()`用于去除数组中一部分。第一个参数指定开始删除的位置，第二个参数指定删除个数。
+
+```js
+numbers.splice(2, 1);
+// numbers is ['zero', 'one', 'shi', 'go']
+```
+
+要对被删除的元素之后的每个元素调整下标值，对大数组来说效率很低。
+
+### 6.4 枚举
+
+因为Javascript数组是对象，因此若使用for–in遍历数组，不仅无法保证按顺序遍历，而且从原型链中属性干扰的问题也存在。
+
+显式使用下标遍历不会有问题：
+
+```js
+var i;
+for (i = 0; i < myArray.length; i += 1) {
+    document.writeln(myArray[i]);
+}
+```
+
+### 6.5 混淆的地方
+
+Javascript本身对于数组和对象的区别是混乱的。`typeof`运算符报告数组的类型是’object’，这没有什么意义。
+
+下面是一个可以判定值是否是数组的方法：
+
+```js
+var is_array = function (value) {
+    return value &&
+        typeof value === 'object' &&
+        value.constructor === Array;
+};
+```
+
+Unfortunately, it fails to identify arrays that were constructed in a different window or frame. If we want to accurately detect those foreign arrays, we have to work a little harder:
+
+```js
+var is_array = function (value) {
+    return value &&
+        typeof value === 'object' &&
+        typeof value.length === 'number' &&
+        typeof value.splice === 'function' &&
+        !(value.propertyIsEnumerable('length'));
+};
+```
+
+### 6.7 维度
+
+Javascript没有多维数组，但支持元素为数组的数组：
+
+```js
+    var matrix = [
+        [0, 1, 2],
+        [3, 4, 5],
+        [6, 7, 8]
+    ];
+    matrix[2][1] // 7
+```
+
+## 7 正则表达式
+
+（略）
+
 
