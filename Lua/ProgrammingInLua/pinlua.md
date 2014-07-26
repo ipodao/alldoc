@@ -1302,13 +1302,176 @@ Lua has no direct support for this syntax, but we can have the same final effect
 
 ## 6. 函数深入
 
+函数是一等公民。可以存入变量和表。
+
+函数与其他值一样，是匿名的。感受一下：
+
+```lua
+    a = {p = print}
+    a.p("Hello World") --> Hello World
+    print = math.sin -- 'print' now refers to the sine function
+    a.p(print(1)) --> 0.841470
+    sin = a.p -- 'sin' now refers to the print function
+    sin(10, 20) --> 10 20
+```
+
+If functions are values, are there expressions that create functions? Yes. In fact, the usual way to write a function in Lua, such as
+
+```lua
+function foo (x) return 2*x end
+```
+
+is just an instance of what we call syntactic sugar; it is simply a pretty way to write the following code:
+
+```lua
+foo = function (x) return 2*x end
+```
+
+Therefore, a function definition is in fact a statement (an assignment, more specifically) that creates a value of type “function” and assigns it to a variable.
+
+We can see the expression `function(x) body end` as a function constructor, just as `{}` is a table constructor. We call the result of such function constructors an anonymous function. 函数可以一直是匿名的。例如，库函数`table.sort`用于排序。它接收一个函数指定元素的顺序关系。
+
+```lua
+    network = {
+        {name = "grauna", IP = "210.26.30.34"},
+        {name = "arraial", IP = "210.26.30.23"},
+        {name = "lua", IP = "210.26.23.12"},
+        {name = "derain", IP = "210.26.23.20"},
+    }
+
+	table.sort(network, function (a, b) return (a.name > b.name) end)
+```
+
+### 6.1 闭包
+
+{{读的比较粗}}
+
+When we write a function enclosed in another function, it has full access to local variables from the enclosing function; we call this feature lexical scoping.
+
+```lua
+    function sortbygrade (names, grades)
+    	table.sort(names, function (n1, n2)
+    		return grades[n1] > grades[n2] -- compare the grades
+    	end)
+    end
+```
+
+在匿名函数中，`grades`既不是全局变量也不是局部变量，我们称其为非局部变量。(For historical reasons, non-local variables are also called **upvalues** in Lua.)
 
 
+```lua
+    function newCounter ()
+        local i = 0
+        return function () -- anonymous function
+        	i = i + 1
+        	return i
+        end
+    end
+    c1 = newCounter()
+    print(c1()) --> 1
+    print(c1()) --> 2
+```
 
+In this code, the anonymous function refers to a non-local variable, i, to keep its counter. However, by the time we call the anonymous function, i is already out of scope, because the function that created this variable (newCounter) has returned. Nevertheless, Lua handles this situation correctly, using the concept of **closure**. Simply put, a closure is a function plus all it needs to access nonlocal variables correctly. If we call `newCounter` again, it will create a new local variable i, so we will get a new closure, acting over this new variable:
 
+```lua
+	c2 = newCounter()
+    print(c2()) --> 1
+    print(c1()) --> 3
+    print(c2()) --> 2
+```
 
+c1和c2是相同函数的不同闭包。Technically speaking, what is a value in Lua is the closure, not the function. The function itself is just a prototype for closures. Nevertheless, we will continue to use the term “function” to refer to a closure whenever there is no possibility for confusion.
 
+### 6.2 非全局函数
 
+库函数（如`io.read`）就是将函数存储为表字段的例子。
+
+```lua
+    Lib = {}
+    Lib.foo = function (x,y) return x + y end
+    Lib.goo = function (x,y) return x - y end
+    print(Lib.foo(2, 3), Lib.goo(2, 3)) --> 5 -1
+```
+
+也可以写成：
+
+```lua
+    Lib = {
+    	foo = function (x,y) return x + y end,
+    	goo = function (x,y) return x - y end
+    }
+```
+
+Moreover, Lua offers yet another syntax to define such functions:
+
+```lua
+    Lib = {}
+    function Lib.foo (x,y) return x + y end
+    function Lib.goo (x,y) return x - y end
+```
+
+A chunk can declare local functions, which are visible only inside the chunk. Lexical scoping ensures that other functions in the package can use these local functions:
+
+```lua
+    local f = function (<params>)
+    	<body>
+    end
+    local g = function (<params>)
+    	<some code>
+    	f() -- 'f' is visible here
+    	<some code>
+    end
+```
+
+Lua supports such uses of local functions with a syntactic sugar for them:
+
+```lua
+    local function f (<params>)
+    	<body>
+    end
+```
+
+A subtle point arises in the definition of recursive local functions. The naive approach does not work here. Consider the next definition:
+
+```lua
+    local fact = function (n)
+    	if n == 0 then return 1
+    	else return n*fact(n-1) -- buggy
+    	end
+    end
+```
+
+When Lua compiles the call `fact(n-1)` in the function body, the local fact is not yet defined. Therefore, this expression will try to call a global fact, not the local one. 解决办法是，先定义局部边框，再定义函数：
+
+```lua
+    local fact
+    fact = function (n)
+        if n == 0 then return 1
+        else return n*fact(n-1)
+        end
+    end
+```
+
+Now the fact inside the function refers to the local variable. Its value when the function is defined does not matter; by the time the function executes, fact already has the right value.
+
+When Lua expands its syntactic sugar for local functions, it does not use the naive definition. Instead, a definition like `local function foo (<params>) <body> end` expands to `local foo; foo = function (<params>) <body> end`. 因此这个语法形式可以用于递归函数，没有任何问题、
+
+Of course, this trick does not work if you have indirect recursive functions. In such cases, you must use the equivalent of an explicit forward declaration:
+
+```lua
+    local f, g -- 'forward' declarations
+    function g ()
+    	<some code> f() <some code>
+    end
+    function f ()
+    	<some code> g() <some code>
+    end
+```
+
+注意最后一个定义不要写成`local function f`。Otherwise, Lua would create a fresh local variable f, leaving the original f (the one that g is bound to) undefined.
+
+### 6.3 Proper Tail Calls
 
 
 
