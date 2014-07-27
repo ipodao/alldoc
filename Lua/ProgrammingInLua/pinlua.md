@@ -1471,7 +1471,482 @@ Of course, this trick does not work if you have indirect recursive functions. In
 
 注意最后一个定义不要写成`local function f`。Otherwise, Lua would create a fresh local variable f, leaving the original f (the one that g is bound to) undefined.
 
-### 6.3 Proper Tail Calls
+### （未）6.3 Proper Tail Calls
+
+## 7. 迭代器与通用for
+
+Lua中，迭代器一般表示为函数：每次调用函数，返回集合中下一个元素。
+
+迭代器需要维护状态，如当前迭代到哪个元素。闭包适于完成此项任务。闭包构造器一般包含两个函数，闭包自己和工厂，工厂负责创建闭包和外部的非局部变量。
+
+As an example, let us write a simple iterator for a list. Unlike `ipairs`, this iterator does not return the index of each element, only its value:
+
+```lua
+    function values (t)
+    	local i = 0
+    	return function () i = i + 1; return t[i] end
+    end
+```
+
+We can use this iterator in a while loop:
+
+```lua
+    t = {10, 20, 30}
+    iter = values(t) -- creates the iterator
+    while true do
+    	local element = iter() -- calls the iterator
+    	if element == nil then break end
+    		print(element)
+    end
+```
+
+但使用通用for更容易：
+
+```lua
+    t = {10, 20, 30}
+    for element in values(t) do
+   		print(element)
+    end
+```
+
+通用for调用的是迭代器工程，它自己负责保存工厂产生迭代器。负责每次调用迭代器。遇到`nil`是停止迭代。(In the next section, we will see that the generic for does even more than that.)
+
+As a more advanced example, Listing 7.1 shows an iterator to traverse all the words from the current input file. To do this traversal, we keep two values: the contents of the current line (variable `line`), and where we are on this line (variable `pos`). With this data, we can always generate the next word. The main part of the iterator function is the call to `string.find`. This call searches for a word in the current line, starting at the current position. It describes a “word” using the pattern ‘`%w+`’, which matches one or more alphanumeric characters. If it finds the word, the function updates the current position to the first character after the word and returns this word. Otherwise, the iterator reads a new line and repeats the search. If there are no more lines, it returns `nil` to signal the end of the iteration.
+
+Despite its complexity, the use of `allwords` is straightforward:
+
+```lua
+    for word in allwords() do
+    	print(word)
+    end
+```
+
+Listing 7.1. Iterator to traverse all words from the input file:
+
+```lua
+    function allwords ()
+        local line = io.read() -- current line
+        local pos = 1 -- current position in the line
+        return function () -- iterator function
+            while line do -- repeat while there are lines
+                local s, e = string.find(line, "%w+", pos)
+                if s then -- found a word?
+                    pos = e + 1 -- next position is after this word
+                    return string.sub(line, s, e) -- return the word
+                else
+                	line = io.read() -- word not found; try next line
+                	pos = 1 -- restart from first position
+                end
+            end
+            return nil -- no more lines: end of traversal
+        end
+    end
+```
+
+### 7.2 通用for的语义
+
+之前迭代器的缺点是，每次新循环都要创建一个新闭包。多数情况下，这个开销不是问题。如上面的例子中，`allwords`迭代器相对于读取文件的开销不大。However, in some situations this overhead can be inconvenient. In such cases, we can use the generic for itself to keep the iteration state. 本节介绍通用for提供的维护状态的功能。
+
+通用for实际会维护三个值：迭代器函数，一个不可变状态和一个控制变量。
+
+通用for的语法是：
+
+```lua
+    for <var-list> in <exp-list> do
+    	<body>
+    end
+```
+
+`var-list`是一个或多个变量，逗号分隔。`exp-list`是一个或多个表达式，也是逗号分隔。多数情况下，表达式列表中只有一个元素，一般是调用迭代器工厂。
+
+```lua
+	for k, v in pairs(t) do print(k, v) end
+```
+
+变量列表中第一个变量称为控制变量。循环过程中，它的值不能为`nil`。因为nil表示循环结束。
+
+for循环做的第一件事是对表达式求值。这些表达式应该产生for循环感兴趣的三个值：迭代器函数、不可变状态和控制变量的初始值。Like in a multiple assignment, only the last (or the only) element of the list can result in more than one value; and the number of values is adjusted to three, extra values being discarded or nils added as needed.（当我们使用的是简单的迭代器时，工程返回的是迭代器函数，因此不可变状态和控制变量都是`nil`。）
+
+After this initialization step, the for calls the iterator function with two arguments: the invariant state and the control variable. (From the standpoint of the for construct, the invariant state has no meaning at all. The for only passes the state value from the initialization step to the calls to the iterator function.) Then the for assigns the values returned by the iterator function to the variables declared by its variable list. 如果第一个值（控制变量）返回nil，循环结束。Otherwise, the for executes its body and calls the iteration function again, repeating the process. More precisely, a construction like
+
+```lua
+    for var_1, ..., var_n in <explist> do <block> end
+```
+
+is equivalent to the following code:
+
+```lua
+    do
+        local _f, _s, _var = <explist>
+        while true do
+            local var_1, ... , var_n = _f(_s, _var)
+            _var = var_1
+            if _var == nil then break end
+            	<block>
+        end
+    end
+```
+
+So, if our iterator function is f, the invariant state is s, and the initial value for the control variable is a0, the control variable will loop over the values a1 = f(s; a0), a2 = f(s; a1), and so on, until ai is nil. If the for has other variables, they simply get the extra values returned by each call to f.
+
+### 7.3 无状态的迭代器
+
+As the name implies, a stateless iterator is an iterator that does not keep any state by itself. Therefore, we can use the same stateless iterator in multiple loops, avoiding the cost of creating new closures.
+
+As we just saw, the for loop calls its iterator function with two arguments: the invariant state and the control variable. A stateless iterator generates the next element for the iteration using only these two values. A typical example of this kind of iterator is `ipairs`, which iterates over all elements of an array:
+
+```lua
+    a = {"one", "two", "three"}
+    for i, v in ipairs(a) do
+    	print(i, v)
+    end
+```
+
+迭代的状态包括：被遍历的表（即不可变状态），当前下标（控制变量）。Both `ipairs` (the factory) and the iterator are quite simple; we could write them in Lua as follows:
+
+```lua
+    local function iter (a, i)
+        i = i + 1
+        local v = a[i]
+        if v then
+        	return i, v
+        end
+    end
+    function ipairs (a)
+        return iter, a, 0
+    end
+```
+
+The pairs function, which iterates over all elements of a table, is similar, except that the iterator function is the `next` function, which is a primitive function in Lua:
+
+```lua
+    function pairs (t)
+    	return next, t, nil
+    end
+```
+
+The call next(t,k), where k is a key of the table t, returns a next key in the table, in an arbitrary order, plus the value associated with this key as a second return value. The call next(t, nil) returns a first pair. When there are no more pairs, next returns nil.
+
+Some people prefer to use `next` directly, without calling pairs:
+
+```lua
+    for k, v in next, t do
+    	<loop body>
+    end
+```
+
+Remember that the for loop adjusts its expression list to three results, so that it gets next, t, and nil; this is exactly what it gets when it calls `pairs(t)`. An iterator to traverse a linked list is another interesting example of a stateless iterator. (As we already mentioned, linked lists are not frequent in Lua, but sometimes we need them.)
+
+```lua
+    local function getnext (list, node)
+        if not node then
+        	return list
+        else
+        	return node.next
+        end
+    end
+    function traverse (list)
+    	return getnext, list, nil
+    end
+```
+
+The trick here is to use the list main node as the invariant state (the second value returned by traverse) and the current node as the control variable. The first time the iterator function getnext is called, node will be nil, and so the function will return list as the first node. In subsequent calls, node will not be nil, and so the iterator will return node.next, as expected. As usual, it is trivial to use the iterator:
+
+```lua
+    list = nil
+    for line in io.lines() do
+    	list = {val = line, next = list}
+    end
+    for node in traverse(list) do
+    	print(node.val)
+    end
+```
+
+### 7.4 复杂状态
+
+Frequently, an iterator needs to keep more state than fits into a single invariant state and a control variable. The simplest solution is to use closures. An alternative solution is to pack all that the iterator needs into a table and use this table as the invariant state for the iteration. Using a table, an iterator can keep as much data as it needs along the loop. Moreover, it can change this data as it goes. Although the state is always the same table (and therefore invariant), the table contents change along the loop. Because such iterators have all their data in the state, they typically ignore the second argument provided by the generic for (the iterator variable).
+
+As an example of this technique, we will rewrite the iterator allwords, which traverses all the words from the current input file. This time, we will keep its state using a table with two fields: line and pos. The function that starts the iteration is simple. It must return the iterator function and the initial state:
+
+local iterator -- to be defined later
+function allwords ()
+local state = {line = io.read(), pos = 1}
+return iterator, state
+end
+The iterator function does the real work:
+function iterator (state)
+while state.line do -- repeat while there are lines
+-- search for next word
+local s, e = string.find(state.line, "%w+", state.pos)
+if s then -- found a word?
+-- update next position (after this word)
+state.pos = e + 1
+return string.sub(state.line, s, e)
+else -- word not found
+state.line = io.read() -- try next line...
+state.pos = 1 -- ... from first position
+end
+end
+return nil -- no more lines: end loop
+end
+
+Whenever possible, you should try to write stateless iterators, those that keep all their state in the for variables. With them, you do not create new objects when you start a loop. If you cannot fit your iteration into this model, then you should try closures. Besides being more elegant, typically a closure is more efficient than an iterator using tables: first, it is cheaper to create a closure than a table; second, access to non-local variables is faster than access to table fields. Later we will see yet another way to write iterators, with coroutines. This is the most powerful solution, but a little more expensive.
+
+### 7.5 真正的迭代器
+
+The name “iterator” is a little misleading, because our iterators do not iterate: what iterates is the for loop. Iterators only provide the successive values for the iteration. Maybe a better name would be “**generator**”, but “iterator” is already well established in other languages, such as Java.
+
+However, there is another way to build iterators wherein iterators actually do the iteration. When we use such iterators, we do not write a loop; instead, we simply call the iterator with an argument that describes what the iterator must do at each iteration. More specifically, the iterator receives as argument a function that it calls inside its loop.
+
+As a concrete example, let us rewrite once more the `allwords` iterator using this style:
+
+```lua
+    function allwords (f)
+        for line in io.lines() do
+            for word in string.gmatch(line, "%w+") do
+            	f(word) -- call the function
+            end
+        end
+    end
+```
+
+To use this iterator, we must supply the loop body as a function. If we want only to print each word, we simply use print:
+
+allwords(print)
+
+Often, we use an anonymous function as the body. For instance, the next code fragment counts how many times the word “hello” appears in the input file:
+
+local count = 0
+allwords(function (w)
+if w == "hello" then count = count + 1 end
+end)
+print(count)
+
+The same task, written with the previous iterator style, is not very different:
+local count = 0
+for w in allwords() do
+if w == "hello" then count = count + 1 end
+end
+print(count)
+
+True iterators were popular in older versions of Lua, when the language did not have the for statement. How do they compare with generator-style iterators? Both styles have approximately the same overhead: one function call per iteration. On the one hand, it is easier to write the iterator with true iterators (although we can recover this easiness with coroutines). On the other hand, the generator style is more flexible. First, it allows two or more parallel iterations. (For instance, consider the problem of iterating over two files comparing them word by word.) Second, it allows the use of break and return inside the iterator body. With a true iterator, a return returns from the anonymous function, not from the function doing the iteration. Overall, I usually prefer generators.
+
+## 8. 编译、执行、错误
+
+虽然Lua是解释性语言，但Lua总是执行前预编译成中间形式。是不是解释语言的关键However, the distinguishing feature of interpreted languages is not that they are not compiled, but that it is possible (and easy) to execute code generated on the fly. We may say that the presence of a function like `dofile` is what allows Lua to be called an interpreted language.
+
+### （未）8.1 编译
+
+Previously, we introduced dofile as a kind of primitive operation to run chunks of Lua code, but dofile is actually an auxiliary function: loadfile does the hard work. Like dofile, loadfile loads a Lua chunk from a file, but it does not run the chunk. Instead, it only compiles the chunk and returns the compiled chunk as a function. Moreover, unlike dofile, loadfile does not raise errors, but instead returns error codes, so that we can handle the error. We could define dofile as follows:
+
+```lua
+    function dofile (filename)
+    	local f = assert(loadfile(filename))
+    	return f()
+    end
+```
+
+### 8.3 C 代码
+
+Unlike code written in Lua, C code needs to be linked with an application before use. In several popular operating systems, the easiest way to do this link is with a dynamic linking facility. However, this facility is not part of the ANSI C specification; therefore, there is no portable way to implement it.
+
+Normally, Lua does not include facilities that cannot be implemented in ANSI C. However, dynamic linking is different. We can view it as the mother of all other facilities: once we have it, we can dynamically load any other facility that is not in Lua. Therefore, in this particular case, Lua breaks its portability rules and implements a dynamic linking facility for several platforms. 标准实现支持Windows, Mac OS X, Linux, FreeBSD, Solaris, and most other UNIX implementations. It should not be difficult to extend this facility to other platforms; check your distribution. (To check it, run `print(package.loadlib("a","b"))` from the Lua prompt and see the result. If it complains about a non-existent file, then you have dynamic linking facility. Otherwise, the error message should indicate that this facility is not supported or not installed.)
+
+Lua provides all the functionality of dynamic linking through a single function, called `package.loadlib`. It has two string arguments: the complete path of a library and the name of a function in that library. So, a typical call to it looks like the next fragment:
+
+```lua
+    local path = "/usr/local/lib/lua/5.1/socket.so"
+    local f = package.loadlib(path, "luaopen_socket")
+```
+
+The loadlib function loads the given library and links Lua to it. However, it does not call the given function. Instead, it returns the C function as a Lua function. If there is any error loading the library or finding the initialization function, `loadlib` returns `nil` plus an error message.
+
+The `loadlib` function is a very low-level function. We must provide the full path of the library and the correct name for the function (including occasional leading underscores included by the compiler). More often than not, we load C libraries using `require`. This function searches for the library and uses loadlib to load an initialization function for the library. When called, this initialization function builds and returns a table with the functions from that library, much as a typical Lua library does. We will discuss `require` in Section 15.1, and more details about C libraries in Section 27.3.
+
+### 8.4 错误
+
+因为Lua经常被签入应用，它不能一遇到错误直接崩溃或退出。Instead, whenever an error occurs, Lua ends the current chunk and returns to the application. Any unexpected condition that Lua encounters raises an error. (You
+can modify this behavior using metatables, as we will see later.) You can also explicitly raise an error calling the `error` function with an error message as an argument. Usually, this function is the appropriate way to signal errors in your code:
+
+```lua
+	print "enter a number:"
+	n = io.read("*n")
+	if not n then error("invalid input") end
+```
+
+This construction of calling `error` subject to some condition is so common that Lua has a built-in function just for this job, called assert:
+
+```lua
+    print "enter a number:"
+    n = assert(io.read("*n"), "invalid input")
+```
+
+The `assert` function checks whether its first argument is not false and simply returns this argument; if the argument is false, assert raises an error. Its second argument, the message, is optional. Beware, however, that assert is a regular function. As such, Lua always evaluates its arguments before calling the function. Therefore, if you have something like
+
+```lua
+    n = io.read()
+    assert(tonumber(n), "invalid input: " .. n .. " is not a number")
+```
+
+Lua will always do the concatenation, even when n is a number. It may be wiser to use an explicit test in such cases.
+
+When a function finds an unexpected situation (an exception), it can assume two basic behaviors: it can return an error code (typically `nil`) or it can raise an error, 调用`error`函数。There are no fixed rules for choosing between these two options, but we can provide a general guideline: an exception that is easily avoided should raise an error; otherwise, it should return an error code.
+
+For instance, let us consider the sin function. How should it behave when called on a table? Suppose it returns an error code. If we need to check for errors, we would have to write something like
+
+```lua
+    local res = math.sin(x)
+    if not res then -- error?
+    <error-handling code>
+```
+
+However, we could as easily check this exception before calling the function:
+
+```lua
+    if not tonumber(x) then -- x is not a number?
+    <error-handling code>
+```
+
+Frequently we check neither the argument nor the result of a call to sin; if the argument is not a number, it means that probably there is something wrong in our program. In such situations, to stop the computation and to issue an error message is the simplest and most practical way to handle the exception. On the other hand, let us consider the `io.open` function, which opens a file.
+
+How should it behave when asked to read a file that does not exist? In this case, there is no simple way to check for the exception before calling the function. In many systems, the only way of knowing whether a file exists is by trying to open it. Therefore, if `io.open` cannot open a file because of an external reason (such as “file does not exist” or “permission denied”), it returns `nil`, plus a string with
+the error message. In this way, you have a chance to handle the situation in an appropriate way, for instance by asking the user for another file name:
+
+```lua
+    local file, msg
+    repeat
+        print "enter a file name:"
+        local name = io.read()
+        if not name then return end -- no input
+        file, msg = io.open(name, "r")
+        if not file then print(msg) end
+    until file
+```
+
+If you do not want to handle such situations, but still want to play safe, you simply use assert to guard the operation:
+
+```lua
+	file = assert(io.open(name, "r"))
+```
+
+This is a typical Lua idiom: if `io.open` fails, `assert` will raise an error.
+
+```lua
+    file = assert(io.open("no-file", "r"))
+    --> stdin:1: no-file: No such file or directory
+```
+
+Notice how the error message, which is the second result from `io.open`, goes as the second argument to assert.
+
+### 8.5 错误处理与异常
+
+For many applications, you do not need to do any error handling in Lua; the application program does this handling. All Lua activities start from a call by the application, usually asking Lua to run a chunk. If there is any error, this call returns an error code, so that the application can take appropriate actions.
+
+In the case of the stand-alone interpreter, its main loop just prints the error message and continues showing the prompt and running the commands.
+
+However, if you need to handle errors in Lua, you must use the `pcall` (protected call) function to encapsulate your code. Suppose you want to run a piece of Lua code and to catch any error raised while running that code. Your first step is to encapsulate that piece of code in a function; more often than not, you will use an anonymous function for that. Then, you call that function with `pcall`:
+
+```lua
+    local ok, msg = pcall(function ()
+        <some code>
+        if unexpected_condition then error() end
+        <some code>
+        print(a[i]) -- potential error: 'a' may not be a table
+        <some code>
+    end)
+    if ok then -- no errors while running protected code
+        <regular code>
+    else -- protected code raised an error: take appropriate action
+        <error-handling code>
+    end
+```
+
+The `pcall` function calls its first argument in protected mode, so that it catches any errors while the function is running. If there are no errors, `pcall` returns true, plus any values returned by the call. Otherwise, it returns false, plus the error message.
+
+Despite its name, the error message does not have to be a string: `pcall` will return any Lua value that you pass to error.
+
+```lua
+    local status, err = pcall(function () error({code=121}) end)
+    print(err.code) --> 121
+```
+
+These mechanisms provide all we need to do exception handling in Lua. We throw an exception with error and catch it with `pcall`. The error message identifies the kind of error.
+
+### 8.6 错误消息与Tracebacks
+
+Although you can use a value of any type as an error message, usually error messages are strings describing what went wrong. When there is an internal error (such as an attempt to index a non-table value), Lua generates the error message; otherwise, the error message is the value passed to the error function.
+
+Whenever the message is a string, Lua tries to add some information about the location where the error happened:
+
+```lua
+    local status, err = pcall(function () a = "a"+1 end)
+    print(err)
+    --> stdin:1: attempt to perform arithmetic on a string value
+    local status, err = pcall(function () error("my error") end)
+    print(err)
+    --> stdin:1: my error
+```
+
+The location information gives the file name (stdin, in the example) plus the line number (1, in the example). The error function has an additional second parameter, which gives the level where it should report the error; you use this parameter to blame someone else for the error. For instance, suppose you write a function whose first task is to aaacheck whether it was called correctly:
+
+```lua
+    function foo (str)
+        if type(str) ~= "string" then
+            error("string expected")
+        end
+        <regular code>
+    end
+```
+
+Then, someone calls your function with a wrong argument:
+
+```lua
+	foo({x=1})
+```
+
+As it is, Lua points its finger to your function—after all, it was foo that called error—and not to the real culprit, the caller. To correct this problem, you inform error that the error you are reporting occurred on level 2 in the calling hierarchy (level 1 is your own function):
+
+```lua
+    function foo (str)
+    if type(str) ~= "string" then
+    error("string expected", 2)
+    end
+    <regular code>
+    end
+```
+
+Frequently, when an error happens, we want more debug information than only the location where the error occurred. At least, we want a traceback, showing the complete stack of calls leading to the error. When pcall returns its error message, it destroys part of the stack (the part that goes from it to the error point). Consequently, if we want a traceback, we must build it before pcall returns. To do this, Lua provides the xpcall function. Besides the function to be called, it receives a second argument, a message handler function. In case of an error, Lua calls this message handler before the stack unwinds, so that it can use the debug library to gather any extra information it wants about the error. Two common message handlers are debug.debug, which gives you a Lua prompt so that you can inspect by yourself what was going on when the error happened; and debug.traceback, which builds an extended error message with a traceback. The latter is the function that the stand-alone interpreter uses to build its error messages.
+
+## 9. 协作程序（Coroutines）
+
+Coroutine与线程有一些像：it is a line of execution, with its own stack, its own local variables, and its own instruction pointer; but it shares global variables and mostly anything else with other coroutines. 线程和协作程序的主要区别是，多个线程是并发执行的，而协作程序，at any given time, a program with coroutines is running only one of its coroutines, and this running coroutine suspends its execution only when it explicitly requests to be suspended.
+
+Coroutine is a powerful concept. As such, several of its main uses are complex. Do not worry if you do not understand some of the examples in this chapter on your first reading. You can read the rest of the book and come back here later. But please come back; it will be time well spent.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
