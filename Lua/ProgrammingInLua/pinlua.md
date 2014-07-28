@@ -1917,18 +1917,104 @@ As it is, Lua points its finger to your function—after all, it was foo that ca
 
 Frequently, when an error happens, we want more debug information than only the location where the error occurred. At least, we want a traceback, showing the complete stack of calls leading to the error. When pcall returns its error message, it destroys part of the stack (the part that goes from it to the error point). Consequently, if we want a traceback, we must build it before pcall returns. To do this, Lua provides the xpcall function. Besides the function to be called, it receives a second argument, a message handler function. In case of an error, Lua calls this message handler before the stack unwinds, so that it can use the debug library to gather any extra information it wants about the error. Two common message handlers are debug.debug, which gives you a Lua prompt so that you can inspect by yourself what was going on when the error happened; and debug.traceback, which builds an extended error message with a traceback. The latter is the function that the stand-alone interpreter uses to build its error messages.
 
-## 9. 协作程序（Coroutines）
+## （未）9. 协作程序（Coroutines）
 
 Coroutine与线程有一些像：it is a line of execution, with its own stack, its own local variables, and its own instruction pointer; but it shares global variables and mostly anything else with other coroutines. 线程和协作程序的主要区别是，多个线程是并发执行的，而协作程序，at any given time, a program with coroutines is running only one of its coroutines, and this running coroutine suspends its execution only when it explicitly requests to be suspended.
 
 Coroutine is a powerful concept. As such, several of its main uses are complex. Do not worry if you do not understand some of the examples in this chapter on your first reading. You can read the rest of the book and come back here later. But please come back; it will be time well spent.
 
+### 9.1 Coroutine Basics
 
+Lua packs all its coroutine-related functions in the `coroutine` table. The `create` function creates new coroutines. It has a single argument, a function with the code that the coroutine will run. It returns a value of type `thread`, which represents the new coroutine. Often, the argument to create is an anonymous function, like here:
 
+```lua
+    co = coroutine.create(function () print("hi") end)
+    print(co) --> thread: 0x8071d98
+```
 
+A coroutine can be in one of four states: suspended, running, dead, and normal. We can check the state of a coroutine with the `status` function:
 
+```lua
+	print(coroutine.status(co)) --> suspended
+```
 
+When we create a coroutine, it starts in the suspended state; a coroutine does not run its body automatically when we create it. Function `coroutine.resume(re)` starts the execution of a coroutine, changing its state from suspended to running:
 
+```lua
+	coroutine.resume(co) --> hi
+```
+
+In this first example, the coroutine body simply prints “hi” and terminates, leaving the coroutine in the dead state.
+
+Until now, coroutines look like nothing more than a complicated way to call functions. The real power of coroutines stems from the yield function, which allows a running coroutine to suspend its own execution so that it can be resumed later. Let us see a simple example:
+
+```lua
+    co = coroutine.create(function ()
+        for i = 1, 10 do
+        	print("co", i)
+        	coroutine.yield()
+        end
+    end)
+```
+
+Now, when we resume this coroutine, it starts its execution and runs until the first yield:
+
+```lua
+	coroutine.resume(co) --> co 1
+```
+
+If we check its status, we can see that the coroutine is suspended and therefore can be resumed again:
+
+```lua
+	print(coroutine.status(co)) --> suspended
+```
+
+From the coroutine’s point of view, all activity that happens while it is suspended is happening inside its call to `yield`. When we resume the coroutine, this call to yield finally returns and the coroutine continues its execution until the next yield or until its end:
+
+```lua
+    coroutine.resume(co) --> co 2
+    coroutine.resume(co) --> co 3
+    ...
+    coroutine.resume(co) --> co 10
+    coroutine.resume(co) -- prints nothing
+```
+
+During the last call to resume, the coroutine body finishes the loop and then returns, without printing anything. If we try to resume it again, resume returns `false` plus an error message:
+
+```lua
+	print(coroutine.resume(co))
+	--> false cannot resume dead coroutine
+```
+
+Note that resume runs in protected mode. Therefore, if there is any error inside a coroutine, Lua will not show the error message, but instead will return it to the resume call. When a coroutine resumes another, it is not suspended; after all, we cannot resume it. However, it is not running either, because the running coroutine is the other one. So, its own status is what we call the normal state.
+
+A useful facility in Lua is that a pair resume–yield can exchange data. The first resume, which has no corresponding yield waiting for it, passes its extra arguments as arguments to the coroutine main function:
+co = coroutine.create(function (a, b, c)
+print("co", a, b, c + 2)
+end)
+coroutine.resume(co, 1, 2, 3) --> co 1 2 5
+
+A call to resume returns, after the true that signals no errors, any arguments passed to the corresponding yield:
+co = coroutine.create(function (a,b)
+coroutine.yield(a + b, a - b)
+end)
+print(coroutine.resume(co, 20, 10)) --> true 30 10
+
+Symmetrically, yield returns any extra arguments passed to the corresponding resume:
+co = coroutine.create (function (x)
+print("co1", x)
+print("co2", coroutine.yield())
+end)
+coroutine.resume(co, "hi") --> co1 hi
+coroutine.resume(co, 4, 5) --> co2 4 5
+
+Finally, when a coroutine ends, any values returned by its main function go to the corresponding resume:
+co = coroutine.create(function ()
+return 6, 7
+end)
+print(coroutine.resume(co)) --> true 6 7
+
+We seldom use all these facilities in the same coroutine, but all of them have their uses. For those that already know something about coroutines, it is important to clarify some concepts before we go on. Lua offers what we call asymmetric coroutines. This means that it has a function to suspend the execution of a coroutine and a different function to resume a suspended coroutine. Some
 
 
 
