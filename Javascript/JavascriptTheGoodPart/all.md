@@ -1,5 +1,7 @@
 [toc]
 
+# Javascript: The Good Part
+
 ## 1. 精华
 
 ### 1.1 为什么要使用JavaScript
@@ -1076,4 +1078,172 @@ Javascript没有多维数组，但支持元素为数组的数组：
 
 （略）
 
+## 8 方法
 
+（略，需要时百度即可）
+
+## 9 代码风格
+
+Javascript没有类似C语言的块级作用域，只有函数级作用域。因此我在每个函数的开始声明我的所有变量。
+
+## A 糟粕
+
+### A.3 自动插入分号
+
+有时自动插入分号会导致错误，例如：
+
+```lua
+    return
+    {
+        status: true
+    };
+```
+
+实际返回`undefined`。
+
+### A.6 typeof
+
+对`null`做`typeof`结果为’object’而非’null’。检查null的方式：
+
+```js
+	my_value===null
+```
+
+判断一个对象是否为对象或数组：
+
+```js
+if (my_value && typeof my_value === 'object') {
+    // my_value is an object or an array!
+}
+```
+
+在对正则表达式的类型识别上，不太一致。有的实现会报’object’有的会报’function’。
+
+```js
+	typeof /a/
+```
+
+### A.7 parseInt
+
+`parseInt`将一个字符串转换为整数。当遇到非数字时停止。因此`parseInt("16")`与`parseInt("16 tons")`返回值相同。
+
+如果第一个字符是`0`，则字符串按八进制解析。因为8和9不是合法的八进制，因此`parseInt("08")`和`parseInt("09")`都返回0。这个问题会导致解析时间字符串时错误，可以强制指定基数`parseInt("08", 10)`。推荐总是指定基数。
+
+### A.9 浮点数
+
+二进制浮点数不能正确处理十进制小数。因此`0.1 + 0.2`不等于`0.3`。这是Javascript经常被报告的bug，并且它是遵循二进制浮点数算术标准（IEEE 754）而有意导致的结果。
+
+**幸好浮点运算中的整数运算是精确的**，可以通过扩大精度避免小数。如将货币单位设为分而不是元。
+
+### A.10 NaN
+
+`NaN`是IEEE 754定义的一个值。它表示非数字，尽管：`typeof NaN === 'number'`是true。
+
+`NaN`可能尝试将字符串转换为数字时产生：
+
+```js
++ '0'       // 0
++ 'oops'    // NaN
+```
+
+如果运算中有一个运算数为`NaN`，结果为`NaN`。
+
+只能使用`isNaN`函数判断一个值是否为数字。`NaN`不等于自己。
+
+```js
+NaN === NaN    // false
+NaN !== NaN    // true
+
+isNaN(NaN)       // true
+isNaN(0)         // false
+isNaN('oops')    // true
+isNaN('0')       // false
+```
+
+判断一个值是否可用于数字运算的最佳方式是使用`isFinite()`函数，因为它会筛选掉`NaN`和`Infinity`。不幸的是，如果操作数不是数字，`isFinite()`会试图将操作数转换为数字。因此，最好定义函数：
+
+```js
+    function isNumber(value) {
+    	return typeof value === 'number' && isFinite(value);
+    }
+```
+
+### A.11 伪数组
+
+`typeof`运算符无法区分数组和对象，要判断是否是数组，需要检查`constructor`属性：
+
+```js
+    if (my_value && typeof my_value === 'object' &&
+            my_value.constructor === Array) {
+        // my_value is an array!
+    }
+```
+
+上面的检测对于在不同Frame或窗口创建的数组将会给出false。当数组有可能在其他Frame中创建时，下面的检测更为可靠：
+
+```js
+    if (my_value && typeof my_value === 'object' &&
+            typeof my_value.length === 'number' &&
+            !(my_value.propertyIsEnumerable('length')) {
+        // my_value is truly an array!
+    }
+```
+
+`arguments`不是一个真数组，尽管它带有length成员。上面的检测会将arguments识别为数组。
+
+### A.12 假值
+
+Javascript中的假值：`0`、`NaN`、`''`（空字符串）、`false`、`null`、`undefined`。
+
+`undefined`和`NaN`不是常量。它们是全局变量，而且你可以改变它们的值。
+
+## 附录B 鸡肋
+
+### B.1 `==`
+
+两组运算符`===`、`!==`和`==`、`!=`。`===`只有在两个操作数类型相同且值相同时才会返回true。但`==`和`!=`在做比较时，如果操作数类型不同，会尝试做转换，转换规则非常奇怪。一些例子：
+
+```js
+'' == '0'          // false
+0 == ''            // true
+0 == '0'           // true
+
+false == 'false'   // false
+false == '0'       // true
+
+false == undefined // false
+false == null      // false
+null == undefined  // true
+
+' \t\r\n ' == 0    // true
+```
+
+建议，始终使用`===`、`!==`。永远不要使用`==`、`!=`。
+
+### B.9 函数语句 vs 函数表达式
+
+Javascript既有**函数语句**，又有**函数表达式**。二者看起来类似。
+
+函数语句：`function foo( ) {}`。等价的函数表达式：`var foo = function foo( ) {};`。
+
+函数语句在解析时会被提升：不管函数语句放置在哪里，它会被移动到所在作用域的顶部。可使得函数不必先声明后使用。而我认为这会造成混乱。
+
+一个语句不能以一个函数表达式开头，因为官方规定以function开头的语句是一个function语句。解决方法是把函数放在一个圆括号中：
+
+```js
+(function () {
+    var hidden_variable;
+
+    // This function can have some impact on
+    // the environment, but introduces no new
+    // global variables.
+})();
+```
+
+### B.10 类型的包装对象
+
+Javascript有一套类型的包装读写，例如：`new Boolean(false)`，会返回一个对象。这其实完全没有必要！不要使用new Boolean，new Number和new String。此外也避免使用new Object和new Array。直接使用`{}`和`[]`多好。
+
+### B.12 void
+
+In JavaScript, void is an operator that takes an operand and returns undefined.
