@@ -956,7 +956,7 @@ x()
 
 ## 5. 函数
 
-如果函数只有一个参数。且实参是字符串字面量或Table构造器，则括号是可选的：
+如果函数只有一个参数。且实参是 **字符串字面量** 或 **表构造器**，则括号是可选的：
 
 ```lua
 	print "Hello World" <--> print("Hello World")
@@ -967,7 +967,7 @@ x()
 	type{} <--> type({})
 ```
 
-Lua also offers a special syntax for object-oriented calls, the colon operator. An expression like `o:foo(x)` is just another way to write `o.foo(o,x)`, that is, to call `o.foo` adding `o` as a first extra argument. In Chapter 16, we will discuss such calls (and object-oriented programming) in more detail.
+Lua提供一种面向对象的调用方式：用冒号运算符。`o:foo(x)`只是`o.foo(o,x)`的另一种写法。面向对象详见第16章。
 
 Lua程序可以使用C编写的函数（或宿主程序使用的其他语言）。例如，标准库中的函数都是C写的。调用函数时，C编写的函数与Lua编写的函数没有区别。
 
@@ -1021,6 +1021,8 @@ Lua函数可以返回多个结果。
     print(maximum({8, 10, 23, 12, 5})) --> 23 3
 ```
 
+假如有下面几个函数定义：
+
 ```lua
     function foo0 () end -- returns no results
     function foo1 () return "a" end -- returns 1 result
@@ -1030,31 +1032,31 @@ Lua函数可以返回多个结果。
 返回多值与多赋值：
 
 ```lua
-x,y,z = 10, foo2() -- x=10, y="a", z="b"
+	x,y,z = 10, foo2() -- x=10, y="a", z="b"
 ```
 
-值列表中，函数调用后面的值无效：
+值列表中，函数调用后面的值无效，将被丢弃！因此函数调用只能作为列表中最后一项：
 
 ```lua
-x, y = foo2(), 20 -- x="a", y=20
-x, y = foo0(), 20, 30 -- x = nil, y=20, 30 is discarded
+    x, y = foo2(), 20 -- x="a", y=20
+    x, y = foo0(), 20, 30 -- x = nil, y=20, 30 is discarded
 ```
 
 When a function call is the last (or the only) argument to another call, all results from the first call go as arguments. We have seen examples of this construction already, with print. Because the print function can receive a variable number of arguments, the statement `print(g())` prints all results returned by g.
 
 ```lua
-print(foo0()) -->
-print(foo1()) --> a
-print(foo2()) --> a b
-print(foo2(), 1) --> a 1
-print(foo2() .. "x") --> ax (see next)
+    print(foo0()) -->
+    print(foo1()) --> a
+    print(foo2()) --> a b
+    print(foo2(), 1) --> a 1
+    print(foo2() .. "x") --> ax (see next)
 ```
 
-When the call to `foo2` appears inside an expression, Lua adjusts the number of results to one; so, in the last line, the concatenation uses only the “a”.
+如果`foo2`调用在一个表达式内，Lua将返回值调整成一个，因此上面例子的最后一个调用，只有第一个返回值“a”被使用。
 
-If we write `f(g())` and f has a fixed number of arguments, Lua adjusts the number of results of g to the number of parameters of f, as we saw previously.
+若`f(g())`，`f`有固定数量的参数，则Lua会调整g的结果数量以匹配f的参数数量。
 
-A constructor also collects all results from a call, without any adjustments:
+表构造器也会收集函数调用的所有结果：
 
 ```lua
     t = {foo0()} -- t = {} (an empty table)
@@ -1062,13 +1064,13 @@ A constructor also collects all results from a call, without any adjustments:
     t = {foo2()} -- t = {"a", "b"}
 ```
 
-As always, this behavior happens only when the call is the last expression in the list; calls in any other position produce exactly one result:
+但前提时函数调用在最后。否则只会留下一个结果：
 
 ```lua
 	t = {foo0(), foo2(), 4} -- t[1] = nil, t[2] = "a", t[3] = 4
 ```
 
-Finally, a statement like `return f()` returns all values returned by f:
+`return f()`返回`f`返回的所有值：
 
 ```lua
     function foo (i)
@@ -1083,7 +1085,7 @@ Finally, a statement like `return f()` returns all values returned by f:
     print(foo(3)) -- (no results)
 ```
 
-You can force a call to return exactly one result by enclosing it in an extra pair of parentheses:
+若想函数调用只返回一个结果，可以在外面包一个括号：
 
 ```lua
     print((foo0())) --> nil
@@ -1091,9 +1093,9 @@ You can force a call to return exactly one result by enclosing it in an extra pa
     print((foo2())) --> a
 ```
 
-Beware that a return statement does not need parentheses around the returned value; any pair of parentheses placed there counts as an extra pair. Therefore, a statement like `return(f(x))` always returns one single value, no matter how many values f returns. Sometimes this is what you want, sometimes not.
+Beware that a return statement does not need parentheses around the returned value; any pair of parentheses placed there counts as an extra pair. Therefore, a statement like `return(f(x))` always returns one single value, no matter how many values `f` returns. Sometimes this is what you want, sometimes not.
 
-A special function with multiple returns is `table.unpack`. It receives an array and returns as results all elements from the array, starting from index 1:
+A special function with multiple returns is `table.unpack`. It receives an array and returns as results all elements from the array, starting from index `1`:
 
 ```lua
 	print(table.unpack{10,20,30}) --> 10 20 30
@@ -1106,7 +1108,7 @@ An important use for `unpack` is in a generic call mechanism. A generic call mec
 	f(table.unpack(a))
 ```
 
-The call to unpack returns all values in `a`, which become the arguments to f. For instance, consider the following call:
+The call to `unpack` returns all values in `a`, which become the arguments to f. For instance, consider the following call:
 
 ```lua
 	print(string.find("hello", "ll"))
@@ -1120,7 +1122,7 @@ You can dynamically build an equivalent call with the following code:
 	print(f(table.unpack(a)))
 ```
 
-`unpack`利用长度运算符确定元素数量，so it works only on proper sequences. 若需要，可以显式限定范围：
+`unpack`利用长度运算符确定元素数量，因为默认它只能处理序列。若需要，可以显式限定范围：
 
 ```lua
 	print(table.unpack({"Sun", "Mon", "Tue", "Wed"}, 2, 3))
@@ -1141,11 +1143,11 @@ Although the predefined `unpack` function is written in C, we could write it als
 
 The first time we call it, with a single argument, i gets 1 and n gets the length of the sequence. Then the function returns t[1] followed by all results from `unpack(t,2,n)`, which in turn returns t[2] followed by all results from `unpack(t,3,n)`, and so on, stopping after n elements.
 
-### 5.2 Variadic Functions
+### 5.2 可变参数函数
 
-A function in Lua can be variadic, that is, it can receive a variable number of arguments. Although print is defined in C, we can define variadic functions in Lua, too.
+可变参数的函数，值函数可以接收多个参数。
 
-As a simple example, the following function returns the summation of all its arguments:
+例如，返回所有参数的和：
 
 ```lua
     function add (...)
@@ -1158,17 +1160,13 @@ As a simple example, the following function returns the summation of all its arg
     print(add(3, 4, 10, 25, 12)) --> 54
 ```
 
-The three dots (`...`) in the parameter list indicate that the function is variadic. When we call this function, Lua collects all its arguments internally; we call these collected arguments the extra arguments of the function. A function can access its extra arguments using again the three dots, now as an expression. In our example, the expression `{...}` results in an array with all collected arguments. The function then traverses the array to add its elements.
-
-We call the expression `...` a vararg expression. It behaves like a multiple return function, returning all extra arguments of the current function. For instance, the command `print(...)` prints all extra arguments of the function.
-
-Likewise, the next command creates two local variables with the values of the first two optional arguments (or nil if there are no such arguments):
+参数列表中的三个点`...`表示函数是可变参数的。我们称这些参数为数组的额外参数。函数内仍然使用三个点访问这些参数。例如`{...}`产生一个数组，收集所有参数。我们称表达式`...`为变参数表达式。For instance, the command `print(...)` prints all extra arguments of the function. 类似的，下面的命令取前两个参数（若实参不足，给`nil`）：
 
 ```lua
 	local a, b = ...
 ```
 
-Actually, we can emulate the usual parameter-passing mechanism of Lua translating function `foo (a, b, c)` to 
+实际上，可以把传统的`foo (a, b, c)`函数改写成：
 
 ```lua
 	function foo (...)
@@ -1181,7 +1179,7 @@ A function like the next one simply returns all arguments in its call:
 	function id (...) return ... end
 ```
 
-It is a multi-value identity function. The next function behaves exactly like another function foo, except that before the call it prints a message with its arguments:
+这个特性可以用于包装、拦截函数：
 
 ```lua
 	function foo1 (...)
@@ -1190,9 +1188,7 @@ It is a multi-value identity function. The next function behaves exactly like an
 	end
 ```
 
-这个特性可以用于包装函数。
-
-Let us see another useful example. Lua provides separate functions for formatting text (`string.format`) and for writing text (`io.write`). It is straightforward to combine both functions into a single variadic function:
+另一个有用的例子，将格式化函数`string.format`和输出函数`io.write`合并为一个可变参数的函数：
 
 ```lua
     function fwrite (fmt, ...)
@@ -1200,7 +1196,7 @@ Let us see another useful example. Lua provides separate functions for formattin
     end
 ```
 
-Variadic functions can have any number of fixed parameters before the variadic part. Lua assigns the first arguments to these parameters; the rest (if any) goes as extra arguments.
+在可变参数前，函数可以有任意数量的固定参数。
 
 Below we show some examples of calls and the corresponding parameter
 values:
@@ -1213,9 +1209,9 @@ values:
 
 (Note that the call fwrite() raises an error, because string.format needs a string as its first argument.)
 
-To iterate over its extra arguments, a function can use the expression `{...}` to collect them all in a table, as we did in our definition of add.
+要遍历额外参数，可以用`{...}`将它们转换成一个表。
 
-In the rare occasions when the extra arguments can be valid nils, however, the table created with {...} may not be a proper sequence. For instance, there is no way to detect in such a table whether there were trailing nils in the original arguments. For these occasions, Lua offers the `table.pack` function.（Lua 5.2加入） This function receives any number of arguments and returns a new table with all its arguments, just like `{...}`; but this table has also an extra field “n”, with the total number of arguments. The following function uses `table.pack` to test whether none of its arguments is `nil`:
+有时额外参数中允许有nil。此时`{...}`产生的表不是序列（有洞）。为解决该问题Lua 5.2引入了`table.pack`函数。This function receives any number of arguments and returns a new table with all its arguments, just like `{...}`; 但这个表还提供一个额外的字段`n`，给出参数数量。The following function uses `table.pack` to test whether none of its arguments is `nil`:
 
 ```lua
     function nonils (...)
@@ -1235,14 +1231,7 @@ Remember, however, that `{...}` is cleaner and faster than `table.pack(...)` whe
 
 ### 5.3 具名实参
 
-Lua中参数传递是基于位置的。Sometimes, however, it is useful to specify the arguments by name. To illustrate this point, let us consider the function `os.rename`, which renames a file. Quite often, we forget which name comes first, the new or the old; therefore, we may want to redefine this function to receive two named arguments:
-
-```lua
-	-- 无效代码
-	rename(old="temp.lua", new="temp1.lua")
-```
-
-Lua has no direct support for this syntax, but we can have the same final effect, with a small syntax change. 方法是将所有的实参打包进一个table，函数只取一个参数，即这个Table。 The special syntax that Lua provides for function calls, with just one table constructor as argument, helps the trick:
+Lua中参数传递是基于位置的。Lua本身不支持命名实参。但可以通过表实现类似效果：所有的实参打包进一个表，函数只取一个参数，即这个表。函数调用时，若参数是表，可以省略括号：
 
 ```lua
 	rename{old="temp.lua", new="temp1.lua"}
@@ -1271,19 +1260,7 @@ Lua has no direct support for this syntax, but we can have the same final effect
     sin(10, 20) --> 10 20
 ```
 
-If functions are values, are there expressions that create functions? Yes. In fact, the usual way to write a function in Lua, such as
-
-```lua
-function foo (x) return 2*x end
-```
-
-is just an instance of what we call syntactic sugar; it is simply a pretty way to write the following code:
-
-```lua
-foo = function (x) return 2*x end
-```
-
-Therefore, a function definition is in fact a statement (an assignment, more specifically) that creates a value of type “function” and assigns it to a variable.
+Lua中`function foo (x) return 2*x end`只是下面写法的糖衣：`foo = function (x) return 2*x end`。
 
 We can see the expression `function(x) body end` as a function constructor, just as `{}` is a table constructor. We call the result of such function constructors an anonymous function. 函数可以一直是匿名的。例如，库函数`table.sort`用于排序。它接收一个函数指定元素的顺序关系。
 
@@ -1359,7 +1336,7 @@ c1和c2是相同函数的不同闭包。Technically speaking, what is a value in
     }
 ```
 
-Moreover, Lua offers yet another syntax to define such functions:
+或者写成：
 
 ```lua
     Lib = {}
@@ -1367,7 +1344,7 @@ Moreover, Lua offers yet another syntax to define such functions:
     function Lib.goo (x,y) return x - y end
 ```
 
-A chunk can declare local functions, which are visible only inside the chunk. Lexical scoping ensures that other functions in the package can use these local functions:
+代码块中可以声明局部函数，只在块内可见。
 
 ```lua
     local f = function (<params>)
@@ -1380,7 +1357,7 @@ A chunk can declare local functions, which are visible only inside the chunk. Le
     end
 ```
 
-Lua supports such uses of local functions with a syntactic sugar for them:
+局部函数的语法糖衣：
 
 ```lua
     local function f (<params>)
@@ -1388,7 +1365,7 @@ Lua supports such uses of local functions with a syntactic sugar for them:
     end
 ```
 
-A subtle point arises in the definition of recursive local functions. The naive approach does not work here. Consider the next definition:
+定义局部的递归函数时要额外注意。正常的写法是不行的：
 
 ```lua
     local fact = function (n)
@@ -1398,7 +1375,7 @@ A subtle point arises in the definition of recursive local functions. The naive 
     end
 ```
 
-When Lua compiles the call `fact(n-1)` in the function body, the local fact is not yet defined. Therefore, this expression will try to call a global fact, not the local one. 解决办法是，先定义局部边框，再定义函数：
+Lua在编译`fact(n-1)`时，局部函数`fact`尚未定义，它会找一个全局函数。解决办法是，先定义局部变量，再定义函数：
 
 ```lua
     local fact
@@ -1409,9 +1386,7 @@ When Lua compiles the call `fact(n-1)` in the function body, the local fact is n
     end
 ```
 
-Now the fact inside the function refers to the local variable. Its value when the function is defined does not matter; by the time the function executes, fact already has the right value.
-
-When Lua expands its syntactic sugar for local functions, it does not use the naive definition. Instead, a definition like `local function foo (<params>) <body> end` expands to `local foo; foo = function (<params>) <body> end`. 因此这个语法形式可以用于递归函数，没有任何问题、
+当Lua展开局部函数的糖衣形式时，如`local function foo (<params>) <body> end`，会被展开成：`local foo; foo = function (<params>) <body> end`。因此这个语法形式可以用于递归函数，没有任何问题、
 
 Of course, this trick does not work if you have indirect recursive functions. In such cases, you must use the equivalent of an explicit forward declaration:
 
@@ -1425,7 +1400,7 @@ Of course, this trick does not work if you have indirect recursive functions. In
     end
 ```
 
-注意最后一个定义不要写成`local function f`。Otherwise, Lua would create a fresh local variable f, leaving the original f (the one that g is bound to) undefined.
+注意最后一个定义不要写成`local function f`！！Otherwise, Lua would create a fresh local variable f, leaving the original f (the one that g is bound to) undefined.
 
 ### （未）6.3 Proper Tail Calls
 
@@ -1435,7 +1410,7 @@ Lua中，迭代器一般表示为函数：每次调用函数，返回集合中�
 
 迭代器需要维护状态，如当前迭代到哪个元素。闭包适于完成此项任务。闭包构造器一般包含两个函数，闭包自己和工厂，工厂负责创建闭包和外部的非局部变量。
 
-As an example, let us write a simple iterator for a list. Unlike `ipairs`, this iterator does not return the index of each element, only its value:
+例子，编写一个列表的迭代器。这个迭代器不像`ipairs`，值返回值，不返回索引：
 
 ```lua
     function values (t)
@@ -1444,7 +1419,7 @@ As an example, let us write a simple iterator for a list. Unlike `ipairs`, this 
     end
 ```
 
-We can use this iterator in a while loop:
+可以在while循环中使用该迭代器：
 
 ```lua
     t = {10, 20, 30}
@@ -1465,17 +1440,9 @@ We can use this iterator in a while loop:
     end
 ```
 
-通用for调用的是迭代器工程，它自己负责保存工厂产生迭代器。负责每次调用迭代器。遇到`nil`是停止迭代。(In the next section, we will see that the generic for does even more than that.)
+通用for调用的是迭代器工厂，它自己负责保存工厂产生迭代器。并负责每次调用迭代器。遇到`nil`时停止迭代。(In the next section, we will see that the generic for does even more than that.)
 
 As a more advanced example, Listing 7.1 shows an iterator to traverse all the words from the current input file. To do this traversal, we keep two values: the contents of the current line (variable `line`), and where we are on this line (variable `pos`). With this data, we can always generate the next word. The main part of the iterator function is the call to `string.find`. This call searches for a word in the current line, starting at the current position. It describes a “word” using the pattern ‘`%w+`’, which matches one or more alphanumeric characters. If it finds the word, the function updates the current position to the first character after the word and returns this word. Otherwise, the iterator reads a new line and repeats the search. If there are no more lines, it returns `nil` to signal the end of the iteration.
-
-Despite its complexity, the use of `allwords` is straightforward:
-
-```lua
-    for word in allwords() do
-    	print(word)
-    end
-```
 
 Listing 7.1. Iterator to traverse all words from the input file:
 
@@ -1499,9 +1466,17 @@ Listing 7.1. Iterator to traverse all words from the input file:
     end
 ```
 
+Despite its complexity, the use of `allwords` is straightforward:
+
+```lua
+    for word in allwords() do
+    	print(word)
+    end
+```
+
 ### 7.2 通用for的语义
 
-之前迭代器的缺点是，每次新循环都要创建一个新闭包。多数情况下，这个开销不是问题。如上面的例子中，`allwords`迭代器相对于读取文件的开销不大。However, in some situations this overhead can be inconvenient. In such cases, we can use the generic for itself to keep the iteration state. 本节介绍通用for提供的维护状态的功能。
+之前迭代器的缺点是，每次新循环都要创建一个新闭包。多数情况下，这个开销不是问题。如上面的例子中，`allwords`迭代器相对于读取文件的开销不大。但有时不能忽略此开销。在这种情况下，我们可以利用通用for自己维护遍历的状态。本节介绍通用for提供的维护状态的功能。
 
 通用for实际会维护三个值：迭代器函数，一个不可变状态和一个控制变量。
 
@@ -1513,23 +1488,25 @@ Listing 7.1. Iterator to traverse all words from the input file:
     end
 ```
 
-`var-list`是一个或多个变量，逗号分隔。`exp-list`是一个或多个表达式，也是逗号分隔。多数情况下，表达式列表中只有一个元素，一般是调用迭代器工厂。
+`var-list`是一个或多个变量，逗号分隔。`exp-list`是一个或多个表达式，也是逗号分隔。多数情况下，表达式列表中只有一个元素，一般是迭代器工厂的调用。
 
 ```lua
 	for k, v in pairs(t) do print(k, v) end
 ```
 
-变量列表中第一个变量称为控制变量。循环过程中，它的值不能为`nil`。因为nil表示循环结束。
+变量列表中第一个变量称为控制变量。循环过程中，它的值不能为`nil`。因为`nil`表示循环结束。
 
-for循环做的第一件事是对表达式求值。这些表达式应该产生for循环感兴趣的三个值：迭代器函数、不可变状态和控制变量的初始值。Like in a multiple assignment, only the last (or the only) element of the list can result in more than one value; and the number of values is adjusted to three, extra values being discarded or nils added as needed.（当我们使用的是简单的迭代器时，工程返回的是迭代器函数，因此不可变状态和控制变量都是`nil`。）
+for循环做的第一件事是对表达式求值。这些表达式应该产生for循环感兴趣的三个值：迭代器函数、不可变状态和控制变量的初始值。与多赋值一样，只有列表中最后一个元素可以产生多于一个值；且最终所有结果只取前三个。（当我们使用的是简单的迭代器时，工程返回的是迭代器函数，因此不可变状态和控制变量都是`nil`。）
 
-After this initialization step, the for calls the iterator function with two arguments: the invariant state and the control variable. (From the standpoint of the for construct, the invariant state has no meaning at all. The for only passes the state value from the initialization step to the calls to the iterator function.) Then the for assigns the values returned by the iterator function to the variables declared by its variable list. 如果第一个值（控制变量）返回nil，循环结束。Otherwise, the for executes its body and calls the iteration function again, repeating the process. More precisely, a construction like
+在初始化完成后，for循环调用迭代器函数时会传入两个实参：不可变状态和控制变量。然后迭代器函数返回的值会被赋给变量列表中的变量。如果第一个值（控制变量）返回nil，循环结束。否则，for执行代码并继续。
+
+通用for的代码：
 
 ```lua
     for var_1, ..., var_n in <explist> do <block> end
 ```
 
-is equivalent to the following code:
+等价于：
 
 ```lua
     do
@@ -1547,9 +1524,9 @@ So, if our iterator function is f, the invariant state is s, and the initial val
 
 ### 7.3 无状态的迭代器
 
-As the name implies, a stateless iterator is an iterator that does not keep any state by itself. Therefore, we can use the same stateless iterator in multiple loops, avoiding the cost of creating new closures.
+无状态的迭代器自身不维护任何状态。因此它可以被多个循环使用。避免了创建新闭包的开销。
 
-As we just saw, the for loop calls its iterator function with two arguments: the invariant state and the control variable. A stateless iterator generates the next element for the iteration using only these two values. A typical example of this kind of iterator is `ipairs`, which iterates over all elements of an array:
+之前讲到，for循环调用迭代器函数时会传递两个参数（不可变状态和控制变量）。无状态迭代器只依赖这两个值产生下一个元素。这种迭代器的典型例子是`ipairs`，用于迭代数组中的所有元素：
 
 ```lua
     a = {"one", "two", "three"}
@@ -1558,7 +1535,7 @@ As we just saw, the for loop calls its iterator function with two arguments: the
     end
 ```
 
-迭代的状态包括：被遍历的表（即不可变状态），当前下标（控制变量）。Both `ipairs` (the factory) and the iterator are quite simple; we could write them in Lua as follows:
+迭代的状态包括：被遍历的表（即不可变状态），当前下标（控制变量）。`ipairs`（工厂）和迭代器都相当简单：
 
 ```lua
     local function iter (a, i)
@@ -1581,9 +1558,9 @@ The pairs function, which iterates over all elements of a table, is similar, exc
     end
 ```
 
-The call next(t,k), where k is a key of the table t, returns a next key in the table, in an arbitrary order, plus the value associated with this key as a second return value. The call next(t, nil) returns a first pair. When there are no more pairs, next returns nil.
+The call `next(t,k)`, where k is a key of the table t, returns a next key in the table, in an arbitrary order, plus the value associated with this key as a second return value. `next(t, nil)`返回第一个项。如果没有别的项了，返回nil。
 
-Some people prefer to use `next` directly, without calling pairs:
+有些人更喜欢直接用`next`，而不用`pairs`：
 
 ```lua
     for k, v in next, t do
@@ -1591,7 +1568,7 @@ Some people prefer to use `next` directly, without calling pairs:
     end
 ```
 
-Remember that the for loop adjusts its expression list to three results, so that it gets next, t, and nil; this is exactly what it gets when it calls `pairs(t)`. An iterator to traverse a linked list is another interesting example of a stateless iterator. (As we already mentioned, linked lists are not frequent in Lua, but sometimes we need them.)
+An iterator to traverse a linked list is another interesting example of a stateless iterator. (As we already mentioned, linked lists are not frequent in Lua, but sometimes we need them.)
 
 ```lua
     local function getnext (list, node)
@@ -1620,31 +1597,37 @@ The trick here is to use the list main node as the invariant state (the second v
 
 ### 7.4 复杂状态
 
-Frequently, an iterator needs to keep more state than fits into a single invariant state and a control variable. The simplest solution is to use closures. An alternative solution is to pack all that the iterator needs into a table and use this table as the invariant state for the iteration. Using a table, an iterator can keep as much data as it needs along the loop. Moreover, it can change this data as it goes. Although the state is always the same table (and therefore invariant), the table contents change along the loop. Because such iterators have all their data in the state, they typically ignore the second argument provided by the generic for (the iterator variable).
+常常，迭代器除了不可变状态和控制变量，还需要维护其他状态。最简单的解决方法是使用闭包。另一种方法是，将迭代器需要的参数打包仅表，用这个表作为迭代的不可变状态。有了这个表，甚至可以忽略控制变量。
 
-As an example of this technique, we will rewrite the iterator allwords, which traverses all the words from the current input file. This time, we will keep its state using a table with two fields: line and pos. The function that starts the iteration is simple. It must return the iterator function and the initial state:
+As an example of this technique, we will rewrite the iterator `allwords`, which traverses all the words from the current input file. This time, we will keep its state using a table with two fields: `line` and `pos`. The function that starts the iteration is simple. It must return the iterator function and the initial state:
 
-local iterator -- to be defined later
-function allwords ()
-local state = {line = io.read(), pos = 1}
-return iterator, state
-end
+```lua
+    local iterator -- to be defined later
+    function allwords ()
+    	local state = {line = io.read(), pos = 1}
+    return iterator, state
+    end
+```
+
 The iterator function does the real work:
-function iterator (state)
-while state.line do -- repeat while there are lines
--- search for next word
-local s, e = string.find(state.line, "%w+", state.pos)
-if s then -- found a word?
--- update next position (after this word)
-state.pos = e + 1
-return string.sub(state.line, s, e)
-else -- word not found
-state.line = io.read() -- try next line...
-state.pos = 1 -- ... from first position
-end
-end
-return nil -- no more lines: end loop
-end
+
+```lua
+    function iterator (state)
+        while state.line do -- repeat while there are lines
+            -- search for next word
+            local s, e = string.find(state.line, "%w+", state.pos)
+            if s then -- found a word?
+            	-- update next position (after this word)
+            	state.pos = e + 1
+            	return string.sub(state.line, s, e)
+            else -- word not found
+            	state.line = io.read() -- try next line...
+            	state.pos = 1 -- ... from first position
+            end
+        end
+        return nil -- no more lines: end loop
+    end
+```
 
 Whenever possible, you should try to write stateless iterators, those that keep all their state in the for variables. With them, you do not create new objects when you start a loop. If you cannot fit your iteration into this model, then you should try closures. Besides being more elegant, typically a closure is more efficient than an iterator using tables: first, it is cheaper to create a closure than a table; second, access to non-local variables is faster than access to table fields. Later we will see yet another way to write iterators, with coroutines. This is the most powerful solution, but a little more expensive.
 
@@ -1689,7 +1672,7 @@ True iterators were popular in older versions of Lua, when the language did not 
 
 ## 8. 编译、执行、错误
 
-虽然Lua是解释性语言，但Lua总是执行前预编译成中间形式。是不是解释语言的关键However, the distinguishing feature of interpreted languages is not that they are not compiled, but that it is possible (and easy) to execute code generated on the fly. We may say that the presence of a function like `dofile` is what allows Lua to be called an interpreted language.
+虽然Lua是解释性语言，但Lua总是执行前预编译成中间形式。However, the distinguishing feature of interpreted languages is not that they are not compiled, but that it is possible (and easy) to execute code generated on the fly. We may say that the presence of a function like `dofile` is what allows Lua to be called an interpreted language.
 
 ### （未）8.1 编译
 
@@ -1701,6 +1684,8 @@ Previously, we introduced dofile as a kind of primitive operation to run chunks 
     	return f()
     end
 ```
+
+### （未）8.2 Precompiled Code
 
 ### 8.3 C 代码
 
@@ -1721,8 +1706,7 @@ The `loadlib` function is a very low-level function. We must provide the full pa
 
 ### 8.4 错误
 
-因为Lua经常被签入应用，它不能一遇到错误直接崩溃或退出。Instead, whenever an error occurs, Lua ends the current chunk and returns to the application. Any unexpected condition that Lua encounters raises an error. (You
-can modify this behavior using metatables, as we will see later.) You can also explicitly raise an error calling the `error` function with an error message as an argument. Usually, this function is the appropriate way to signal errors in your code:
+因为Lua经常被嵌入应用，它不能一遇到错误直接崩溃或退出。Instead, whenever an error occurs, Lua ends the current chunk and returns to the application. You can also explicitly raise an error calling the `error` function with an error message as an argument. Usually, this function is the appropriate way to signal errors in your code:
 
 ```lua
 	print "enter a number:"
@@ -1730,43 +1714,23 @@ can modify this behavior using metatables, as we will see later.) You can also e
 	if not n then error("invalid input") end
 ```
 
-This construction of calling `error` subject to some condition is so common that Lua has a built-in function just for this job, called assert:
+根据某个条件调用`error`是常见的场景，于是Lua提供内建函数`assert`支持这种场景：
 
 ```lua
     print "enter a number:"
     n = assert(io.read("*n"), "invalid input")
 ```
 
-The `assert` function checks whether its first argument is not false and simply returns this argument; if the argument is false, assert raises an error. Its second argument, the message, is optional. Beware, however, that assert is a regular function. As such, Lua always evaluates its arguments before calling the function. Therefore, if you have something like
+如果`assert`函数的第一个参数不是false，则它返回这个参数。如果第一个参数是false，`assert`会报错。第二个参数作为错误信息（可选）。`assert`只是普通函数。因此像其他函数一样，Lua会先求所有实参的值再调用函数。于是：
 
 ```lua
     n = io.read()
     assert(tonumber(n), "invalid input: " .. n .. " is not a number")
 ```
 
-Lua will always do the concatenation, even when n is a number. It may be wiser to use an explicit test in such cases.
+Lua总是会做字符串连接。
 
-When a function finds an unexpected situation (an exception), it can assume two basic behaviors: it can return an error code (typically `nil`) or it can raise an error, 调用`error`函数。There are no fixed rules for choosing between these two options, but we can provide a general guideline: an exception that is easily avoided should raise an error; otherwise, it should return an error code.
-
-For instance, let us consider the sin function. How should it behave when called on a table? Suppose it returns an error code. If we need to check for errors, we would have to write something like
-
-```lua
-    local res = math.sin(x)
-    if not res then -- error?
-    <error-handling code>
-```
-
-However, we could as easily check this exception before calling the function:
-
-```lua
-    if not tonumber(x) then -- x is not a number?
-    <error-handling code>
-```
-
-Frequently we check neither the argument nor the result of a call to sin; if the argument is not a number, it means that probably there is something wrong in our program. In such situations, to stop the computation and to issue an error message is the simplest and most practical way to handle the exception. On the other hand, let us consider the `io.open` function, which opens a file.
-
-How should it behave when asked to read a file that does not exist? In this case, there is no simple way to check for the exception before calling the function. In many systems, the only way of knowing whether a file exists is by trying to open it. Therefore, if `io.open` cannot open a file because of an external reason (such as “file does not exist” or “permission denied”), it returns `nil`, plus a string with
-the error message. In this way, you have a chance to handle the situation in an appropriate way, for instance by asking the user for another file name:
+考虑`io.open`函数，用于打开一个文件。如果由于外部原因，`io.open`不能打开一个文件（如文件不存在，权限问题），它返回`nil`和一个错误消息。
 
 ```lua
     local file, msg
@@ -1779,7 +1743,7 @@ the error message. In this way, you have a chance to handle the situation in an 
     until file
 ```
 
-If you do not want to handle such situations, but still want to play safe, you simply use assert to guard the operation:
+或者：
 
 ```lua
 	file = assert(io.open(name, "r"))
@@ -1792,15 +1756,13 @@ This is a typical Lua idiom: if `io.open` fails, `assert` will raise an error.
     --> stdin:1: no-file: No such file or directory
 ```
 
-Notice how the error message, which is the second result from `io.open`, goes as the second argument to assert.
+注意到，`io.open`返回的第二个值，即错误消息，将变成assert的第二个实参。
 
 ### 8.5 错误处理与异常
 
-For many applications, you do not need to do any error handling in Lua; the application program does this handling. All Lua activities start from a call by the application, usually asking Lua to run a chunk. If there is any error, this call returns an error code, so that the application can take appropriate actions.
-
 In the case of the stand-alone interpreter, its main loop just prints the error message and continues showing the prompt and running the commands.
 
-However, if you need to handle errors in Lua, you must use the `pcall` (protected call) function to encapsulate your code. Suppose you want to run a piece of Lua code and to catch any error raised while running that code. Your first step is to encapsulate that piece of code in a function; more often than not, you will use an anonymous function for that. Then, you call that function with `pcall`:
+如果想在Lua内处理错误，想捕获一段代码中的所有错误，你需要使用`pcall`（protected call）包围代码。
 
 ```lua
     local ok, msg = pcall(function ()
@@ -1817,22 +1779,20 @@ However, if you need to handle errors in Lua, you must use the `pcall` (protecte
     end
 ```
 
-The `pcall` function calls its first argument in protected mode, so that it catches any errors while the function is running. If there are no errors, `pcall` returns true, plus any values returned by the call. Otherwise, it returns false, plus the error message.
+如果没有错误`pcall`返回true，后面是调用返回的其他值。如果有错误，返回false和错误信息。
 
-Despite its name, the error message does not have to be a string: `pcall` will return any Lua value that you pass to error.
+其实错误消息不一定是字符串，可以向`error`传入任何值。这个值最终都会被`pcall`返回。
 
 ```lua
     local status, err = pcall(function () error({code=121}) end)
     print(err.code) --> 121
 ```
 
-These mechanisms provide all we need to do exception handling in Lua. We throw an exception with error and catch it with `pcall`. The error message identifies the kind of error.
+总结：抛出异常使用`error`，捕获使用`pcall`。
 
 ### 8.6 错误消息与Tracebacks
 
-Although you can use a value of any type as an error message, usually error messages are strings describing what went wrong. When there is an internal error (such as an attempt to index a non-table value), Lua generates the error message; otherwise, the error message is the value passed to the error function.
-
-Whenever the message is a string, Lua tries to add some information about the location where the error happened:
+如果错误消息是字符串，Lua会尝试添加一些信息，关于错误发生的位置：
 
 ```lua
     local status, err = pcall(function () a = "a"+1 end)
@@ -1843,7 +1803,7 @@ Whenever the message is a string, Lua tries to add some information about the lo
     --> stdin:1: my error
 ```
 
-The location information gives the file name (stdin, in the example) plus the line number (1, in the example). The error function has an additional second parameter, which gives the level where it should report the error; you use this parameter to blame someone else for the error. For instance, suppose you write a function whose first task is to aaacheck whether it was called correctly:
+位置信息包括文件名（这里是stdin）和行号（这里是1）。The `error` function has an additional second parameter, which gives the level where it should report the error; you use this parameter to blame someone else for the error. For instance, suppose you write a function whose first task is to check whether it was called correctly:
 
 ```lua
     function foo (str)
@@ -1860,7 +1820,7 @@ Then, someone calls your function with a wrong argument:
 	foo({x=1})
 ```
 
-As it is, Lua points its finger to your function—after all, it was foo that called error—and not to the real culprit, the caller. To correct this problem, you inform error that the error you are reporting occurred on level 2 in the calling hierarchy (level 1 is your own function):
+As it is, Lua points its finger to your function—after all, it was `foo` that called error—and not to the real culprit, the caller. To correct this problem, you inform error that the error you are reporting occurred on level 2 in the calling hierarchy (level 1是你自己的函数):
 
 ```lua
     function foo (str)
@@ -1871,7 +1831,7 @@ As it is, Lua points its finger to your function—after all, it was foo that ca
     end
 ```
 
-Frequently, when an error happens, we want more debug information than only the location where the error occurred. At least, we want a traceback, showing the complete stack of calls leading to the error. When pcall returns its error message, it destroys part of the stack (the part that goes from it to the error point). Consequently, if we want a traceback, we must build it before pcall returns. To do this, Lua provides the xpcall function. Besides the function to be called, it receives a second argument, a message handler function. In case of an error, Lua calls this message handler before the stack unwinds, so that it can use the debug library to gather any extra information it wants about the error. Two common message handlers are debug.debug, which gives you a Lua prompt so that you can inspect by yourself what was going on when the error happened; and debug.traceback, which builds an extended error message with a traceback. The latter is the function that the stand-alone interpreter uses to build its error messages.
+发生错误时，我们总想要更多调试信息。至少，我们想要traceback，showing the complete stack of calls leading to the error. When pcall returns its error message, it destroys part of the stack (the part that goes from it to the error point). 因此如果我们想要traceback，我们必须在`pcall`返回前构建。To do this, Lua provides the `xpcall` function. Besides the function to be called, it receives a second argument, a message handler function. In case of an error, Lua calls this message handler before the stack unwinds, so that it can use the debug library to gather any extra information it wants about the error. Two common message handlers are `debug.debug`, which gives you a Lua prompt so that you can inspect by yourself what was going on when the error happened; and `debug.traceback`, which builds an extended error message with a traceback. The latter is the function that the stand-alone interpreter uses to build its error messages.
 
 ## （未）9. 协作程序（Coroutines）
 
