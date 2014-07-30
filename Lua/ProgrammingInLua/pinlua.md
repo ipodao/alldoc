@@ -1,6 +1,6 @@
 [toc]
 
-## Preface
+## 前言
 
 Lua被设计为与**C/C++**等其他语言集成。Lua不打算做其他语言更擅长做的事，如底层操作。
 
@@ -23,6 +23,7 @@ Lua是跨平台的。包括Windows、IOS、Android、树莓派、Arduino等。�
 ```
 
 If you save the above program in a file hello.lua, the following command should run it:
+
 ```lua
 	% lua hello.lua
 ```
@@ -47,7 +48,7 @@ If you save the above program in a file hello.lua, the following command should 
 
 Each piece of code that Lua executes, such as a file or a single line in interactive mode, is called a chunk. A chunk is simply a sequence of commands (or statements).
 
-Lua needs no separator between consecutive statements, 但如果愿意可以使用分号。我个人习惯，只有一行有多个语句时采用分号。换行在Lua语法中没有特殊含义。例如下面四个写法是等价的：
+连续语句之间不需要分隔符。但如果愿意可以使用分号。我个人习惯，只有一行有多个语句时采用分号。换行在Lua语法中没有特殊含义。例如下面四个写法是等价的：
 
 ```lua
     a = 1
@@ -60,9 +61,6 @@ Lua needs no separator between consecutive statements, 但如果愿意可以使�
 
     a = 1 b = a*2 -- ugly, but valid
 ```
-
-Because Lua is used also as a data-description language, chunks with several megabytes are not uncommon. The Lua interpreter has no problems at all with large chunks.
-
 
 退出交互式编译器：`os.exit()`。
 
@@ -77,19 +75,16 @@ Because Lua is used also as a data-description language, chunks with several meg
     end
 ```
 
-```
+
     > dofile("lib1.lua") -- load your library
     > n = norm(3.4, 1.0)
     > print(twice(n)) --> 7.0880180586677
-```
 
 ### 1.2 词法约定
 
 标识符可以含有字母、数字和下环线。不能以数字开头。
 
-```
     i j i10 _ij aSomewhatLongName _INPUT
-```
 
 避免使用下划线开头跟大写字母（如`_VERSION`）。它们保留做特殊用途。Usually, I reserve the identifier `_` (a single underscore) for dummy variables.
 
@@ -105,8 +100,7 @@ In older versions of Lua, the concept of what is a letter depended on the locale
 
 Lua是大小写敏感的。
 
-单行注释以`--`开头。块注释（多行）以`--[[`开头`]]`结尾。A common trick to comment out a piece of code is to enclose
-the code between --[[ and --]], like here:
+单行注释以`--`开头。块注释（多行）以`--[[`开头`]]`结尾。
 
 ### 1.3 全局变量
 
@@ -159,18 +153,18 @@ Lua中函数是一等公民。
 
 ### 2.1 Nil
 
-Nil is a type with a single value, `nil`, whose main property is to be different from any other value. Lua uses `nil` as a kind of non-value, to represent the absence of a useful value. As we have seen, a global variable has a nil value by default, before its first assignment, and you can assign nil to a global variable to **delete** it.
+Nil是只有一个值的类型。全局变量的默认值是nil。于是给全局变量赋nil相当于删除它们。
 
 ### 2.2 布尔
 
-布尔类型有两个值：false和true。However, booleans do not hold a monopoly of condition values: 在Lua中所有值都都表示一个条件。布尔测试时，布尔false和nil被当作假其他都是真。特别的，数字零和空字符串偶是真。
+布尔类型有两个值：false和true。However, booleans do not hold a monopoly of condition values: 在Lua中所有值都都表示一个条件。布尔测试时，`false`和`nil`被当作假，其他都是真。特别的，数字零和空字符串偶是真。
 
 
 ### 2.3 数字
 
-数字类型表示浮点数，双精度。Lua没有整数。Some people fear that even a simple increment or comparison can go weird with floating-point numbers. Reality, however, is not like that. 现在几乎所有平台表示浮点数都遵循IEEE 754标准。Following this standard, the only possible source of errors is a representation error, which happens when a number cannot be exactly represented. An operation rounds its result only if that result has no exact representation. Any operation with a result that has an exact representation must give that exact result.
+数字类型表示浮点数，双精度。Lua没有整数。现在几乎所有平台表示浮点数都遵循IEEE 754标准。根据该标准，唯一可能的错误源是表示（representation）错误，即当一个数字不能被精确表示时。An operation rounds its result only if that result has no exact representation. 若操作的结果能被精确表示就一定要返回精确结果。
 
-事实是，小于2^53（接近10^16）的整数都能被双精度浮点数精确表示。When you use a double to represent an integer, there is no rounding error at all, 除非整数超过2^53。特别的，Lua数字类型可以表示任何32位整数，不会有rounding问题。
+事实是，小于2^53（接近10^16）的 **整数** 都能被双精度浮点数精确表示。When you use a double to represent an integer, there is no rounding error at all, 除非整数超过2^53。特别的，Lua数字类型可以表示任何32位整数，不会有rounding问题。
 
 Of course, fractional numbers can have representation errors. The situation here is not different from what happens with pen and paper. If we want to write `1/7` in decimal, we will have to stop somewhere. If we use ten digits to represent a number, `1/7` becomes rounded to 0:142857142. If we compute `1/7*7` using ten digits, the result will be `0:999999994`, which is different from 1.
 
@@ -198,9 +192,9 @@ Lua的字符串是不可变的。
     print(b) --> another string
 ```
 
-Lua的字符串遵从自动内存管理，like all other Lua objects (tables, functions, etc.). This means that you do not have to worry about allocation and deallocation of strings; Lua handles this for you. Programs that manipulate strings with 100K or 1M characters are not unusual in Lua.
+Lua的字符串遵从自动内存管理。Programs that manipulate strings with 100K or 1M characters are not unusual in Lua.
 
-可以通过前缀运算符‘#’（长度运算符）获得字符串长度：
+可以通过前缀运算符`#`（长度运算符）获得字符串长度：
 
 ```lua
     a = "hello"
@@ -271,7 +265,7 @@ Lua提供运行时的数字和字符串的自动转换。算术运算中的字�
 
 `..`是Lua的字符串连接运算符。这个运算符放在数字后，必须加空格，否则Lua会把第一个点当作小数点。
 
-现在我们不在觉得这些自动转换是一种好的设计。最好不要依赖它们。They are handy in a few places, but add complexity both to the language and to programs that use them. After all, strings and numbers are different things, despite these conversions. 形如`10=="10"`的比较是假值。
+现在我们不再觉得这些自动转换是一种好的设计。最好不要依赖它们。形如`10=="10"`的比较是假值。
 
 若需显式将字符串转换为数字，可以使用函数`tonumber`。如果不能转换返回`nil`。
 
@@ -294,11 +288,11 @@ Lua提供运行时的数字和字符串的自动转换。算术运算中的字�
 
 ### 2.5 Tables
 
-类型table是关联数组（associative arrays）。关联数组的索引不仅可以是数字，也可以是字符串，或语言中的其他值。`nil`除外。
+类型table是一个关联数组（associative arrays）。关联数组的索引不仅可以是数字，也可以是字符串，或语言中的其他值，`nil`除外。
 
-Tables是Lua中唯一的数据结构。我们用Table一种结构表示了普通数组、集合、记录或其他数据结构。Lua还要tables表示包（packages）和对象。如`io.read`，实际上，`io`是table，`read`是table的索引。
+Tables是Lua中唯一的数据结构。“表”这一种结构能够表示普通数组、集合、记录或其他数据结构。Lua还用“表”表示包（packages）和对象。如`io.read`，其中`io`是表，`read`是表的索引。
 
-Lua的table不是值也不是变量；它们是对象。If you are familiar with arrays in Java or Scheme, then you have a fair idea of what I mean. You may think of a table as a dynamically allocated object; your program manipulates only references (or pointers) to them. Lua never does hidden copies or creation of new tables behind the scenes. Moreover, you do not have to declare a table in Lua; in fact, there is no way to declare one. 通过构造器表达式（constructor expression）创建一个table。最简单的形式是`{}`：
+Lua的表不是值也不是变量；它们是对象。Moreover, you do not have to declare a table in Lua; in fact, there is no way to declare one. 通过构造器表达式（constructor expression）创建一个table。最简单的形式是`{}`：
 
 ```lua
     a = {} -- create a table and store its reference in 'a'
@@ -312,7 +306,7 @@ Lua的table不是值也不是变量；它们是对象。If you are familiar with
     print(a["x"]) --> 11
 ```
 
-A table is always anonymous. There is no fixed relationship between a variable that holds a table and the table itself:
+表总是匿名的。表自身与持有表的变量之间没有固定关系。
 
 ```lua
     a = {}
@@ -325,21 +319,21 @@ A table is always anonymous. There is no fixed relationship between a variable t
     b = nil -- no references left to the table
 ```
 
-若不再有引用指向table，Lua的垃圾收集会最终删除Table，释放内存。
+若不再有引用指向表，Lua的垃圾收集会最终删除表，释放内存。
 
-一个Table的索引可以是多种类型的。
+一个表的索引可以是多种类型的。
 
 ```lua
     a = {} -- empty table
     -- create 1000 new entries
     for i = 1, 1000 do a[i] = i*2 end
-    	print(a[9]) --> 18
+    print(a[9]) --> 18
     a["x"] = 10
     print(a["x"]) --> 10
     print(a["y"]) --> nil
 ```
 
-注意最后一行：与全局变量一样，Table的字段（field）若未被初始化，求值为`nil`。与全局变量一样，给一个字段赋`nil`将删除该字段。This is not a coincidence: Lua stores global variables in ordinary tables. We will discuss this subject further in Chapter 14.
+注意最后一行：与全局变量一样，表的字段（field）若未被初始化，求值得到`nil`。与全局变量一样，给一个字段赋`nil`将删除该字段。
 
 获取字段值时，`a.name`等价于`a["name"]`。
 
@@ -359,22 +353,24 @@ A table is always anonymous. There is no fixed relationship between a variable t
     end
 ```
 
-索引可以从任何整数开始。但Lua习惯从1开始！Lua中一些工具遵从这个约定。
+索引可以从任何整数开始。但Lua习惯从`1`开始！要使用Lua中一些工具，也须遵从这个约定。
 
-Usually, when you manipulate a list you must know its length. It can be a constant or it can be stored somewhere. Often we store the length of a list in a non-numeric field of the table; for historical reasons, several programs use the field “n” for this purpose.
+为了操纵列表（List），必须知道列表的长度。列表的长度可能是常量，或者将长度存到某个地方。一些程序将列表长度存放到表的`n`字段中。
 
-Often, however, the length is implicit. Remember that any non-initialized index results in `nil`; 可以利用这个值标记边界。但有时列表内部也有nil。我们称这种列表为序列（sequence）。对于序列，Lua提供长度运算符‘#’。For instance, you could print the lines read in the last example with the following code:
+表中未初始化的索引的值是`nil`。有时列表内部也有`nil`，我们称之为洞。没有洞的列表为序列（sequence）。对于序列，可以利用`nil`标记边界。Lua提供长度运算符‘#’依赖这个特性。例如：
 
 ```lua
--- print the lines
-for i = 1, #a do
-	print(a[i])
-end
+    -- print the lines
+    for i = 1, #a do
+        print(a[i])
+    end
 ```
+
+> 对于数组，只有内部没有洞时（序列），长度运算符‘#’才有意义。
 
 ### 2.6 函数
 
-Lua中函数是一等值：可以将函数存储到一个变量中，将函数作为参数传递，将函数作为函数返回值。Moreover, Lua offers good support for functional programming, including nested functions with proper lexical scoping; just wait until Chapter 6. Finally, first-class functions play a key role in Lua’s object-oriented facilities, as we will see in Chapter 16.
+Lua中函数是一等值：可以将函数存储到一个变量中，将函数作为参数传递，将函数作为函数返回值。
 
 Lua可以调用C写的函数。Lua中标准库都是C编写的。We will discuss Lua functions in Chapter 5 and C functions in Chapter 27.
 
@@ -386,11 +382,11 @@ We will explain the thread type in Chapter 9, where we discuss coroutines.
 
 ## 4. 表达式
 
-Expressions denote values. Expressions in Lua include the numeric constants and string literals, variables, unary and binary operations, and function calls. Expressions include also the unconventional function definitions and table constructors.
+表达式产生值。
 
 ### 3.1 算术运算符
 
-加减乘除乘方取模：‘+’、‘-’、‘*’、‘/’、‘^’、‘%’。All of them operate on real numbers. For instance, `x^0.5` computes the square root of x, while `x^(-1/3)` computes the inverse of its cubic root.
+加减乘除、乘方、取模：‘+’、‘-’、‘*’、‘/’、‘^’、‘%’。所有这些运算符的对象都是实数。例如`x^0.5`是x的平方根；`x^(-1/3)`。
 
 取模运算符的规则：
 
@@ -435,13 +431,11 @@ The operation `angle%(2*math.pi)` is all we need to normalize any angle to a val
 
 ### 3.2 关系运算符
 
-Lua provides the following relational operators:
+Lua的关系运算符：
 
 ```lua
 	< > <= >= == ~=
 ```
-
-All these operators always produce a boolean value.
 
 `nil`只与自己相等。
 
@@ -463,7 +457,7 @@ you have a==c but a~=b.
 
 逻辑运算符包括`and`, `or`, `not`。Like control structures, all logical operators consider both the boolean false and nil as false, and anything else as true.
 
-如果第一个运算符为真，`and`返回第一个参数，否则返回第二个。如果第一个参数为假，`or`返回第一个参数，否则返回第二个：
+如果第一个参数为假，`and`返回第一个参数，否则返回第二个。如果第一个参数为真，`or`返回第一个参数，否则返回第二个：
 
 ```lua
     print(4 and 5) --> 5
@@ -509,52 +503,19 @@ you have a==c but a~=b.
 
 ### 3.5 长度运算符
 
-长度运算符可以用于字符串或table。On strings, it gives the number of bytes in the string. On tables, it gives the length of the sequence represented by the table.
+长度运算符可以用于字符串或表。On strings, it gives the number of bytes in the string. 用于表，返回表表示的序列的长度。
 
-The length operator provides several common Lua idioms for manipulating sequences:
+利用长度运算符，可以实现对序列的基本操作：
 
 ```lua
     print(a[#a]) -- prints the last value of sequence 'a'
     a[#a] = nil -- removes this last value
     a[#a + 1] = v -- appends 'v' to the end of the list
 ```
-As we saw in the last chapter, the length operator is **unpredictable** for lists with holes (nils). It only works for sequences, which we defined as lists without holes. More precisely, a sequence is a table where the numeric keys comprise a set 1 ... n for some n. (Remember that any key with value nil is actually not in the table.) In particular, a table with no numeric keys is a sequence with length zero.
 
-Over the years, there have been many proposals to extend the meaning of the length operator to lists with holes, but this extension is easier said than done. The problem is that, because a list is actually a table, the concept of “length” is somewhat fuzzy. For instance, consider the list resulting from the following code:
+注意，长度运算符只对序列有意义。序列要求中间没有值是`nil`。
 
-```lua
-    a = {}
-    a[1] = 1
-    a[2] = nil -- does nothing, as a[2] is already nil
-    a[3] = 1
-    a[4] = 1
-```
-
-It is easy to say that the length of this list is four, and that is has a hole at index 2. However, what can we say about the next similar example?
-
-```lua
-    a = {}
-    a[1] = 1
-    a[10000] = 1
-```
-
-Should we consider a as a list with 10000 elements, where 9998 of them are nil? Now, the program does this:
-
-```lua
-	a[10000] = nil
-```
-
-What is the list length now? Should it be 9999, because the program deleted the last element? Or maybe still 10000, as the program only changed the last element to nil? Or should the length collapse to 1?
-
-Another common proposal is to make the `#` operator return the total number of elements in the table. This semantics is clear and well defined, but not useful at all. Consider all previous examples and think how useful would be such operator for real algorithms over lists or arrays. Yet more troubling are nils at the end of the list. What should be the length of the following list?
-
-```lua
-	a = {10, 20, 30, nil, nil}
-```
-
-记住，在Lua中，一个值为nil的字段跟没有这个字段是没有区别的。Therefore, the previous table is equal to {10, 20, 30}; its length is 3, not 5.
-
-You may consider that a nil at the end of a list is a very special case. However, many lists are built by adding elements one by one. Any list with holes that was built that way must have had nils at its end along the way. Most lists we use in our programs are sequences (e.g., a file line cannot be nil) and, therefore, most of the time the use of the length operator is safe. If you really need to handle lists with holes, 你需要显式的把长度存到某个地方。
+记住在Lua中，字段的这为`nil`，与没有这个字段是没有区别的。
 
 ### 3.6 优先级
 
@@ -571,30 +532,26 @@ Operator precedence in Lua follows the table below, from the higher to the lower
 
 All binary operators are left associative, except for ‘^’ (exponentiation) and ‘..’ (concatenation), which are right associative.
 
-### 3.7 Table构造
+### 3.7 表构造器
 
-Constructors are expressions that create and initialize tables.
+构造器指创建并初始化表的表达式。最简单的构造器是空构造器`{}`，创建一个空表。
 
-最简单的构造器是空构造器，`{}`，创建一个空表；Constructors also initialize lists. For instance, the statement
+初始化列表风格的表：
 
 ```lua
 	days = {"Sunday", "Monday", "Tuesday", "Wednesday",
 		"Thursday", "Friday", "Saturday"}
 ```
 
-will initialize `days[1]` with the string “Sunday” (第一个元素的索引是1不是0！), days[2] with “Monday”, and so on:
+第一个元素的索引是1不是0！因此`days[1]`的值是“Sunday”，`days[2]`的值是“Monday”。
 
-```lua
-	print(days[4]) --> Wednesday
-```
-
-Lua also offers a special syntax to initialize a table record-like, as in the next example:
+初始化纪录（Map）风格的表（用等号连接键值，用逗号或分号分隔项）：
 
 ```lua
 	a = {x=10, y=20}
 ```
 
-This previous line is equivalent to these commands:
+等价的写法是：
 
 ```lua
 	a = {}; a.x=10; a.y=20
@@ -602,7 +559,7 @@ This previous line is equivalent to these commands:
 
 The original expression, however, is faster, because Lua creates the table already with the right size.
 
-We can mix record-style and list-style initializations in the same constructor:
+可以混合记录风格和列表风格的初始化：
 
 ```lua
     polyline = {color="blue",
@@ -620,13 +577,13 @@ Those two constructor forms have their limitations. For instance, you cannot ini
 ```lua
 	opnames = {["+"] = "add", ["-"] = "sub",
 		["*"] = "mul", ["/"] = "div"}
-		i = 20; s = "-"
-		a = {[i+0] = s, [i+1] = s..s, [i+2] = s..s..s}
-		print(opnames[s]) --> sub
-		print(a[22]) --> ---
+    i = 20; s = "-"
+    a = {[i+0] = s, [i+1] = s..s, [i+2] = s..s..s} -- 键是变量的值
+    print(opnames[s]) --> sub
+    print(a[22]) --> ---
 ```
 
-This syntax is more cumbersome, but more flexible too: both the list-style and the record-style forms are special cases of this more general syntax. The constructor `{x=0 ,y=0}` is equivalent to `{["x"]=0,["y"]=0}`, and the constructor `{"r","g","b"}` is equivalent to `{[1]="r",[2]="g",[3]="b"}`.
+`{x=0 ,y=0}`与`{["x"]=0,["y"]=0}`等价；`{"r","g","b"}`与`{[1]="r",[2]="g",[3]="b"}`等价。
 
 You can always put a comma after the last entry. These trailing commas are optional, but are always valid:
 
@@ -662,7 +619,7 @@ Lua先求所有值，再执行赋值。因此多赋值可以用于交换值：
 	a[i], a[j] = a[j], a[i] -- swap 'a[i]' for 'a[j]'
 ```
 
-如果值比变量数量少，不够的变量被赋予nil。如果值比变量多，多个值将被丢弃：
+如果值比变量数量少，不够的变量被赋予`nil`。如果值比变量多，多个值将被丢弃：
 
 ```lua
     a, b, c = 0, 1
@@ -677,14 +634,14 @@ Lua先求所有值，再执行赋值。因此多赋值可以用于交换值：
 
 ### 4.2 局部变量与块
 
-除了全局变量，Lua还支持局部变量。We create local variables with the local statement:
+除了全局变量，Lua还支持局部变量。使用local语句创建局部变量：
 
 ```lua
 	j = 10 -- global variable
 	local i = 1 -- local variable
 ```
 
-Unlike global variables, local variables have their scope limited to the block where they are declared. A block is the body of a control structure, the body of a function, or a chunk (the file or string where the variable is declared):
+局部变量的作用域限制在创建它们的块。A block is the body of a control structure, the body of a function, or a chunk (the file or string where the variable is declared):
 
 ```lua
     x = 10
@@ -704,7 +661,7 @@ Unlike global variables, local variables have their scope limited to the block w
     print(x) --> 10 (the global one)
 ```
 
-Beware that this example will not work as expected if you enter it in interactive mode. In interactive mode, each line is a chunk by itself (unless it is not a complete command). As soon as you enter the second line of the example (local i=1), Lua runs it and starts a new chunk in the next line. By then, the local declaration is already out of scope. To solve this problem, we can delimit the whole block explicitly, bracketing it with the keywords `do–end`. Once you enter the `do`, the command completes only at the corresponding `end`, so Lua does not execute each line by itself.
+Beware that this example will not work as expected if you enter it in interactive mode. 在交互模式下，每一行都是一个chunk（除非是不完整的命令）。As soon as you enter the second line of the example (local i=1), Lua runs it and starts a new chunk in the next line. By then, the local declaration is already out of scope. To solve this problem, we can delimit the whole block explicitly, bracketing it with the keywords `do–end`. Once you enter the `do`, the command completes only at the corresponding `end`, so Lua does not execute each line by itself.
 
 These do blocks are useful also when you need finer control over the scope of some local variables:
 
@@ -718,9 +675,9 @@ These do blocks are useful also when you need finer control over the scope of so
     print(x1, x2)
 ```
 
-It is good programming style to use local variables whenever possible. Local variables help you avoid cluttering the global environment with unnecessary names. 而且访问局部变量与全局变量快。Finally, a local variable vanishes as soon as its scope ends, allowing the garbage collector to release its value.
+访问局部变量与全局变量快。Finally, a local variable vanishes as soon as its scope ends, allowing the garbage collector to release its value.
 
-Lua handles local-variable declarations as statements. As such, you can write local declarations anywhere you can write a statement. The scope of the declared variables begins after the declaration and goes until the end of the block. Each declaration can include an initial assignment, which works the same way as a conventional assignment. 如果声明后面没有显式的赋值，变量将被赋予`nil`：
+Lua将局部变量声明处理成语句。As such, you can write local declarations anywhere you can write a statement. 变量的作用域从声明处开始，到块尾部。声明可以带初始值。如果声明后面没有显式的赋值，变量将被赋予`nil`：
 
 ```lua
     local a, b = 1, 10
@@ -732,17 +689,17 @@ Lua handles local-variable declarations as statements. As such, you can write lo
     print(a, b) --> 1 10
 ```
 
+下面的代码创建局部变量`foo`，并用全局变量`foo`初始化。
+
 ```lua
 	local foo = foo
 ```
 
-上面的代码创建局部变量`foo`，并用全局变量`foo`初始化。
-
 ### 4.3 控制结构
 
-所有的控制结构都有显式的结尾：`end`终止if, for and while。`until`终止repeat。
+所有的控制结构都有显式的结尾：`end`终止`if`, `for`和`while`。`until`终止`repeat`。
 
-记得，Lua中，0和空串在条件中是true。
+Lua中，0和空串在条件中是true。
 
 #### if then else
 
@@ -775,6 +732,7 @@ Lua handles local-variable declarations as statements. As such, you can write lo
 		print(a[i])
 		i = i + 1
 	end
+```
 
 #### repeat
 
@@ -824,9 +782,7 @@ for语句有两个变体：数字for和通用for。数字for的语法如下：
 	end
 ```
 
-三个表达式在循环开始前会被求值一次。控制变量是局部变量，作用域在for循环内。循环结束后不存在！
-
-若在循环结束后，想知道控制变量的值，需要一个额外的变量，适时将控制变量赋给它：
+三个表达式在循环开始前会被求值一次。控制变量是局部变量，作用域在for循环内。循环结束后不存在！若在循环结束后，想知道控制变量的值，需要一个额外的变量，适时将控制变量赋给它：
 
 ```lua
     -- find a value in a list
@@ -851,15 +807,15 @@ for语句有两个变体：数字for和通用for。数字for的语法如下：
 	for k, v in pairs(t) do print(k, v) end
 ```
 
-`pairs`是一个遍历table的迭代器。
+`pairs`是一个遍历表的迭代器。
 
-标准库提供了几个迭代器，which allow us to iterate over the lines of a file (`io.lines`), the pairs of a table (`pairs`), the entries of a sequence (`ipairs`), the words of a string (`string.gmatch`), and so on.
+标准库提供了几个迭代器：遍历文件的行：`io.lines`，表的键值对：`pairs`，序列的项：`ipairs`，字符串的单词：`string.gmatch`。
 
 可以编写自己的迭代器。见Chapter 7。
 
 通用for的控制变量也是局部变量。不能改变它们的值。
 
-构建反向表。如
+示例：构建反向表。如
 
 ```lua
 	days = {"Sunday", "Monday", "Tuesday", "Wednesday",
