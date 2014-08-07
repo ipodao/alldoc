@@ -663,19 +663,107 @@ Besides allowing you to explore your objects interactively, the typeobject in it
 
 ### （未）5.4 Numeric Extensions
 
+## （未）6. The Dynamic Typing Interlude
 
+## 7. 字符串基础
 
+### 7.1 本章内容范围
 
+本章关注的是`str`类型的字符串。关于Unicode的内容见第37章。
 
+- Python 3.X有三种字符串类型：`str`用于Unicode文本，`bytes`用于二进制数据（包括编码过的文本）；`bytearray`是`bytes`的可变版本。文件有两种模式：*text*，将文件内容表示成`str`，实现Unicode编码；*binary*，处理原始的字节。
+- Python 2.X中，`unicode`字符串表示Unicode文本，`str`字符串处理8比特文本和二进制数据，`bytearray`从2.6后才出现，为了兼容3.X。普通文件的内容一般是字节，由`str`表示；但`codecs`模块可以打开Unicode编码的文件，将文件内容表示为`unicode`对象。
 
+### 7.2 字符串基础
 
+    S = "spam's"  // Double quotes, same as single
+    S = 's\np\ta\x00m' // Escape sequences
+    S = """...multiline...""" // Triple-quoted block strings
+    S = r'\temp\spam' // Raw strings (no escapes)
+    B = b'sp\xc4m' // Byte strings in 2.6, 2.7, and 3.X (Chapter 4, Chapter 37)
+    U = u'sp\u00c4m' // Unicode strings in 2.X and 3.3+ (Chapter 4, Chapter 37)
+    "a %s parrot" % kind // String formatting expression
+    "a {0} parrot".format(kind) // String formatting method in 2.6, 2.7, and 3.X
 
+### 7.4 字符串字面量
 
+- Single quotes: `'spa"m'`
+- Double quotes: `"spa'm"`
+- Triple quotes: `'''... spam ...''', """... spam ..."""`
+- Escape sequences: `"s\tp\na\0m"`
+- Raw strings: `r"C:\new\test.spm"`
+- Bytes literals in 3.X and 2.6+ (see Chapter 4, Chapter 37): `b'sp\x01am'`
+- Unicode literals in 2.X and 3.3+ (see Chapter 4, Chapter 37): `u'eggs\u0020spam'`
 
+单引号和双引号可以互换。
 
+Python会自动连接相邻的字符串
 
+    >>> title = "Meaning " 'of' " Life"  # Implicit concatenation
+    >>> title
+    'Meaning of Life'
 
+内建函数`len`返回字符串中的字符数——不管字符串被如何编码和显示。
 
+实际上3.X将`str`定义为Unicode code points的序列，而不是字节序列。详见第37章。
 
+转义：
 
+- \xhh Character with hex value hh(exactly 2 digits)
+- \ooo Character with octal value ooo(up to 3 digits)
+- \0 Null: binary 0 character (doesn’t end string)
+- \N{ id } Unicode database ID
+- \uhhhh Unicode character with 16-bit hex value
+- \Uhhhhhhhh Unicode character with 32-bit hex value
+- \other Not an escape (keeps both \and other)
+
+Finally, if Python does not recognize the character after a \ as being a valid escape code, it simply keeps the backslash in the resulting string:
+
+    >>> x = "C:\py\code"  # Keeps \ literally (and displays it as \\)
+    >>> x
+    'C:\\py\\code'
+    >>> len(x)
+    10
+
+### 7.4 字符串实战
+
+Extended slicing (`S[i:j:k]`) accepts a step (or stride) k, which defaults to +1. `[::−1]`可以用于反序。如`"hello"[::−1]`的结果是"olleh"。
+
+Later in the book, we’ll also learn that slicing is equivalent to indexing with a `slice` object, a finding of importance to class writers seeking to support both operations:
+
+    >>> 'spam'[1:3]  # Slicing syntax
+    'pa'
+    >>> 'spam'[slice(1, 3)]  # Slice objects with index syntax + object
+    'pa'
+    >>> 'spam'[::-1]
+    'maps'
+    >>> 'spam'[slice(None, None, −1)]
+    'maps'
+
+应用：去掉第一个字符：`sys.argv[1:]`；去掉最后一个：`line[:−1]`。
+
+不能将字符串与数字相加：
+
+    # Python 3.X
+    >>> "42" + 1
+    TypeError: Can't convert 'int' object to str implicitly
+    # Python 2.X
+    >>> "42" + 1
+    TypeError: cannot concatenate 'str' and 'int' objects
+
+需要时需要显式转换：
+
+    >>> int("42"), str(42)  # Convert from/to string
+    (42, '42')
+    >>> repr(42)  # Convert to as-code string
+    '42'
+    >>> str(3.1415), float("1.5")
+    ('3.1415', 1.5)
+    >>> text = "1.234E-10"
+    >>> float(text)  # Shows more digits before 2.7 and 3.1
+    1.234e-10
+
+### 7.5 字符串方法
+
+#### （未）The Original string Module’s Functions (Gone in 3.X)
 
