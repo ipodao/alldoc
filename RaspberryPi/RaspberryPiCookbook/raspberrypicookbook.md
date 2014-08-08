@@ -339,9 +339,15 @@ You can also use PWM with the MOSFET to control the brightness of the LED module
 
 You want to turn devices on and off that may not be suitable for switching with a MOSFET. 使用继电器和晶体管。
 
-器件：1kΩ电阻，晶体管2N3904，二极管1N4001。
+器件：1kΩ电阻，晶体管2N3904，二极管1N4001，5V继电器，万用表。
 
 ![](switchbyrelay.png)
 
+You can use the same LED blink program that you used in Recipe 9.1. If all is well, you’ll hear a click from the relay each time the contacts are closed. 由于继电器是慢速机械设备，不要使用PWM。否则会损坏继电器。
 
+If the relay contacts are asked to exceed their specifications, then the relay’s life will be
+shortened. There will be arcing, 触点可能最终融化在一起。There is also the possibility of the relay becoming dangerously hot. When in doubt, overspecify the relay contacts.
 
+The downside of relays is that they are slow to operate and will eventually wear out after many hundreds of thousands of operations. This means they are only suitable for slow on/off control, not for fast switching like PWM.
+
+继电器中的线圈需要大约 50 mA 才能闭合连接。由于GPIO引脚只能提供大约 3 mA，需要一个小的晶体管做开关。不需要上节使用的高功率 MOSFET。基极连接到GPIO脚，中间有一个1kΩ电阻，用于限制电流。发射极接地，集电极连接到集电极一端。继电器的另一边连接到GPIO的5V脚。二极管用于平抑高电压脉冲，当三极管occur when the transistor rapidly switches the power to the relay’s coil.
