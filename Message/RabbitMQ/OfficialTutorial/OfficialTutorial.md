@@ -37,8 +37,6 @@ public class Send {
 }
 ```
 
-The connection abstracts the socket connection, and takes care of protocol version negotiation and authentication and so on for us.
-
 声明队列是幂等的——仅当不存在时才会创建。
 
 消费者代码：
@@ -75,7 +73,7 @@ public class Recv {
 }
 ```
 
-`QueueingConsumer.nextDelivery()` blocks until another message has been delivered from the server.
+`QueueingConsumer.nextDelivery()`阻塞知道收到下一条消息。
 
 编译：
 ```
@@ -140,7 +138,6 @@ channel.queueDeclare("task_queue", durable, false, false, null);
 
 接下来令消息持久化
 ```java
-import com.rabbitmq.client.MessageProperties;
 channel.basicPublish("", "task_queue", MessageProperties.PERSISTENT_TEXT_PLAIN,
 	message.getBytes());
 ```
@@ -247,38 +244,33 @@ public class Worker {
 
 To illustrate the pattern, we're going to build a simple logging system. In our logging system every running copy of the receiver program will get the messages.
 
-Essentially, published log messages are going to be broadcast to all the receivers.
-
 ### Exchanges
 
-生产者从来不直接向队列发消息。生产者根本不知晓消息是否被递送到了队列。
-生产者只能将消息发给一个exchange。交换机一边从生产者接收消息，一边将消息送给队列。送给哪个队列由交换机类型决定。
+生产者从来不直接向队列发消息。生产者根本不知晓消息是否被递送到了队列。生产者只能将消息发给一个exchange。交换机一边从生产者接收消息，一边将消息送给队列。送给哪个队列由交换机类型决定。
 
-交换器类型有：direct, topic, headers fanout。这里创建最后一种，并将其命名为`logs`：
+交换器类型有：direct, topic, headers, fanout。这里创建最后一种，并将其命名为`logs`：
 ```java
 channel.exchangeDeclare("logs", "fanout");
 ```
 
 fanout将所有消息播发给所有队列。
 
-
-> 列出exchanges
 列出服务器上的exchanges：
-```
-$ sudo rabbitmqctl list_exchanges
-Listing exchanges ...
-        direct
-amq.direct      direct
-amq.fanout      fanout
-amq.headers     headers
-amq.match       headers
-amq.rabbitmq.log        topic
-amq.rabbitmq.trace      topic
-amq.topic       topic
-logs    fanout
-...done.
-```
-amq.*开头的exchanges和默认exchange（无名，第一个）是默认创建的。
+
+    $ sudo rabbitmqctl list_exchanges
+    Listing exchanges ...
+            direct
+    amq.direct      direct
+    amq.fanout      fanout
+    amq.headers     headers
+    amq.match       headers
+    amq.rabbitmq.log        topic
+    amq.rabbitmq.trace      topic
+    amq.topic       topic
+    logs    fanout
+    ...done.
+
+`amq.*`开头的exchanges和默认exchange（无名，第一个）是默认创建的。
 
 > 无名exchange
 之前的例子中，没有显式使用Exchange，但仍能将消息送到队列。That was possible because we were using a default exchange, which we identify by the empty string ("").

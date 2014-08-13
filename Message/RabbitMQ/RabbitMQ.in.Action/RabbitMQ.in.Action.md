@@ -1,5 +1,9 @@
 [toc]
 
+{{
+本书貌似不是针对3.x的。貌似会过时。
+}}
+
 RabbitMQ更像是联邦快递，它是一个递送服务。
 
 
@@ -19,27 +23,27 @@ AMQP消息路由需要三部分：exchange、队列和绑定（bindings）。Exc
 
 消费者接收消息有两种方式：
 
-- 通过AMQP命令`basic.consume`订阅。该命令将信道置为接收模式（直到解除订阅）。在订阅过程中，在消费完一个消息后，你将自动从队列中收到下一条消息。You should use `basic.consume` if your consumer is processing many messages out of a queue and/or needs to automatically receive messages from a queue as soon as they arrive.
-- 有时，只需要从队列中接收一个消息（然后解除订阅）。此时使用`basic.get`命令。不要在一个循环中使用`basic.get`。需要收取多个消息时，要用`basic.consume`。
+- 通过AMQP命令`basic.consume`订阅。该命令将信道置为接收模式（直到解除订阅）。在订阅过程中，消费完一个消息后，将自动从队列中收到下一条消息。以下场景应该使用`basic.consume`：消费者要从队列中接收许多消息；一旦消息到达队列，想立即接收。
+- 有时，只需要从队列中接收一个消息（然后解除订阅）。此时使用`basic.get`命令。不要使用循环加`basic.get`的模式：需要收取多个消息时，要用`basic.consume`。
 
 消息进入队列时，若无消费者连接，则消息等在队列中，待消费者连接后发出。
 
 但如果同时有多个消费者连接到队列。则一个消息只会发给队列中的一个消费者。
 
-消费者收到的所有消息都需要被ACK：消费者需要显式发送AMQP命令`basic.ack`，或者在订阅队列时设置`auto_ack`参数为true。When `auto_ack` is specified, RabbitMQ will automatically consider the message acknowledged by the consumer as soon as **the consumer has** received it. 注意，消费者ACK消息，只是向RabbitMQ确认，于是消息可以从RabbitMQ队列中移除。与生产者无关，并不会通知生产者消息被消费。
+消费者收到的所有消息都需要被ACK：消费者需要显式发送AMQP命令`basic.ack`，或者在订阅队列时设置`auto_ack`参数为true。若`auto_ack`置位，RabbitMQ在消费者收到消息后，立即认为消息被ACK。注意，消费者ACK消息，只是向RabbitMQ确认，于是消息可以从RabbitMQ队列中移除。与生产者无关，并不会通知生产者消息被消费。
 
 如果消费者在收到消息后，没有ACK就断开连接（或解除订阅）。RabbitMQ会认为该消息没有被递送成功，会递送给下一个订阅者。
 
 如果你的APP有Bug，忘记ACK，Rabbit不会再递送消息给你。因为只有你ACK之后，Rabbit才会觉得你已准备好接收下一条。当处理大的消息时，你可以延迟ACK直到处理完。在这段时间，RabbitMQ不会递送消息，于是你的应用不会过载。
 
-有时在收到后，你需要拒绝，而不是ACK消息。比如当你觉得自己不无法处理该消息。拒绝消息有两种方式（需要在ACK之前）：
+有时收到消息后，需要拒绝，而不是ACK消息——如当你觉得无法处理该消息。拒绝消息有两种方式（需要在ACK之前）：
 
 * 断开与RabbitMQ服务器的连接。RabbitMQ会自动将消息再递送给其他消费者。任何版本的RabbitMQ都支持该方法。只是有额外开销。
 * RabbitMQ 2.0.0之后支持 AMQP 命令`basic.reject`。如果调用时`requeue`参数为true，则RabbitMQ将重新递送给其他消费者。设置`requeue`为false，则RabbitMQ只是从队列中移除消息，不再递送。
 
-> 为什么`basic.reject`并设置`requeue`参数为false，而不是直接ACK消息。因为 RabbitMQ 将来会支持一种特殊的 “dead letter” 队列，用于防止被拒绝且不被递送的消息。A dead letter queue lets you inspect rejected/undeliverable messages for issues. If you want your app to automatically take advantage of the dead letter queue feature when it’s added to Rabbit, use the rejectcommand with requeueset to false.
+> 为什么`basic.reject`并设置`requeue`参数为false，而不是直接ACK消息。因为 RabbitMQ 将来会支持一种特殊的 “dead letter” 队列，用于放置被拒绝且不被递送的消息。从这个队列，你可以浏览到所有被拒绝/未被递送的消息，以查找问题。If you want your app to automatically take advantage of the dead letter queue feature when it’s added to Rabbit, use the rejectcommand with requeueset to false.
 
-如何创建队列？消费者和生产者都可以通过`queue.declare`创建队列。但消费者无法在同一信道上已有一个订阅队列的情况下，声明另一个队列。必须先解除订阅，将信道职位“`transmit`”状态。创建队列时，一般要指定一个名字。否则Rabbit会分配一个随机名，并作为`queue.declare`的返回值。(this is useful when using temporary “anonymous” queues for RPC-over-AMQPapplications, as you’ll see in chapter 4).
+如何创建队列？消费者和生产者都可以通过`queue.declare`创建队列。但消费者在同一信道上已有一个订阅队列的情况下，无法声明另一个队列。必须先解除订阅，将信道置为`transmit`状态。创建队列时，一般要指定一个名字。否则Rabbit会分配一个随机名，并作为`queue.declare`的返回值。(this is useful when using temporary “anonymous” queues for RPC-over-AMQPapplications, as you’ll see in chapter 4).
 
 创建队列时的选项：
 
@@ -52,13 +56,14 @@ AMQP消息路由需要三部分：exchange、队列和绑定（bindings）。Exc
 
 ### 2.3 exchanges 和 bindings
 
-消息送往队列前先被发到exchange。然后根据特定规则，RabbitMQ决定递送到哪个队列。规则称为**routing keys**。A queue is said to be bound to an exchange by a routing key. 向broker发送的消息都带一个**routing key**（即使为空），将与bindings的routing keys绑定。如果没有匹配的绑定，消息送入黑洞。
+消息送往队列前先被发到exchange。然后根据特定规则决定递送到哪个队列。规则称为**routing keys**。队列按照某个路由键被绑定到exchange。向broker发送的消息都带一个**routing key**（即使为空），将与bindings的routing keys匹配。如果没有匹配的绑定，消息送入黑洞。
 
 协议提供四种exchanges：direct, fanout, topic, headers，实现不同的路由算法。
 
 **headers exchange**，匹配AMQP消息中的一个头，而不是routing key。其他方面与direct exchange一致，但性能差很多。因此实际很少被使用。
 
 **direct exchange**，如果路由键匹配，则消息会被递送到相应队列。broker必须实现direct exchange，并提供一个**默认exchange，其名字为空**。When a queue is declared, it’ll be automatically bound to that exchange using the queue name as routing key.
+
 ```php
 $channel->basic_publish($msg, '','queue-name');
 ```
@@ -71,29 +76,32 @@ When the default direct exchange isn’t enough for your application’s needs, 
 
 **fanout exchange**, 将消息多播到多个绑定的队列。当消息发送到fanout exchange，它会被递送到所有与此exchange绑定的队列。
 
-使用Exchange、队列两级比只使用队列的好处是：例如，加入一个消息要触发三个处理。则这三个处理可以由三个绑定到同一个Exchange的队列构成。将来如果要再增加处理，只需要再绑定一个队列。如果有生产者直接发给队列，则从发送三个队列到发送到四个队列需要生产者改代码。
+使用Exchange、队列两级比只使用队列的好处是：例如，一个消息要触发三个处理。则这三个处理可以由三个绑定到同一个Exchange的队列构成。将来如果要再增加处理，只需要再绑定一个队列。如果有生产者直接发给队列，则从发送三个队列到发送到四个队列需要生产者改代码。
 
 ![](topic-exchange-flow.png	)
 
 **topic exchange**. 来自不同数据源的消息可以进入同一个队列。一个应用例子，日志系统，多种日志级别。同时应用划分为多个模块，如user-profile, image-gallery, msg-inbox等。若想报告发送消息失败（*msg-inbox*模块的错误），可以：
+
 ```php
 $channel->basic_publish($msg, 'logs-exchange', 'error.msg-inbox');
 ```
 
 另，绑定到`msg-inbox-errors`队列接收消息：
+
 ```php
-$channel->queue_bind('msg-inbox-errors', 'logs-exchange',
-	'error.msg-inbox');
+$channel->queue_bind('msg-inbox-errors', 'logs-exchange', 'error.msg-inbox');
 ```
 
 一个相同的字符串，`error.msg-inbox`，被用于队列绑定操作和消息发布的路由键。于是消息才能送到`msg-inbox-errors`队列。
 
 若又想让一个队列监听*msg-inbox*模块的所有消息，可以利用已存在的exchange，但绑定一个新队列：
+
 ```php
 $channel->queue_bind('msg-inbox-logs', 'logs-exchange', '*.msg-inbox');
 ```
 
 `msg-inbox-logs`队列将收到*msg-inbox*模块的所有日志消息。在绑定队列到exchange时可以使用通配符。一个点`.`将路由键分成几个部分，`*`匹配一部分的任意字符。而`#`匹配所有：
+
 ```php
 $channel->queue_bind('all-logs', 'logs-exchange', '#');
 ```
@@ -102,29 +110,25 @@ $channel->queue_bind('all-logs', 'logs-exchange', '#');
 
 ### 2.4 虚拟机
 
-Within every RabbitMQ server is the ability to create virtual message brokers called **virtual hosts (vhosts)**. Each one is essentially a mini-RabbitMQ server with its own queues, exchanges, and bindings … and, more important, its own permissions. 于是多个应用可以安全的使用同一个 RabbitMQ 服务器，不必担心一个应用破坏另一个应用的队列。还能避免队列和Exchange命令的冲突。
+在 RabbitMQ 服务器中，能够创建虚拟消息brokers，称为虚拟机（vhosts）。每个虚拟机有自己的队列、交换机、绑定、权限等。于是多个应用可以安全的使用同一个 RabbitMQ 服务器，不必担心一个应用破坏另一个应用的队列。还能避免队列和Exchange命名的冲突。
 
 连接时需要指定连哪个虚拟机。RabbitMQ自带一个默认的虚拟机，称为`/`。默认通过用户名*guest*和密码*guest*访问（改密码见第3章）。AMQP未规定权限粒度是虚拟机还是服务器。对于RabbitMQ，是每个虚拟机一个权限设置。
 
-在Rabbit创建用户后，为它至少分配一个虚拟机，则它只能访问此虚拟机的队列、exchanges、绑定。Also, 虚拟机之间的分离是绝对的。你不能把一个虚拟机上的exchange跟另一台虚拟机上的队列绑定。Hence, we highly recommend identifying the common functionality groups in your infrastructure (such as web logging) and giving each one its own vhost. Also, keep in mind that when you create a vhost on a RabbitMQ cluster, it’s created across the entire cluster.
+在Rabbit创建用户后，为它至少分配一个虚拟机，则它只能访问此虚拟机的队列、exchanges、绑定。虚拟机之间的分离是绝对的。你不能把一个虚拟机上的exchange跟另一台虚拟机上的队列绑定。Hence, we highly recommend identifying the common functionality groups in your infrastructure (such as web logging) and giving each one its own vhost. Also, keep in mind that when you create a vhost on a RabbitMQ cluster, it’s created across the entire cluster.
 
-虚拟机和权限是AMQP的primitives，不能通过像队列一样 AMQP 协议创建。RabbitMQ中，创建需要使用`./sbin/rabbitmqctl`工具。创建虚拟机需要运行`rabbitmqctl add_vhost [vhost_name]`。删除虚拟机：`rabbitmqctl delete_vhost [vhost_name]`。列出服务器上的虚拟机：`rabbitmqctl list_vhosts`。
-```
-$ ./sbin/rabbitmqctl list_vhosts
-Listing vhosts ...
-/
-oak
-sycamore
-...done.
-```
+虚拟机和权限是AMQP的primitives，不能通过像队列一样 AMQP 协议创建。RabbitMQ中，创建需要使用`./sbin/rabbitmqctl`工具。
 
-> Typically you’ll run `rabbitmqctl` directly on the server with the RabbitMQ node you want to manage. But you can also pass the `-n rabbit@[server_name]` option before any command to manage a remote RabbitMQ node. The node identifier (rabbit@[server_name]) is split into two parts at the `@`: the left half is the Erlang application name and will almost always be rabbit, and the right half is the server hostname or IPaddress. You need to make sure the server running the Rabbit node and the workstation you’re running `rabbitmqctl` on have the same Erlang cookie installed. For more info on Erlang cookies, check out section 3.4.1.
+- 创建虚拟机需要运行`rabbitmqctl add_vhost [vhost_name]`。
+- 删除虚拟机：`rabbitmqctl delete_vhost [vhost_name]`。
+- 列出服务器上的虚拟机：`rabbitmqctl list_vhosts`。
+
+> 要管理远程服务器，可以在命令前加`-n rabbit@[server_name]`选项。The node identifier (rabbit@[server_name]) is split into two parts at the `@`: the left half is the Erlang application name，基本上都是`rabbit`, and the right half is the server hostname or IP address. You need to make sure the server running the Rabbit node and the workstation you’re running `rabbitmqctl` on have the same Erlang cookie installed. For more info on Erlang cookies, check out section 3.4.1.
 
 ### 2.5 Durability、持久化、事务、发送确认
 
 要保证消息挺过重启或服务器崩溃，需要两方面：
 
-首先，队列和exchanges默认在重启后丢失（包括里面的消息）。该特性由队列和exchange的属性`durable`控制。默认为false。它控制RabbitMQ是否在崩溃或重启后重新创建队列或exchange。
+首先，队列和exchanges本身，默认在重启后丢失（包括里面的消息）。该特性由队列和exchange的属性`durable`控制。默认为false。它控制RabbitMQ是否在崩溃或重启后重新创建队列或exchange。
 
 能挺过AMQP broker崩溃的消息称为持久化消息。持久化消息需要将其delivery mode设为2。这类消息必须与durable的exchange和队列搭配。
 
@@ -138,11 +142,11 @@ RabbitMQ 实现持久化消息的方式是，将它们写到磁盘。When you pu
 
 事务是 AMQP 规范的一部分。事务严重影响 Rabbit 的性能。Not only can using transactions drop your message throughput by a factor of 2–10x, but they also make your producer app synchronous, which is one of the things you’re trying to get rid of with messaging. 基于此，RabbitMQ 决定提供一个汇总更好的保证消息递送的方式（RabbitMQ对AMQP 的扩展）：**publisher confirms**。将信道设为 `confirm` 模式，and you can’t turn it off without re-creating the channel. 发布到此信道的所有消息将被分配一个唯一的ID（从1开始）。Once the message has been delivered to all queues that have bindings matching the message’s routing key, the channel will issue a publisher confirm to the producer app (containing the message’s unique ID). This lets the producer know the message has been safely queued at all of its destinations. If the message and the queues are durable, the confirm is issued only after the queues have written the message to disk. **publisher confirms**的主要优点是异步。Once a message has been published, the producer app can go on to the next message while waiting for the confirm. When the confirm for that message is finally received, a callback function in the producer app will be fired so it can wake up and handle the confirmation. If an internal error occurs inside Rabbit that causes a message to be lost, Rabbit will send a message nack(not acknowledged) that’s like a publisher confirm (it has the message’s unique ID) but indicates the message was lost. Also, since there’s no concept of message rollback (as with transactions), publisher confirms are much lighter weight and have an almost negligible performance hit on the Rabbit broker.
 
-### 2.6 Putting it all together: a day in the life of a message
+### 2.6 综合实践
 
 用Python写一个Hello World。
 
-* **easy_install** — This handy program is part of the setuptoolsPython package and will help you install the extra packages you need for your framework.
+* **easy_install** — This handy program is part of the setuptools Python package and will help you install the extra packages you need for your framework.
 * **Pika 0.9.6 or higher** — Besides being a cute member of the rabbit family, Pikais also the official Python AMQPlibrary produced by the guys at Rabbit.
 
 创建一个生产者：
@@ -224,45 +228,18 @@ channel.start_consuming()
 
 如何启动、停止 RabbitMQ 节点，如何使用 RabbitMQ 的配置文件。
 
-#### 3.1.1 启动节点
-
-一个RabbitMQ服务器实例常称为一个节点。In reality, what a node really describes is an Erlang node running an Erlang application. Erlang has a virtual machine and 每个实例称为一个节点。Unlike the JVM,  multiple Erlang applications can run inside the same node, and more important, nodes can talk natively to each other (whether they’re on the same server or not). 若一个应用因故崩溃，Erlang节点将自动尝试重启应用（只要Erlang自身没有崩溃）。
-
-通过一条命令可以在同时启动Erlang节点和Rabbit应用：`./rabbitmq-server`。 若想将Rabbit节点作为后台守护，添加`-detached`选项：`./rabbitmq -server -detached`。
-
-#### 3.1.2 停止节点
-
-When it comes to stopping RabbitMQ, there are two ways of doing it: the clean way and dirty way. If you run RabbitMQ attached to the console, you might be confused when you punch CTRL-Cand see something like this:
-
-	BREAK:(a)bort (c)ontinue (p)rocinfo (i)nfo (l)oaded
-	(v)ersion (k)ill (D)b-tables(d)istribution
-
-What you’re looking at is the Erlang node asking you if you want to kill the application, the whole node, or if it’s all a mistake and you want to keep running. Generally speaking, you want to kill the whole node, so abortis what you want. But there’s a much better way to stop RabbitMQ—a way that will tell RabbitMQ to cleanly shut down and protect all those persistent queues.
+#### --- 3.1.1 启动节点
 
 
-`rabbitmqctl` is the one-stop shop for almost all of your RabbitMQ management needs. It can also help you stop RabbitMQ. When you run `./sbin/rabbitmqctl stop`, rabbitmqctl will communicate with the local node and instruct it to cleanly shut down. You can also specify a different node to shut down, including remote nodes, by passing the `-n rabbit@[hostname]` option. If you  watch the RabbitMQ log you’ll see something like this:
 
-	=INFO REPORT====
-		application: rabbit
-		exited: stopped
-		type: permanent
-	=INFO REPORT====
-		application: mnesia
-		exited: stopped
-		type: permanent
-	=INFO REPORT====
-		application: os_mon
-		exited: stopped
-		type: permanent
-
-When you see that *rabbit*, *mnesia*, and *os_mon* are stopped, the Rabbit node is completely shut down.
+#### --- 3.1.2 停止节点
 
 
 #### （未）3.1.3 Stopping and restarting the application: what’s the difference?
 
 #### 3.1.4 Rabbit配置文件
 
-Typically, this file is located at `/etc/rabbitmq/rabbitmq.config`, but its location can be changed via the `CONFIG_FILE` environment variable set in the rabbitmq-server script. Within rabbitmq.config you’ll find a scary-looking file format:
+一般配置文件位于`/etc/rabbitmq/rabbitmq.config`。But its location can be changed via the `CONFIG_FILE` environment variable set in the rabbitmq-server script. Within rabbitmq.config you’ll find a scary-looking file format:
 
 	[ {mnesia, [{dump_log_write_threshold,1000}]},
 	{rabbit, [{vm_memory_high_watermark,0.4}]} ].
@@ -275,121 +252,9 @@ What you’re looking at is essentially a raw Erlang data structure. `mnesia` sp
 
 ### 3.2 权限
 
-The nice thing about the RabbitMQ permission system is that a  single user can be granted permissions across multiple vhosts.
+#### --- 3.2.1 管理用户
 
-#### 3.2.1 管理用户
-
-通过`rabbitmqctl`管理用户。
-添加用户，用户名为`cashing-tier`，密码为`cashMe1`：
-```sh
-$ ./rabbitmqctl add_user cashing-tier cashMe1
-Creating user "cashing-tier" ...
-...done.
-```
-
-删除用户`cashing-tier`
-```sh
-$ ./rabbitmqctl delete_user cashing-tier
-Deleting user "cashing-tier" ...
-...done.
-```
-
-列出用户：
-```sh
-$ ./rabbitmqctl list_users
-Listing users ...
-cashing-tier
-guest
-...done.
-```
-
-改密码：
-```sh
-$ ./rabbitmqctl change_passwordcashing-tier compl3xPassword
-Changing password for user "cashing-tier"...
-...done.
-```
-
-#### 3.2.2 Rabbit的权限系统
-
-三个权限：
-
-- Read：Any operation related to consuming messages, including “purging” an entire queue (also required for binding operations to succeed)
-- Write：Publishing messages (also required for binding operations to succeed)
-- Configure：创建或删除队列和Exchange
-
-Table 3.3 AMQP operations-to-RabbitMQ permissions map
-
-|AMQP命令         |配置     |写      |读      |
-|----------------|--------|--------|--------|
-|exchange.declare|exchange|        |        |
-|exchange.delete |exchange|        |        |
-|queue.declare   |queue   |        |        |
-|queue.delete    |queue   |        |        |
-|queue.bind      |        |queue   |exchange|
-|basic.publish   |        |exchange|        |
-|basic.get       |        |        |queue   |
-|basic.consume   |        |        |queue   |
-|queue.purge     |        |        |queue   |
-
-访问控制项包含四部分：
-- The user being granted access.
-- The vhost on which the permissions apply.
-- The combination of read/write/configure permissions to grant.
-- The permission scope—whether the permissions apply only to client-named queues/exchanges, server-named queues/exchanges, or both. Client-named means your app set the name of the exchange/queue; server-named means your app didn’t supply a name and let the server assign a random one for you.
-
-例如，向用户cashing-tier授予访问虚拟机sycamore的全部权限。To do this you want `rabbitmqctl`’s `set_permissions` command:
-
-```sh
-$ ./rabbitmqctl set_permissions -p sycamore \
-cashing-tier ".*" ".*" ".*"
-Setting permissions for user "cashing-tier"in vhost "sycamore" ...
-...done.
-```
-
-Let’s take the `set_permissions` command apart, piece by piece:
-
-- `-p sycamore` — This tells `set_permissions` which vhost the entry should apply to.
-- `cashing-tier` — The user being granted the permissions.
-- `".*" ".*" ".*"` — These are the granted permissions. The values map to configure, write, and read respectively.
-
-三个权限制都是正则表达式（Perl的语法）。".*"表示匹配所有队列和exchange名。
-
-例子，授予用户*cashing-tier*访问虚拟机*oak*。允许用户执行任何读取。限制写只能对以`checks-`开头的队列或Exchange。禁止所有配置。执行：`set_permissions`：
-
-```sh
-$ ./rabbitmqctl set_permissions -p oak \
--s all cashing-tier "" "checks-.*"".*"
-Setting permissions for user "cashing-tier"in vhost "oak" ...
-...done.
-```
-
-例如`list_permissions`命令查看权限：
-
-```sh
-$ ./rabbitmqctl list_permissions -p oak
-Listing permissions in vhost "oak"...
-cashing-tier checks-.* .* all
-...done.
-```
-
-利用`clear_permissions`移除用户在特定虚拟机上的权限：
-
-```sh
-$ ./rabbitmqctl clear_permissions -p oak cashing-tier
-Clearing permissions for user "cashing-tier"in vhost "oak" ...
-...done.
-```
-
-利用`list_user_permissions`更新权限：
-
-```sh
-$ ./rabbitmqctl list_user_permissions cashing-tier
-Listing permissions for user "cashing-tier"...
-oak checks-.* .* all
-sycamore .* .* .* all
-...done.
-```
+#### --- 3.2.2 Rabbit的权限系统
 
 ### （未）3.3 Checking up
 
@@ -403,14 +268,82 @@ sycamore .* .* .* all
 
 ### （未）4.3 Remember me: RPC over RabbitMQ and waiting for answers
 
+## 8. 从Web管理RabbitMQ
 
+- Advantages of the Management plugin over the `rabbitmqctl` script 
+- 启用 RabbitMQ Management plugin 
+- 管理插件功能
+- 管理用户、队列、交换机
+- 关键插件的REST接口
 
+### 8.1 RabbitMQ Management plugin
 
+RabbitMQ的插件用Erlang编写，与服务器运行在相同的Erlang VM。
 
+#### 8.1.1 为什么需要管理插件
 
+#### 8.1.2 管理插件功能
 
+- 服务器状态概览：已递送消息，服务器内存使用，Erlang进程数等。
+- 导入导出服务器配置
+- 管理到服务器的连接
+- 列出打开的信道
+- 列出/添加交换机 
+- 列出/添加队列
+- 修改队列绑定
+- 列出/添加用户
+- 列出/添加虚拟机 
 
+#### 8.1.3 启用管理插件
 
+新版本管理插件随分发，于是只需要启用。在RabbitMQ安装目录，执行：
+
+    $ ls plugins/
+    README
+    amqp_client-2.7.0.ez
+    eldap-2.7.0-git.ez
+    erlando-2.7.0.ez
+    mochiweb-1.3-rmq2.7.0-git.ez
+    rabbitmq_auth_backend_ldap-2.7.0.ez
+    rabbitmq_auth_mechanism_ssl-2.7.0.ez
+    rabbitmq_consistent_hash_exchange-2.7.0.ez
+    rabbitmq_federation-2.7.0.ez
+    rabbitmq_jsonrpc-2.7.0.ez
+    rabbitmq_jsonrpc_channel-2.7.0.ez
+    rabbitmq_jsonrpc_channel_examples-2.7.0.ez
+    rabbitmq_management-2.7.0.ez
+    rabbitmq_management_agent-2.7.0.ez
+    rabbitmq_management_visualiser-2.7.0.ez
+    rabbitmq_mochiweb-2.7.0.ez
+    rabbitmq_shovel-2.7.0.ez
+    rabbitmq_shovel_management-2.7.0.ez
+    rabbitmq_stomp-2.7.0.ez
+    rabbitmq_tracing-2.7.0.ez
+    rfc4627_jsonrpc-2.7.0-git.ez
+    webmachine-1.7.0-rmq2.7.0-hg.ez
+
+`.ez`结尾的是插件和支持库。For example, the management plugin that you want to enable depends on others like the AMQP Erlang client **amqp_client-2.7.0.ez** and the webmachine plugin **webmachine-1.7.0-rmq2.7.0-hg.ez**, among others. 要启用管理插件，执行：
+
+    $ rabbitmq-plugins enable rabbitmq_management
+
+启用后需要重启broker以生效
+ 
+    ./rabbitmqctl stop
+    $ ./rabbitmq-server -detached
+    Activating RabbitMQ plugins ...
+    6 plugins activated:
+    * amqp_client-2.7.0
+    * mochiweb-1.3-rmq2.7.0-git
+    * rabbitmq_management-2.7.0
+    * rabbitmq_management_agent-2.7.0
+    * rabbitmq_mochiweb-2.7.0
+    * webmachine-1.7.0-rmq2.7.0-hg
+
+打开浏览器：http://localhost:15672/。
+
+In the meantime you can use guest as user and password.
+
+### （未）8.2 Managing RabbitMQ from the web console
 
 
 
