@@ -19,7 +19,7 @@ RabbitMQ更像是联邦快递，它是一个递送服务。
 
 ### 2.2 队列
 
-AMQP消息路由需要三部分：exchange、队列和绑定（bindings）。Exchanges是生产者发布消息的地方；队列是消息最终的归宿，消息在这里等待被消费；绑定决定消息如何从exchange路由到队列。
+AMQP消息路由需要三部分：交换机、队列和绑定（bindings）。交换机是生产者发布消息的地方；队列是消息最终的归宿，消息在这里等待被消费；绑定决定消息如何从交换机路由到队列。
 
 消费者接收消息有两种方式：
 
@@ -56,27 +56,27 @@ AMQP消息路由需要三部分：exchange、队列和绑定（bindings）。Exc
 
 ### 2.3 exchanges 和 bindings
 
-消息送往队列前先被发到exchange。然后根据特定规则决定递送到哪个队列。规则称为**routing keys**。队列按照某个路由键被绑定到exchange。向broker发送的消息都带一个**routing key**（即使为空），将与bindings的routing keys匹配。如果没有匹配的绑定，消息送入黑洞。
+消息送往队列前先被发到交换机。然后根据特定规则决定递送到哪个队列。规则称为**routing keys**。队列按照某个路由键被绑定到交换机。向broker发送的消息都带一个**路由键**（即使为空）。消息的路由键将与绑定的路由键匹配。如果没有匹配的绑定，消息送入黑洞。
 
 协议提供四种exchanges：direct, fanout, topic, headers，实现不同的路由算法。
 
 **headers exchange**，匹配AMQP消息中的一个头，而不是routing key。其他方面与direct exchange一致，但性能差很多。因此实际很少被使用。
 
-**direct exchange**，如果路由键匹配，则消息会被递送到相应队列。broker必须实现direct exchange，并提供一个**默认exchange，其名字为空**。When a queue is declared, it’ll be automatically bound to that exchange using the queue name as routing key.
+**direct exchange**，如果路由键匹配，则消息会被递送到相应队列。broker必须实现direct交换，并提供一个**默认交换机**，其名字为空。When a queue is declared, it’ll be automatically bound to that exchange，队列名作为路由键。
 
 ```php
-$channel->basic_publish($msg, '','queue-name');
+$channel->basic_publish($msg, '', 'queue-name');
 ```
 
-第一个参数是要发送的消息，第二个参数，空串，表示默认exchange，第三个参数是路由键，这里是队列名。
+第一个参数是要发送的消息，第二个参数，空串，表示默认交换机，第三个参数是路由键，这里是队列名。
 
-When the default direct exchange isn’t enough for your application’s needs, you can declare your own exchanges. You can issue the `exchange.declare` command with appropriate parameters to accomplish that.
+当默认的直接交换不能满足你的要求时，可以声明新的交换机。You can issue the `exchange.declare` command with appropriate parameters to accomplish that.
 
 ![](fanout-exchange-flow.png)
 
-**fanout exchange**, 将消息多播到多个绑定的队列。当消息发送到fanout exchange，它会被递送到所有与此exchange绑定的队列。
+**fanout exchange**, 将消息多播到多个绑定的队列。当消息发送到fanout交换机，它会被递送到所有与此交换机绑定的队列。
 
-使用Exchange、队列两级比只使用队列的好处是：例如，一个消息要触发三个处理。则这三个处理可以由三个绑定到同一个Exchange的队列构成。将来如果要再增加处理，只需要再绑定一个队列。如果有生产者直接发给队列，则从发送三个队列到发送到四个队列需要生产者改代码。
+使用交换机、队列两级比只使用队列的好处是：例如，一个消息要触发三个处理。则这三个处理可以由三个绑定到同一个Exchange的队列构成。将来如果要再增加处理，只需要再绑定一个队列。如果有生产者直接发给队列，则从发送三个队列到发送到四个队列需要生产者改代码。
 
 ![](topic-exchange-flow.png	)
 

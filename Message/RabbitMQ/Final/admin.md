@@ -167,7 +167,7 @@ http://www.rabbitmq.com/management.html
 
 If you wish to build the plugin from source, it can be built like any other. See the [plugin development page](http://www.rabbitmq.com/plugin-development.html) for more information.
 
-- Web界面在：http://server-name:15672/。
+- Web界面在：http://server-name:15672/
 - HTTP API及其文档在http://server-name:15672/api/。最新的API文档在[这](http://hg.rabbitmq.com/rabbitmq-management/raw-file/rabbitmq_v3_3_5/priv/www/api/index.html)。
 - Download [rabbitmqadmin](http://www.rabbitmq.com/management-cli.html) at: http://server-name:15672/cli/
 
