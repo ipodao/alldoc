@@ -1,4 +1,20 @@
-# 入门
+http://expressjs.com/guide.html
+
+[toc]
+
+## 入门
+
+package.json
+
+    {
+      "name": "hello-world",
+      "description": "hello world test app",
+      "version": "0.0.1",
+      "private": true,
+      "dependencies": {
+        "express": "3.x"
+      }
+    }
 
 创建一个`app.js`或`server.js`文件（或其他名字）。调用`express()`创建一个新应用
 

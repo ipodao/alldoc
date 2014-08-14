@@ -351,3 +351,48 @@ shortened. There will be arcing, 触点可能最终融化在一起。There is al
 The downside of relays is that they are slow to operate and will eventually wear out after many hundreds of thousands of operations. This means they are only suitable for slow on/off control, not for fast switching like PWM.
 
 继电器中的线圈需要大约 50 mA 才能闭合连接。由于GPIO引脚只能提供大约 3 mA，需要一个小的晶体管做开关。不需要上节使用的高功率 MOSFET。基极连接到GPIO脚，中间有一个1kΩ电阻，用于限制电流。发射极接地，集电极连接到集电极一端。继电器的另一边连接到GPIO的5V脚。二极管用于平抑高电压脉冲，当三极管occur when the transistor rapidly switches the power to the relay’s coil.
+
+### 9.6. 控制高电压AC设备
+
+想要开关110或240V AC设备。
+
+Use a PowerSwitch Tail II (see “Modules”on page  381). This handy device makes it really easy to switch AC equipment on and off from a Raspberry Pi. It has an AC socket on one end and a plug on the other, like an extension cable; the only difference is that the control box in the middle of the lead has three screw terminals. By attaching terminal
+2 to GND and terminal 1 to a GPIO pin, the device acts like a switch to turn the appliance on and off.
+
+You can use the same Python code as you did in Recipe 9.1 to use the PowerSwitch Tail, as shown in Figure 9-7.
+
+![](PowerSwitchTail.png)
+
+The PowerSwitch Tail uses a relay, but to switch the relay, it uses a component called an opto-isolator that has an LED shining onto a photo-TRIAC (a high-voltage, light sensitive switch); when the LED is illuminated, the photo-TRIAC conducts, supplying current to the relay coil.
+The LED inside the opto-isolator has its current limited by a resistor, so that only 3 mA flows through it when you supply it with 3.3V from a GPIO pin.
+
+### （未）9.7. Making a User Interface to Turn Things On and Off
+
+### （未）9.8. Making a User Interface to Control PWM Power for LEDs and Motors
+
+### （未）9.9. Changing the Color of an RGB LED
+
+### （未）9.10. Using Lots of LEDs (Charlieplexing)
+
+### 9.11. 使用模拟电压表
+
+Assuming you have a 5V volt meter, you can use a PWM output to drive the meter directly, connecting the negative side of the meter to ground and the positive side to a GPIO pin. However, if the meter is the common 5V kind, you’ll only be able to display voltages up to 3.3V.
+
+If you want to use almost the full range of a 5V volt meter, you will need a transistor to act as a switch for the PWM signal and a 1kΩ resistor to limit the current to the base of the transistor.
+
+To make this recipe, you will need:
+
+- 5V panel meter (“Miscellaneous” on page 382)
+- Breadboard and jumper wires (see “Prototyping Equipment” on page 380)
+- Two 1kΩ resistors (see “Resistors and Capacitors” on page 380)
+- Transistor 2N3904 (see “Transistors and Diodes” on page 381)
+
+The breadboard layout for this is shown in Figure 9-15.
+
+![](meter.png)
+
+To test the volt meter, use the same program as you did for controlling the brightness of the LED in Recipe 9.2.
+
+You will probably notice that the needle gives a steady reading at either end of the scale, but everywhere else jitters a bit. This is a side effect of the way the PWM signals are generated. For a steadier result, you can use external PWM hardware like the 16-channel module used in Recipe 10.2.
+
+### 9.12. 中断Programming with Interrupts
