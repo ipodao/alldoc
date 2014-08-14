@@ -118,28 +118,19 @@ After this event is emitted, the request's socket will not have a `data` event l
 
 ### server.listen(port, [hostname], [backlog], [callback])
 
-Begin accepting connections on the specified port and hostname.  If the
-hostname is omitted, the server will accept connections directed to any
-IPv4 address (`INADDR_ANY`).
+在特定端口和主机接收连接。If the hostname is omitted, the server will accept connections directed to any IPv4 address (`INADDR_ANY`).
 
 To listen to a unix socket, supply a filename instead of port and hostname.
 
-Backlog is the maximum length of the queue of pending connections.
-The actual length will be determined by your OS through sysctl settings such as
-`tcp_max_syn_backlog` and `somaxconn` on linux. The default value of this
-parameter is 511 (not 512).
+Backlog is the maximum length of the queue of pending connections. The actual length will be determined by your OS through sysctl settings such as `tcp_max_syn_backlog` and `somaxconn` on linux. 默认值是511。
 
-This function is asynchronous. The last parameter `callback` will be added as
-a listener for the ['listening'][] event.  See also [net.Server.listen(port)][].
-
+这个函数的异步的。最后一个参数`callback`将作为 ['listening'][] 事件的监听器。See also [net.Server.listen(port)][].
 
 ### server.listen(path, [callback])
 
 Start a UNIX socket server listening for connections on the given `path`.
 
-This function is asynchronous. The last parameter `callback` will be added as
-a listener for the ['listening'][] event.  See also [net.Server.listen(path)][].
-
+This function is asynchronous. The last parameter `callback` will be added as a listener for the ['listening'][] event.  See also [net.Server.listen(path)][].
 
 ### server.listen(handle, [callback])
 
@@ -149,42 +140,31 @@ a listener for the ['listening'][] event.  See also [net.Server.listen(path)][].
 The `handle` object can be set to either a server or socket (anything
 with an underlying `_handle` member), or a `{fd: <n>}` object.
 
-This will cause the server to accept connections on the specified
-handle, but it is presumed that the file descriptor or handle has
-already been bound to a port or domain socket.
+This will cause the server to accept connections on the specified handle, but it is presumed that the file descriptor or handle has already been bound to a port or domain socket.
 
 Listening on a file descriptor is not supported on Windows.
 
-This function is asynchronous. The last parameter `callback` will be added as
-a listener for the ['listening'](net.html#event_listening_) event.
-See also [net.Server.listen()](net.html#net_server_listen_handle_callback).
+This function is asynchronous. The last parameter `callback` will be added as a listener for the ['listening'](net.html#event_listening_) event. See also [net.Server.listen()](net.html#net_server_listen_handle_callback).
 
 ### server.close([callback])
 
-Stops the server from accepting new connections.  See [net.Server.close()][].
-
+服务器停止接收新的连接。见 [net.Server.close()][]。
 
 ### server.maxHeadersCount
 
-Limits maximum incoming headers count, equal to 1000 by default. If set to 0 -
-no limit will be applied.
+Limits maximum incoming headers count, equal to 1000 by default. If set to 0 - no limit will be applied.
 
 ### server.setTimeout(msecs, callback)
 
 * `msecs` {Number}
 * `callback` {Function}
 
-Sets the timeout value for sockets, and emits a `'timeout'` event on
-the Server object, passing the socket as an argument, if a timeout
-occurs.
+Sets the timeout value for sockets, and emits a `'timeout'` event on the Server object, passing the socket as an argument, if a timeout occurs.
 
-If there is a `'timeout'` event listener on the Server object, then it
-will be called with the timed-out socket as an argument.
+If there is a `'timeout'` event listener on the Server object, then it will be called with the timed-out socket as an argument.
 
 By default, the Server's timeout value is 2 minutes, and sockets are
-destroyed automatically if they time out.  However, if you assign a
-callback to the Server's `'timeout'` event, then you are responsible
-for handling socket timeouts.
+destroyed automatically if they time out. However, if you assign a callback to the Server's `'timeout'` event, then you are responsible for handling socket timeouts.
 
 ### server.timeout
 
@@ -193,50 +173,35 @@ for handling socket timeouts.
 The number of milliseconds of inactivity before a socket is presumed
 to have timed out.
 
-Note that the socket timeout logic is set up on connection, so
-changing this value only affects *new* connections to the server, not
-any existing connections.
+Note that the socket timeout logic is set up on connection, so changing this value only affects *new* connections to the server, not any existing connections.
 
-Set to 0 to disable any kind of automatic timeout behavior on incoming
-connections.
+Set to 0 to disable any kind of automatic timeout behavior on incoming connections.
 
 ## Class: http.ServerResponse
 
-This object is created internally by a HTTP server--not by the user. It is
-passed as the second parameter to the `'request'` event.
-
-The response implements the [Writable Stream][] interface. This is an
-[EventEmitter][] with the following events:
+由服务器内部创建该对象。作为`'request'`事件的第二个参数。实现 [Writable Stream][] 接口，且是一个 [EventEmitter][]。
 
 ### Event: 'close'
 
 `function () { }`
 
-Indicates that the underlying connection was terminated before
-[response.end()][] was called or able to flush.
+Indicates that the underlying connection was terminated before [response.end()][] was called or able to flush.
 
 ### Event: 'finish'
 
 `function () { }`
 
-Emitted when the response has been sent. More specifically, this event is
-emitted when the last segment of the response headers and body have been
-handed off to the operating system for transmission over the network. It
-does not imply that the client has received anything yet.
+Emitted when the response has been sent. More specifically, this event is emitted when the last segment of the response headers and body have been handed off to the operating system for transmission over the network. 不表示客户端已经收到。
 
-After this event, no more events will be emitted on the response object.
+这个事件过后，响应对象不会再发出任何事件。
 
 ### response.writeContinue()
 
-Sends a HTTP/1.1 100 Continue message to the client, indicating that
-the request body should be sent. See the ['checkContinue'][] event on `Server`.
+Sends a HTTP/1.1 100 Continue message to the client, indicating that the request body should be sent. See the ['checkContinue'][] event on `Server`.
 
 ### response.writeHead(statusCode, [statusMessage], [headers])
 
-Sends a response header to the request. The status code is a 3-digit HTTP
-status code, like `404`. The last argument, `headers`, are the response headers.
-Optionally one can give a human-readable `statusMessage` as the second
-argument.
+设置响应头。The status code is a 3-digit HTTP status code, like `404`. The last argument, `headers`, are the response headers. Optionally one can give a human-readable `statusMessage` as the second argument.
 
 Example:
 
@@ -245,66 +210,44 @@ Example:
       'Content-Length': body.length,
       'Content-Type': 'text/plain' });
 
-This method must only be called once on a message and it must
-be called before [response.end()][] is called.
+一个消息只能调用一次这个方法。必须在 [response.end()][] 之前调用。
 
-If you call [response.write()][] or [response.end()][] before calling this, the
-implicit/mutable headers will be calculated and call this function for you.
+If you call [response.write()][] or [response.end()][] before calling this, the implicit/mutable headers will be calculated and call this function for you.
 
-Note: that Content-Length is given in bytes not characters. The above example
-works because the string `'hello world'` contains only single byte characters.
-If the body contains higher coded characters then `Buffer.byteLength()`
-should be used to determine the number of bytes in a given encoding.
-And Node does not check whether Content-Length and the length of the body
-which has been transmitted are equal or not.
+注意`Content-Length`单位是字节不是字符。对于多字节字符串，利用`Buffer.byteLength()`获取字节长度。Node不会检查`Content-Length`的响应体的长度是否匹配。
 
 ### response.setTimeout(msecs, callback)
 
 * `msecs` {Number}
 * `callback` {Function}
 
-Sets the Socket's timeout value to `msecs`.  If a callback is
-provided, then it is added as a listener on the `'timeout'` event on
-the response object.
+Sets the Socket's timeout value to `msecs`.  If a callback is provided, then it is added as a listener on the `'timeout'` event on the response object.
 
-If no `'timeout'` listener is added to the request, the response, or
-the server, then sockets are destroyed when they time out.  If you
-assign a handler on the request, the response, or the server's
-`'timeout'` events, then it is your responsibility to handle timed out
-sockets.
+If no `'timeout'` listener is added to the request, the response, or the server, then sockets are destroyed when they time out. If you assign a handler on the request, the response, or the server's `'timeout'` events, then it is your responsibility to handle timed out sockets.
 
 ### response.statusCode
 
-When using implicit headers (not calling [response.writeHead()][] explicitly),
-this property controls the status code that will be sent to the client when
-the headers get flushed.
+When using implicit headers (not calling [response.writeHead()][] explicitly), this property controls the status code that will be sent to the client when the headers get flushed.
 
 Example:
 
     response.statusCode = 404;
 
-After response header was sent to the client, this property indicates the
-status code which was sent out.
+After response header was sent to the client, this property indicates the status code which was sent out.
 
 ### response.statusMessage
 
-When using implicit headers (not calling `response.writeHead()` explicitly), this property
-controls the status message that will be sent to the client when the headers get
-flushed. If this is left as `undefined` then the standard message for the status
-code will be used.
+When using implicit headers (not calling `response.writeHead()` explicitly), this property controls the status message that will be sent to the client when the headers get flushed. If this is left as `undefined` then the standard message for the status code will be used.
 
 Example:
 
     response.statusMessage = 'Not found';
 
-After response header was sent to the client, this property indicates the
-status message which was sent out.
+After response header was sent to the client, this property indicates the status message which was sent out.
 
 ### response.setHeader(name, value)
 
-Sets a single header value for implicit headers.  If this header already exists
-in the to-be-sent headers, its value will be replaced.  Use an array of strings
-here if you need to send multiple headers with the same name.
+Sets a single header value for **implicit** headers. If this header already exists in the to-be-sent headers, its value will be replaced. Use an array of strings here if you need to send multiple headers with the same name.
 
 Example:
 
@@ -321,16 +264,13 @@ Boolean (read-only). True if headers were sent, false otherwise.
 ### response.sendDate
 
 When true, the Date header will be automatically generated and sent in
-the response if it is not already present in the headers. Defaults to true.
+the response if it is not already present in the headers. 默认是true。
 
-This should only be disabled for testing; HTTP requires the Date header
-in responses.
+This should only be disabled for testing; HTTP requires the Date header in responses.
 
 ### response.getHeader(name)
 
-Reads out a header that's already been queued but not sent to the client.  Note
-that the name is case insensitive.  This can only be called before headers get
-implicitly flushed.
+Reads out a header that's already been queued but not sent to the client. 名字是大小写不敏感的。This can only be called before headers get implicitly flushed.
 
 Example:
 
@@ -347,27 +287,19 @@ Example:
 
 ### response.write(chunk, [encoding])
 
-If this method is called and [response.writeHead()][] has not been called,
-it will switch to implicit header mode and flush the implicit headers.
+若调用该方法前未调用 [response.writeHead()][]，将切换到implicit header模式，并刷出隐式的头。
 
-This sends a chunk of the response body. This method may
-be called multiple times to provide successive parts of the body.
+This sends a chunk of the response body. 这个方法可以调用多次。
 
-`chunk` can be a string or a buffer. If `chunk` is a string,
-the second parameter specifies how to encode it into a byte stream.
-By default the `encoding` is `'utf8'`.
+`chunk`可以使字符串或Buffer。若是字符串，第二个参数指定编码。默认是`'utf8'`。
 
-**Note**: This is the raw HTTP body and has nothing to do with
-higher-level multi-part body encodings that may be used.
+**Note**: This is the raw HTTP body and has nothing to do with higher-level multi-part body encodings that may be used.
 
 The first time `response.write()` is called, it will send the buffered
-header information and the first body to the client. The second time
-`response.write()` is called, Node assumes you're going to be streaming
-data, and sends that separately. That is, the response is buffered up to the
-first chunk of body.
+header information and the first body to the client. The second time `response.write()` is called, Node assumes you're going to be streaming data, and sends that separately. That is, the response is buffered up to the first chunk of body.
 
-Returns `true` if the entire data was flushed successfully to the kernel
-buffer. Returns `false` if all or part of the data was queued in user memory.
+Returns `true` if the entire data was flushed successfully to the kernel buffer. Returns `false` if all or part of the data was queued in user memory.
+
 `'drain'` will be emitted when the buffer is again free.
 
 ### response.addTrailers(headers)
@@ -379,8 +311,7 @@ Trailers will **only** be emitted if chunked encoding is used for the
 response; if it is not (e.g., if the request was HTTP/1.0), they will
 be silently discarded.
 
-Note that HTTP requires the `Trailer` header to be sent if you intend to
-emit trailers, with a list of the header fields in its value. E.g.,
+Note that HTTP requires the `Trailer` header to be sent if you intend to emit trailers, with a list of the header fields in its value. E.g.,
 
     response.writeHead(200, { 'Content-Type': 'text/plain',
                               'Trailer': 'Content-MD5' });
@@ -391,57 +322,44 @@ emit trailers, with a list of the header fields in its value. E.g.,
 
 ### response.end([data], [encoding])
 
-This method signals to the server that all of the response headers and body
-have been sent; that server should consider this message complete.
-The method, `response.end()`, MUST be called on each
-response.
+该方法告诉服务器所有的响应头和响应体都已发出；服务器应认为消息已完成。每个响应最后都必须调用此方法。
 
-If `data` is specified, it is equivalent to calling `response.write(data, encoding)`
-followed by `response.end()`.
+If `data` is specified, it is equivalent to calling `response.write(data, encoding)` followed by `response.end()`.
 
+-----
 
 ## http.request(options, [callback])
 
 Node maintains several connections per server to make HTTP requests.
 This function allows one to transparently issue requests.
 
-`options` can be an object or a string. If `options` is a string, it is
-automatically parsed with [url.parse()][].
+`options`可以是对象或字符串。若是字符串，就使用 [url.parse()][] 解析。
 
-Options:
+选项：
 
-- `host`: A domain name or IP address of the server to issue the request to.
-  Defaults to `'localhost'`.
+- `host`: 主机名或IP地址。默认是`'localhost'`。
 - `hostname`: To support `url.parse()` `hostname` is preferred over `host`
 - `port`: Port of remote server. Defaults to 80.
 - `localAddress`: Local interface to bind for network connections.
 - `socketPath`: Unix Domain Socket (use one of host:port or socketPath)
-- `method`: A string specifying the HTTP request method. Defaults to `'GET'`.
-- `path`: Request path. Defaults to `'/'`. Should include query string if any.
-  E.G. `'/index.html?page=12'`. An exception is thrown when the request path
-  contains illegal characters. Currently, only spaces are rejected but that
-  may change in the future.
-- `headers`: An object containing request headers.
+- `method`: 字符串，表示HTTP请求方法。默认是`'GET'`。
+- `path`: 请求路径。默认是`'/'`。可以包含查询字符串。如`'/index.html?page=12'`。若路径中包含无效字符，会抛异常。现在只有空格会被拒绝，但将来可能变化。
+- `headers`: 对象，包含请求头。
 - `auth`: Basic authentication i.e. `'user:password'` to compute an
   Authorization header.
-- `agent`: Controls [Agent][] behavior. When an Agent is used request will
-  default to `Connection: keep-alive`. Possible values:
+- `agent`: Controls [Agent][] behavior. When an Agent is used request will default to `Connection: keep-alive`. Possible values:
  - `undefined` (default): use [global Agent][] for this host and port.
  - `Agent` object: explicitly use the passed in `Agent`.
- - `false`: opts out of connection pooling with an Agent, defaults request to
-   `Connection: close`.
+ - `false`: opts out of connection pooling with an Agent, defaults request to `Connection: close`.
 - `keepAlive`: {Boolean} Keep sockets around in a pool to be used
-  by other requests in the future. Default = `false`
+  by other requests in the future. **默认false**。
 - `keepAliveMsecs`: {Integer} When using HTTP KeepAlive, how often to
-  send TCP KeepAlive packets over sockets being kept alive.  Default =
-  `1000`.  Only relevant if `keepAlive` is set to `true`.
+  send TCP KeepAlive packets over sockets being kept alive. Default =
+  `1000`. Only relevant if `keepAlive` is set to `true`.
 
-The optional `callback` parameter will be added as a one time listener for
-the ['response'][] event.
+The optional `callback` parameter will be added as a one time listener for the ['response'][] event.
 
-`http.request()` returns an instance of the [http.ClientRequest][]
-class. The `ClientRequest` instance is a writable stream. If one needs to
-upload a file with a POST request, then write to the `ClientRequest` object.
+`http.request()` returns an instance of the [http.ClientRequest][] class. `ClientRequest`是一个可写流。如果需要上传文件，可以向`ClientRequest`对象写数据。
 
 Example:
 
@@ -470,28 +388,16 @@ Example:
     req.write('data\n');
     req.end();
 
-Note that in the example `req.end()` was called. With `http.request()` one
-must always call `req.end()` to signify that you're done with the request -
-even if there is no data being written to the request body.
+必须最后调用`req.end()`，即使请求体是空的。
 
-If any error is encountered during the request (be that with DNS resolution,
-TCP level errors, or actual HTTP parse errors) an `'error'` event is emitted
-on the returned request object.
+If any error is encountered during the request (be that with DNS resolution, TCP level errors, or actual HTTP parse errors) an `'error'` event is emitted on the returned request object.
 
 There are a few special headers that should be noted.
 
-* Sending a 'Connection: keep-alive' will notify Node that the connection to
-  the server should be persisted until the next request.
-
+* Sending a 'Connection: keep-alive' will notify Node that the connection to the server should be persisted until the next request.
 * Sending a 'Content-length' header will disable the default chunked encoding.
-
-* Sending an 'Expect' header will immediately send the request headers.
-  Usually, when sending 'Expect: 100-continue', you should both set a timeout
-  and listen for the `continue` event. See RFC2616 Section 8.2.3 for more
-  information.
-
-* Sending an Authorization header will override using the `auth` option
-  to compute basic authentication.
+* Sending an 'Expect' header will immediately send the request headers. Usually, when sending 'Expect: 100-continue', you should both set a timeout and listen for the `continue` event. See RFC2616 Section 8.2.3 for more information.
+* Sending an Authorization header will override using the `auth` option to compute basic authentication.
 
 ## http.get(options, [callback])
 
@@ -510,15 +416,9 @@ Example:
 
 ## Class: http.Agent
 
-The HTTP Agent is used for pooling sockets used in HTTP client
-requests.
+The HTTP Agent is used for pooling sockets used in HTTP client requests.
 
-The HTTP Agent also defaults client requests to using
-Connection:keep-alive. If no pending HTTP requests are waiting on a
-socket to become free the socket is closed. This means that Node's
-pool has the benefit of keep-alive when under load but still does not
-require developers to manually close the HTTP clients using
-KeepAlive.
+The HTTP Agent also defaults client requests to using Connection:keep-alive. If no pending HTTP requests are waiting on a socket to become free the socket is closed. This means that Node's pool has the benefit of keep-alive when under load but still does not require developers to manually close the HTTP clients using KeepAlive.
 
 If you opt into using HTTP KeepAlive, you can create an Agent object
 with that flag set to `true`.  (See the [constructor
@@ -627,37 +527,23 @@ socket reusability.
 
 ## http.globalAgent
 
-Global instance of Agent which is used as the default for all http client
-requests.
+Global instance of Agent which is used as the default for all http client requests.
 
+----
 
 ## Class: http.ClientRequest
 
-This object is created internally and returned from `http.request()`.  It
-represents an _in-progress_ request whose header has already been queued.  The
-header is still mutable using the `setHeader(name, value)`, `getHeader(name)`,
-`removeHeader(name)` API.  The actual header will be sent along with the first
-data chunk or when closing the connection.
+This object is created internally and returned from `http.request()`.  It represents an _in-progress_ request whose header has already been queued. The header is still mutable using the `setHeader(name, value)`, `getHeader(name)`, `removeHeader(name)` API. The actual header will be sent along with the first data chunk or when closing the connection.
 
-To get the response, add a listener for `'response'` to the request object.
-`'response'` will be emitted from the request object when the response
-headers have been received.  The `'response'` event is executed with one
-argument which is an instance of [http.IncomingMessage][].
+To get the response, add a listener for `'response'` to the request object. `'response'` will be emitted from the request object when the response headers have been received. The `'response'` event is executed with one argument which is an instance of [http.IncomingMessage][].
 
-During the `'response'` event, one can add listeners to the
-response object; particularly to listen for the `'data'` event.
+During the `'response'` event, one can add listeners to the response object; particularly to listen for the `'data'` event.
 
-If no `'response'` handler is added, then the response will be
-entirely discarded.  However, if you add a `'response'` event handler,
-then you **must** consume the data from the response object, either by
-calling `response.read()` whenever there is a `'readable'` event, or
-by adding a `'data'` handler, or by calling the `.resume()` method.
-Until the data is consumed, the `'end'` event will not fire.  Also, until
-the data is read it will consume memory that can eventually lead to a
-'process out of memory' error.
+If no `'response'` handler is added, then the response will be entirely discarded. However, if you add a `'response'` event handler, then you **must** consume the data from the response object, either by calling `response.read()` whenever there is a `'readable'` event, or by adding a `'data'` handler, or by calling the `.resume()` method.
 
-Note: Node does not check whether Content-Length and the length of the body
-which has been transmitted are equal or not.
+Until the data is consumed, the `'end'` event will not fire. Also, until the data is read it will consume memory that can eventually lead to a 'process out of memory' error.
+
+Note: Node does not check whether Content-Length and the length of the body which has been transmitted are equal or not.
 
 The request implements the [Writable Stream][] interface. This is an
 [EventEmitter][] with the following events:
@@ -666,8 +552,7 @@ The request implements the [Writable Stream][] interface. This is an
 
 `function (response) { }`
 
-Emitted when a response is received to this request. This event is emitted only
-once. The `response` argument will be an instance of [http.IncomingMessage][].
+Emitted when a response is received to this request. This event is emitted only once. The `response` argument will be an instance of [http.IncomingMessage][].
 
 Options:
 
@@ -748,9 +633,7 @@ A client server pair that show you how to listen for the `connect` event.
 
 `function (response, socket, head) { }`
 
-Emitted each time a server responds to a request with an upgrade. If this
-event isn't being listened for, clients receiving an upgrade header will have
-their connections closed.
+Emitted each time a server responds to a request with an upgrade. If this event isn't being listened for, clients receiving an upgrade header will have their connections closed.
 
 A client server pair that show you how to listen for the `upgrade` event.
 
@@ -797,9 +680,7 @@ A client server pair that show you how to listen for the `upgrade` event.
 
 `function () { }`
 
-Emitted when the server sends a '100 Continue' HTTP response, usually because
-the request contained 'Expect: 100-continue'. This is an instruction that
-the client should send the request body.
+Emitted when the server sends a '100 Continue' HTTP response, usually because the request contained 'Expect: 100-continue'. This is an instruction that the client should send the request body.
 
 ### request.flush()
 
@@ -855,38 +736,33 @@ Once a socket is assigned to this request and is connected
 Once a socket is assigned to this request and is connected
 [socket.setKeepAlive()][] will be called.
 
+----
 
 ## http.IncomingMessage
 
-An `IncomingMessage` object is created by [http.Server][] or
-[http.ClientRequest][] and passed as the first argument to the `'request'`
-and `'response'` event respectively. It may be used to access response status,
-headers and data.
+An `IncomingMessage` object is created by [http.Server][] or [http.ClientRequest][] and passed as the first argument to the `'request'` and `'response'` event respectively. It may be used to access response status, headers and data.
 
-It implements the [Readable Stream][] interface, as well as the
-following additional events, methods, and properties.
+It implements the [Readable Stream][] interface, as well as the following additional events, methods, and properties.
 
 ### Event: 'close'
 
 `function () { }`
 
-Indicates that the underlaying connection was closed.
-Just like `'end'`, this event occurs only once per response.
+Indicates that the underlaying connection was closed. Just like `'end'`, this event occurs only once per response.
 
 ### message.httpVersion
 
-In case of server request, the HTTP version sent by the client. In the case of
-client response, the HTTP version of the connected-to server.
+In case of server request, the HTTP version sent by the client. In the case of client response, the HTTP version of the connected-to server.
 Probably either `'1.1'` or `'1.0'`.
 
-Also `response.httpVersionMajor` is the first integer and
-`response.httpVersionMinor` is the second.
+Also `response.httpVersionMajor` is the first integer and `response.httpVersionMinor` is the second.
 
 ### message.headers
 
 The request/response headers object.
 
-Read only map of header names and values. Header names are lower-cased.
+Read only map of header names and values. 头名字是小写的。
+
 Example:
 
     // Prints something like:
@@ -900,9 +776,7 @@ Example:
 
 The raw request/response headers list exactly as they were received.
 
-Note that the keys and values are in the same list.  It is *not* a
-list of tuples.  So, the even-numbered offsets are key values, and the
-odd-numbered offsets are the associated values.
+Note that the keys and values are in the same list. It is *not* a list of tuples. So, the even-numbered offsets are key values, and the odd-numbered offsets are the associated values.
 
 Header names are not lowercased, and duplicates are not merged.
 
@@ -925,7 +799,7 @@ The request/response trailers object. Only populated at the 'end' event.
 ### message.rawTrailers
 
 The raw request/response trailer keys and values exactly as they were
-received.  Only populated at the 'end' event.
+received. Only populated at the 'end' event.
 
 ### message.setTimeout(msecs, callback)
 
@@ -938,15 +812,13 @@ Calls `message.connection.setTimeout(msecs, callback)`.
 
 **Only valid for request obtained from [http.Server][].**
 
-The request method as a string. Read only. Example:
-`'GET'`, `'DELETE'`.
+The request method as a string. Read only. Example: `'GET'`, `'DELETE'`.
 
 ### message.url
 
 **Only valid for request obtained from [http.Server][].**
 
-Request URL string. This contains only the URL that is
-present in the actual HTTP request. If the request is:
+Request URL string. This contains only the URL that is present in the actual HTTP request. If the request is:
 
     GET /status?name=ryan HTTP/1.1\r\n
     Accept: text/plain\r\n
@@ -956,8 +828,7 @@ Then `request.url` will be:
 
     '/status?name=ryan'
 
-If you would like to parse the URL into its parts, you can use
-`require('url').parse(request.url)`.  Example:
+If you would like to parse the URL into its parts, you can use `require('url').parse(request.url)`. Example:
 
     node> require('url').parse('/status?name=ryan')
     { href: '/status?name=ryan',
@@ -965,9 +836,7 @@ If you would like to parse the URL into its parts, you can use
       query: 'name=ryan',
       pathname: '/status' }
 
-If you would like to extract the params from the query string,
-you can use the `require('querystring').parse` function, or pass
-`true` as the second argument to `require('url').parse`.  Example:
+If you would like to extract the params from the query string, you can use the `require('querystring').parse` function, or pass `true` as the second argument to `require('url').parse`. Example:
 
     node> require('url').parse('/status?name=ryan', true)
     { href: '/status?name=ryan',

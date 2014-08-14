@@ -22,9 +22,9 @@ package.json
 	var app = express();
 
 
-利用`app.VERB()`创建路由（如`app.get()`用于*GET*方法，`app.post()`用于*POST*方法）。`req`和`res`就是node提供的对象，因此你可以调用`res.pipe()`，`req.on('data', callback)`等方法。Express增强了这些变量。例如`res.send()`可以帮你设置`Content-Type`。
+利用`app.VERB()`创建路由（如`app.get()`用于*GET*方法，`app.post()`用于*POST*方法）。`req`和`res`是node提供的对象，因此你可以调用`res.pipe()`，`req.on('data', callback)`等方法。Express增强了这些变量。例如`res.send()`可以帮你设置`Content-Type`。
 
-	app.get('/hello.txt', function(req, res){
+	app.get('/hello.txt', function(req, res) {
 	  res.send('Hello World');
 	});
 
@@ -33,8 +33,8 @@ package.json
     var server = app.listen(3000, function() {
         console.log('Listening on port %d', server.address().port);
     });
-    
-# 利用`express(1)`产生应用
+
+## 利用`express(1)`产生应用
 
 The Express team maintains a handy quickstart project generator aptly named express(1). If you install `express-generator` globally with npm you'll have it available from anywhere on your machine:
 
@@ -125,7 +125,7 @@ For organizational, and higher-level framework purposes you may define several o
 	  res.status(500);
 	  res.render('error', { error: err });
 	}
-	
+
 # 用户在线统计
 
 使用Redis。首先在`package.json`加入对*redis client*的依赖。
@@ -170,12 +170,12 @@ Then finally we use it, and bind to a port! That's all there is to it, visit the
 	app.get('/', function(req, res){
 	  res.send(req.online.length + ' users online');
 	});
-	
+
 	app.listen(3000);
 
 # 代理后面的Express
 
-在Ngnix等反向带来后面使用，需要配置。调用`app.enable('trust proxy')`启用*trust proxy*，告诉Express它在代理后面，and that the X-Forwarded-* header fields may be trusted, which otherwise may be easily spoofed.
+在Ngnix等反向带来后面使用，需要配置。调用`app.enable('trust proxy')`启用*trust proxy*，告诉Express它在代理后面，and that the `X-Forwarded-*` header fields may be trusted, which otherwise may be easily spoofed.
 
 几个效果。The first of which is that `X-Forwarded-Proto` may be set by the reverse proxy to tell the app that it is https or simply http. This value is reflected by `req.protocol`.
 
